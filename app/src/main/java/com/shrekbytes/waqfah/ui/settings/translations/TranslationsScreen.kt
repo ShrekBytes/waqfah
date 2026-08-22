@@ -2,6 +2,7 @@ package com.shrekbytes.waqfah.ui.settings.translations
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.data.model.TranslationLanguage
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
+import kotlin.math.roundToInt
 
 @Composable
 fun TranslationsScreen(
@@ -62,50 +64,73 @@ private fun TranslationRow(
     onDelete: () -> Unit,
 ) {
     val colors = WaqfahTheme.colors
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(row.meta.name, color = colors.ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            when {
-                row.isDownloading -> Text(
-                    "Downloading…",
-                    color = colors.inkMuted.copy(alpha = 0.5f),
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                row.isActive -> Text("✓ Active", color = colors.accent, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
-                row.isDownloaded -> {
-                    Text(
-                        "Select",
-                        color = colors.accent,
+    Column(Modifier.fillMaxWidth().padding(vertical = 14.dp)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(row.meta.name, color = colors.ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                when {
+                    row.isDownloading -> Text(
+                        // Percentage only once the server's told us a
+                        // Content-Length to compute it from — see
+                        // TranslationRepository.downloadOverNetwork().
+                        row.downloadProgress?.let { "Downloading… ${(it * 100).roundToInt()}%" } ?: "Downloading…",
+                        color = colors.inkMuted.copy(alpha = 0.5f),
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable(onClick = onSelect),
                     )
-                    // Deletable even when bundled — it's shipped in the APK, so
-                    // "downloading" it again afterward is a local copy, not a
-                    // network fetch. See TranslationRepository.download().
-                    Text(
-                        "Delete",
+                    // Retrying just re-runs onDownload — TranslationsViewModel.download()
+                    // clears the previous error the moment a new attempt starts.
+                    row.errorMessage != null -> Text(
+                        "Failed — Retry",
                         color = colors.danger,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable(onClick = onDelete),
+                        modifier = Modifier.clickable(onClick = onDownload),
+                    )
+                    row.isActive -> Text("✓ Active", color = colors.accent, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                    row.isDownloaded -> {
+                        Text(
+                            "Select",
+                            color = colors.accent,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clickable(onClick = onSelect),
+                        )
+                        // Deletable even when bundled — it's shipped in the APK, so
+                        // "downloading" it again afterward is a local copy, not a
+                        // network fetch. See TranslationRepository.download().
+                        Text(
+                            "Delete",
+                            color = colors.danger,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clickable(onClick = onDelete),
+                        )
+                    }
+                    // No ".tr-btn.download" override in the prototype, so this
+                    // stays the base .tr-btn color (ink-muted), not accent.
+                    else -> Text(
+                        "Download",
+                        color = colors.inkMuted,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable(onClick = onDownload),
                     )
                 }
-                // No ".tr-btn.download" override in the prototype, so this
-                // stays the base .tr-btn color (ink-muted), not accent.
-                else -> Text(
-                    "Download",
-                    color = colors.inkMuted,
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable(onClick = onDownload),
-                )
             }
+        }
+        if (row.errorMessage != null) {
+            Text(
+                row.errorMessage,
+                color = colors.danger.copy(alpha = 0.85f),
+                fontSize = 11.5.sp,
+                lineHeight = 15.sp,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }
