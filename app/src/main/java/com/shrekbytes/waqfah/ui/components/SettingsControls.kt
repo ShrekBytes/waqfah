@@ -1,0 +1,466 @@
+package com.shrekbytes.waqfah.ui.components
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
+
+// The app's one shared "primary CTA" style — also used directly by the
+// "Open App" trigger button in ReadingScreen.kt, so every full-width
+// call-to-action in the app shares the same height, type size, and color
+// language rather than each screen rolling its own. Accent-colored (not a
+// plain dark/ink pill) to match every other interactive accent in the app —
+// the switch knob, chips, Mark Read — so it reads as "the same design
+// system" rather than a one-off. 48dp is a standard comfortable touch
+// target; the previous 52dp with the same small text underneath just left
+// visibly excess padding.
+@Composable
+fun WaqfahPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val colors = WaqfahTheme.colors
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.fillMaxWidth().height(48.dp),
+        shape = RoundedCornerShape(50),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colors.accent,
+            contentColor = colors.accentInk,
+            disabledContainerColor = colors.accent.copy(alpha = 0.35f),
+            disabledContentColor = colors.accentInk.copy(alpha = 0.7f),
+        ),
+    ) {
+        Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+enum class ChevronDirection { LEFT, RIGHT }
+
+// The prototype draws every chevron (back button, and the prev/next ayah
+// arrows in ReadingCard) from the same thin two-segment path — `M11 4L6 9L11
+// 14` in its 18x18 icon viewBox — rather than a filled arrowhead glyph.
+// Material's ArrowBack/KeyboardArrowLeft/Right icons are visibly heavier and
+// don't match, so this reproduces that exact path instead.
+@Composable
+fun ChevronIcon(direction: ChevronDirection, tint: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val s = size.minDimension / 18f
+        val path = Path().apply {
+            if (direction == ChevronDirection.LEFT) {
+                moveTo(11f * s, 4f * s)
+                lineTo(6f * s, 9f * s)
+                lineTo(11f * s, 14f * s)
+            } else {
+                moveTo(7f * s, 4f * s)
+                lineTo(12f * s, 9f * s)
+                lineTo(7f * s, 14f * s)
+            }
+        }
+        drawPath(path, color = tint, style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+    }
+}
+
+// Matches the prototype's `.icon-back`: a 34dp circle, transparent by
+// default (same color as the screen behind it), holding just the chevron.
+@Composable
+fun WaqfahBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = WaqfahTheme.colors
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = colors.background,
+        contentColor = colors.inkMuted,
+        modifier = modifier.padding(top = 16.dp).size(34.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            ChevronIcon(ChevronDirection.LEFT, tint = colors.inkMuted, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+// Matches the prototype's `.search-box`: a hairline pill/rounded-rect field
+// with a magnifier and inline placeholder, rather than Material's floating-
+// label OutlinedTextField (which sits noticeably taller and reads as a form
+// field, not the light search affordance the prototype uses).
+@Composable
+fun WaqfahSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = "Search apps",
+) {
+    val colors = WaqfahTheme.colors
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, colors.line, RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(Icons.Default.Search, contentDescription = null, tint = colors.inkSoft, modifier = Modifier.size(15.dp))
+        Box(Modifier.weight(1f)) {
+            if (value.isEmpty()) {
+                Text(placeholder, color = colors.inkSoft, fontSize = 14.sp)
+            }
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = TextStyle(color = colors.ink, fontSize = 14.sp),
+                cursorBrush = SolidColor(colors.accent),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+// Matches the prototype's `.empty-note`, shown instead of the app list when
+// a search filters it down to nothing.
+@Composable
+fun EmptyListNote(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        color = WaqfahTheme.colors.inkSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = modifier.fillMaxWidth().padding(vertical = 28.dp),
+    )
+}
+
+@Composable
+fun SectionTitle(text: String) {
+    Text(
+        text.uppercase(),
+        color = WaqfahTheme.colors.inkMuted,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.9.sp,
+        modifier = Modifier.padding(top = 26.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+fun FieldLabel(text: String) {
+    Text(
+        text,
+        color = WaqfahTheme.colors.ink,
+        fontSize = 13.5.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(bottom = 10.dp),
+    )
+}
+
+// Matches the prototype's `.field`: label on its own line, its control
+// below, then (usually) a hairline divider marking the boundary with the
+// next field. Pass `showDivider = false` for the last field in a section —
+// matches the prototype's per-field `border-bottom:none` override.
+@Composable
+fun SettingsField(showDivider: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
+    val colors = WaqfahTheme.colors
+    Column(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 16.dp), content = content)
+    if (showDivider) HorizontalDivider(color = colors.line)
+}
+
+// Matches the prototype's `.field-inline`: label and control share one row
+// instead of the control dropping to its own line below the label — used
+// for steppers and single-value pickers, never for chip groups (those wrap
+// to multiple lines, so they stay label-on-top via SettingsField).
+@Composable
+fun InlineField(label: String, showDivider: Boolean = true, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
+    val colors = WaqfahTheme.colors
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .let {
+                // Clip before clickable so the ripple is bounded to a rounded
+                // rect instead of filling the row's sharp-cornered full width.
+                if (onClick != null) it.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick) else it
+            }
+            .padding(horizontal = 6.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.Medium)
+        content()
+    }
+    if (showDivider) HorizontalDivider(color = colors.line)
+}
+
+// A rounded-rect ripple bounded to just this row reads as a small, isolated
+// blob rather than feedback on "the whole line" it sits on. Swapping it for
+// a flat, edge-to-edge highlight that fills the row's full, sharp-cornered
+// width — no ripple, no rounding — instead makes press feedback read as the
+// entire horizontal line lighting up at once, closer to a native list-row
+// press than a card-style ripple.
+@Composable
+fun SettingsNavRow(title: String, subtitle: String, onClick: () -> Unit) {
+    val colors = WaqfahTheme.colors
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val rowHighlight by animateColorAsState(
+        targetValue = if (isPressed) colors.line.copy(alpha = 0.6f) else Color.Transparent,
+        animationSpec = tween(durationMillis = if (isPressed) 60 else 220),
+        label = "settings_row_highlight",
+    )
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(rowHighlight)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 13.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            Text(title, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.Medium)
+            Text(subtitle, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 3.dp))
+        }
+        Text("›", color = colors.inkSoft, fontSize = 14.sp)
+    }
+}
+
+@Composable
+fun SettingsToggleRow(title: String, subtitle: String, checked: Boolean, onToggle: () -> Unit) {
+    val colors = WaqfahTheme.colors
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 13.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 3.dp))
+        }
+        WaqfahSwitch(checked = checked, onCheckedChange = { onToggle() })
+    }
+}
+
+// Settings > Permissions: a toggle-switch row, matching every other on/off
+// setting in the app. Tapping it — whether currently on or off — opens the
+// relevant system settings screen, since real accessibility/battery
+// permissions can only be granted or reviewed there, not flipped in place;
+// the switch position simply reflects current status.
+@Composable
+fun PermissionRow(title: String, subtitle: String, granted: Boolean, onOpenSettings: () -> Unit) {
+    val colors = WaqfahTheme.colors
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        WaqfahSwitch(checked = granted, onCheckedChange = { onOpenSettings() })
+    }
+}
+
+// Onboarding permissions list: same flat, unbordered row structure as the
+// Settings version, but with an actual "Grant" button instead of a toggle
+// switch — these can only be granted (or reviewed) from system settings, not
+// flipped in place. Only the button itself is tappable, same as how only
+// the switch (not the whole row) is tappable on the Settings version.
+@Composable
+fun OnboardPermissionRow(title: String, subtitle: String, granted: Boolean, onOpenSettings: () -> Unit) {
+    val colors = WaqfahTheme.colors
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        if (granted) {
+            Icon(Icons.Default.Check, contentDescription = "Granted", tint = colors.accent, modifier = Modifier.size(16.dp))
+        } else {
+            Surface(
+                onClick = onOpenSettings,
+                shape = RoundedCornerShape(50),
+                color = colors.accentSoft,
+                contentColor = colors.accent,
+            ) {
+                Text(
+                    "Grant",
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+    }
+}
+
+// A custom pill toggle rather than Material3's Switch — the prototype's
+// toggle is a plain 44x26 pill with a sliding knob, noticeably slimmer than
+// Material's default.
+@Composable
+fun WaqfahSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+    val colors = WaqfahTheme.colors
+    val knobOffset by animateDpAsState(if (checked) 18.dp else 0.dp, label = "toggle_knob")
+    Box(
+        modifier
+            .size(width = 44.dp, height = 26.dp)
+            .clip(RoundedCornerShape(50))
+            .background(if (checked) colors.accent else colors.line)
+            .clickable { onCheckedChange(!checked) },
+    ) {
+        Box(
+            Modifier
+                .padding(3.dp)
+                .offset(x = knobOffset)
+                .size(20.dp)
+                .clip(CircleShape)
+                .background(colors.background),
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun <T> ChipGroup(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit) {
+    val colors = WaqfahTheme.colors
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.forEach { (value, label) ->
+            val isSelected = value == selected
+            Surface(
+                onClick = { onSelect(value) },
+                shape = RoundedCornerShape(50),
+                color = if (isSelected) colors.accent else Color.Transparent,
+                contentColor = if (isSelected) colors.accentInk else colors.inkMuted,
+            ) {
+                Text(
+                    label,
+                    modifier = Modifier.padding(horizontal = 15.dp, vertical = 7.dp),
+                    fontSize = 12.5.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun Stepper(
+    value: Int,
+    suffix: String,
+    min: Int,
+    max: Int,
+    step: Int = 1,
+    valueLabel: (Int) -> String = { "$it$suffix" },
+    onChange: (Int) -> Unit,
+) {
+    val colors = WaqfahTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        StepperButton("−", enabled = value - step >= min) { onChange(value - step) }
+        Text(valueLabel(value), color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
+        StepperButton("+", enabled = value + step <= max) { onChange(value + step) }
+    }
+}
+
+@Composable
+private fun StepperButton(label: String, enabled: Boolean, onClick: () -> Unit) {
+    val colors = WaqfahTheme.colors
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = CircleShape,
+        color = colors.accentSoft,
+        contentColor = if (enabled) colors.ink else colors.inkSoft,
+        modifier = Modifier.size(30.dp),
+    ) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+            Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Composable
+fun ProgressRing(percent: Int, modifier: Modifier = Modifier) {
+    val colors = WaqfahTheme.colors
+    Column(modifier, verticalArrangement = Arrangement.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val strokeWidth = 5.dp.toPx()
+            val diameter = size.minDimension - strokeWidth
+            val topLeft = androidx.compose.ui.geometry.Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
+            val arcSize = Size(diameter, diameter)
+            drawArc(color = colors.line, startAngle = -90f, sweepAngle = 360f, useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(strokeWidth, cap = StrokeCap.Round))
+            drawArc(color = colors.accent, startAngle = -90f, sweepAngle = 360f * (percent / 100f), useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(strokeWidth, cap = StrokeCap.Round))
+        }
+    }
+}
+
+@Composable
+fun SettingsScaffold(title: String, onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    val colors = WaqfahTheme.colors
+    Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
+        WaqfahBackButton(onClick = onBack)
+        Text(
+            title,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = (-0.2).sp,
+            color = colors.ink,
+            modifier = Modifier.padding(top = 8.dp, bottom = 10.dp),
+        )
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), content = content)
+    }
+}
