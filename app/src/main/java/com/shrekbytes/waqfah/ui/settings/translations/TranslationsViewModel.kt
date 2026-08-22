@@ -102,6 +102,11 @@ class TranslationsViewModel @Inject constructor(
     }
 
     fun delete(meta: TranslationMeta) = viewModelScope.launch {
+        // Defensive: the row UI no longer offers a Delete action for bundled
+        // translations (see TranslationsScreen), but guard it here too so
+        // this can never wipe a translation the app relies on always being
+        // available as a fallback.
+        if (meta.isBundled) return@launch
         translationRepository.delete(meta)
         refreshTrigger.update { it + 1 }
     }

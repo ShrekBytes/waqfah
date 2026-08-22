@@ -68,17 +68,24 @@ class ReadingViewModel @Inject constructor(
     fun next() = step { quranRepository.getNextVerse(it) }
     fun previous() = step { quranRepository.getPreviousVerse(it) }
 
-    // Only marks the current ayah — doesn't move on to another one. Whether a
-    // *later* session shows a fresh ayah is handled separately by
+    // Toggles the current ayah's read status — tapping an already-marked
+    // ayah unmarks it again, rather than read status only ever going one
+    // way. Only affects the current ayah — doesn't move on to another one.
+    // Whether a *later* session shows a fresh ayah is handled separately by
     // skipAlreadyRead() below, when a new ReadingViewModel instance loads.
     fun markCurrentRead() = viewModelScope.launch {
         val verse = currentVerse ?: return@launch
+        val newIsRead = !_uiState.value.isMarkedRead
         // Update the UI first, write to Room after — an optimistic update.
         // Waiting on the suspend DB write before showing any visual feedback
         // is what made this feel laggy: the animation didn't even start until
         // the write finished.
-        _uiState.update { it.copy(isMarkedRead = true) }
-        readingProgressRepository.markRead(verse.id)
+        _uiState.update { it.copy(isMarkedRead = newIsRead) }
+        if (newIsRead) {
+            readingProgressRepository.markRead(verse.id)
+        } else {
+            readingProgressRepository.unmarkRead(verse.id)
+        }
     }
 
     fun resume() = viewModelScope.launch { settingsRepository.setAppActive(true) }
@@ -132,25 +139,35 @@ class ReadingViewModel @Inject constructor(
         render(latestPrefs)
     }
 
-    // Reading-mode note: this only picks the *starting* verse when there's
-    // nothing to resume. The prev/next arrows always step sequentially by id
-    // regardless of mode — "next ayah" reads as sequential motion even in
-    // random mode, since the prototype doesn't otherwise define what
-    // "random-mode next" would mean.
+    // Reading-mode note: this only picks the *starting* verse for a fresh
+    // session (new ReadingViewModel instance — see the class doc comment).
+    // The prev/next arrows always step sequentially by id regardless of mode
+    // — "next ayah" reads as sequential motion even in random mode, since
+    // the prototype doesn't otherwise define what "random-mode next" would
+    // mean.
+    //
+    // Sequential mode resumes from lastViewedVerseId so you pick up where
+    // you left off. Random mode deliberately ignores it and always rolls a
+    // fresh random ayah — resuming here would make Random behave exactly
+    // like Sequential after the very first launch (once lastViewedVerseId is
+    // set, which happens below on every load), which was the bug: Random
+    // effectively only ever randomized once, ever.
     private suspend fun loadStartingVerse(prefs: UserPreferences): VerseEntity? {
-        val resumed = prefs.lastViewedVerseId?.let { quranRepository.getVerseById(it) }
-        val start = resumed ?: initialVerse(prefs)
+        val start = when (prefs.readingMode) {
+            ReadingMode.RANDOM -> quranRepository.getRandomVerse()
+            ReadingMode.SEQUENTIAL -> prefs.lastViewedVerseId?.let { quranRepository.getVerseById(it) }
+                ?: quranRepository.getFirstVerse()
+        }
         val landed = skipAlreadyRead(start)
-        // Save the skip-ahead result so the *next* fresh load starts from here
-        // directly, instead of re-scanning past the same read verses again.
+        // Save the landing spot so sequential mode's *next* fresh load
+        // resumes from here directly, instead of re-scanning past the same
+        // read verses again. (Random mode overwrites this again next time
+        // anyway, since it never reads it back.)
         if (landed != null && landed.id != prefs.lastViewedVerseId) {
             settingsRepository.setLastViewedVerseId(landed.id)
         }
         return landed
     }
-
-    private suspend fun initialVerse(prefs: UserPreferences): VerseEntity? =
-        if (prefs.readingMode == ReadingMode.RANDOM) quranRepository.getRandomVerse() else quranRepository.getFirstVerse()
 
     // markCurrentRead() keeps lastViewedVerseId pointing at an unread ayah in
     // the normal case, but the saved position can still land on an

@@ -66,5 +66,12 @@ class SettingsViewModel @Inject constructor(
 
     fun setTheme(theme: AppTheme) = viewModelScope.launch { settingsRepository.setTheme(theme) }
     fun setAccentColor(color: AccentColor) = viewModelScope.launch { settingsRepository.setAccentColor(color) }
-    fun resetProgress() = viewModelScope.launch { readingProgressRepository.resetAll() }
+    // Both halves of "reset" have to move together, or the reading screen
+    // reopens on whatever ayah was last shown/read even though progress says
+    // otherwise — clearing only the read-verse table left that position
+    // behind as a stale source of truth.
+    fun resetProgress() = viewModelScope.launch {
+        readingProgressRepository.resetAll()
+        settingsRepository.clearLastViewedVerseId()
+    }
 }

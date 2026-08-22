@@ -45,6 +45,13 @@ class SettingsRepository @Inject constructor(
     suspend fun setOnboardingComplete(complete: Boolean) = edit { it[SettingsKeys.ONBOARDING_COMPLETE] = complete }
     suspend fun setLastViewedVerseId(id: Int) = edit { it[SettingsKeys.LAST_VIEWED_VERSE_ID] = id }
 
+    // Companion to setLastViewedVerseId — lets a fresh reading session fall
+    // back to initialVerse() (first ayah, or a new random one) again instead
+    // of resuming a specific verse. Used by resetProgress() so "reset
+    // progress" and "which ayah opens next" stay a single source of truth
+    // instead of the reading position silently surviving a reset.
+    suspend fun clearLastViewedVerseId() = edit { it.remove(SettingsKeys.LAST_VIEWED_VERSE_ID) }
+
     suspend fun setActiveTranslation(language: TranslationLanguage, id: String) = edit {
         val key = if (language == TranslationLanguage.ENGLISH) SettingsKeys.ACTIVE_TRANSLATION_EN else SettingsKeys.ACTIVE_TRANSLATION_BN
         it[key] = id

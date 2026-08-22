@@ -34,6 +34,9 @@ interface ReadVerseDao {
     @Upsert
     suspend fun markRead(entity: ReadVerseEntity)
 
+    @Query("DELETE FROM read_verses WHERE verse_id = :verseId")
+    suspend fun unmarkRead(verseId: Int)
+
     @Query("SELECT EXISTS(SELECT 1 FROM read_verses WHERE verse_id = :verseId)")
     suspend fun isRead(verseId: Int): Boolean
 

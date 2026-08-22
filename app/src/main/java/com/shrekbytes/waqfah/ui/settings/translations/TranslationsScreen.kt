@@ -92,6 +92,20 @@ private fun TranslationRow(
                         modifier = Modifier.clickable(onClick = onDownload),
                     )
                     row.isActive -> Text("✓ Active", color = colors.accent, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                    // Bundled (built-in) translations ship in the APK and can't
+                    // meaningfully be "downloaded" or "deleted" — they're always
+                    // available. Showing Download/Delete for them was what let a
+                    // bundled row flicker to "Download" once it wasn't active
+                    // (isDownloaded reflects a lazy on-disk copy, not whether the
+                    // translation is actually available) and, from there, be
+                    // deleted like a real download. Select is the only action.
+                    row.meta.isBundled -> Text(
+                        "Select",
+                        color = colors.accent,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable(onClick = onSelect),
+                    )
                     row.isDownloaded -> {
                         Text(
                             "Select",
@@ -100,9 +114,6 @@ private fun TranslationRow(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.clickable(onClick = onSelect),
                         )
-                        // Deletable even when bundled — it's shipped in the APK, so
-                        // "downloading" it again afterward is a local copy, not a
-                        // network fetch. See TranslationRepository.download().
                         Text(
                             "Delete",
                             color = colors.danger,

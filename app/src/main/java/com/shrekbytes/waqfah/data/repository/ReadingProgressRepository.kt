@@ -15,6 +15,8 @@ class ReadingProgressRepository @Inject constructor(
     suspend fun markRead(verseId: Int) =
         appDatabase.readVerseDao().markRead(ReadVerseEntity(verseId, readAt = System.currentTimeMillis()))
 
+    suspend fun unmarkRead(verseId: Int) = appDatabase.readVerseDao().unmarkRead(verseId)
+
     suspend fun isRead(verseId: Int): Boolean = appDatabase.readVerseDao().isRead(verseId)
 
     suspend fun resetAll() = appDatabase.readVerseDao().clearAll()
