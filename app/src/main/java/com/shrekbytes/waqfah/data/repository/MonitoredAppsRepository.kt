@@ -3,6 +3,10 @@ package com.shrekbytes.waqfah.data.repository
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 import com.shrekbytes.waqfah.data.local.appstate.MonitoredAppEntity
 import com.shrekbytes.waqfah.data.local.appstate.WaqfahAppDatabase
 import com.shrekbytes.waqfah.data.model.InstalledApp
@@ -48,9 +52,47 @@ class MonitoredAppsRepository @Inject constructor(
         // contributor to the list feeling heavy to scroll through, on top of
         // just being a confusing picker (Waqfah's own entry included).
         return pm.queryIntentActivities(intent, 0)
-            .map { InstalledApp(it.activityInfo.packageName, it.loadLabel(pm).toString()) }
+            .map { info ->
+                InstalledApp(
+                    packageName = info.activityInfo.packageName,
+                    label = info.loadLabel(pm).toString(),
+                    icon = loadIconBitmap(info, pm),
+                )
+            }
             .filter { it.packageName != context.packageName }
             .distinctBy { it.packageName }
             .sortedBy { it.label.lowercase() }
+    }
+
+    // Runs alongside the label load above (same off-main-thread call site —
+    // see AppsViewModel.installedApps), so it doesn't add a second pass over
+    // the app list. Downscaled to a small, fixed pixel size regardless of the
+    // device's actual icon density (which can be 192px+ on xxxhdpi screens)
+    // so holding 100+ of these in memory at once — the whole point of this
+    // list — stays cheap: ICON_SIZE_PX² * 4 bytes ≈ 65KB each, so even 150
+    // apps is under 10MB. AppRow displays these at a fixed 36dp regardless,
+    // so there's no visible quality loss.
+    private fun loadIconBitmap(info: ResolveInfo, pm: PackageManager): Bitmap? =
+        try {
+            info.loadIcon(pm).toFixedSizeBitmap(ICON_SIZE_PX)
+        } catch (e: Exception) {
+            // A handful of odd system/launcher entries can fail to resolve an
+            // icon — AppRow falls back to its existing letter avatar for these.
+            null
+        }
+
+    // Manual Canvas draw rather than androidx.core's Drawable.toBitmap() —
+    // keeps this independent of whatever core-ktx version (or lack of it) is
+    // on the classpath, using only framework android.graphics APIs.
+    private fun Drawable.toFixedSizeBitmap(sizePx: Int): Bitmap {
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        setBounds(0, 0, sizePx, sizePx)
+        draw(canvas)
+        return bitmap
+    }
+
+    private companion object {
+        const val ICON_SIZE_PX = 128
     }
 }

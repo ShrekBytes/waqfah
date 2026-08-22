@@ -3,7 +3,9 @@ package com.shrekbytes.waqfah.ui.reading
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -86,8 +88,10 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 // How much further the content travels than the finger physically does while
-// swiping — see the pointerInput block below for why.
-private const val DRAG_MULTIPLIER = 1.35f
+// swiping — see the pointerInput block below for why. Raised from 1.35x so
+// the same physical flick now crosses the threshold with noticeably less
+// finger travel (paired with the lower thresholdPx below).
+private const val DRAG_MULTIPLIER = 1.6f
 
 // The post-threshold "complete the swipe" animation used to travel the
 // content a full box-width off screen before swapping in the next ayah, then
@@ -210,7 +214,11 @@ fun ReadingCard(
                     // less physical movement than an 80dp threshold at
                     // 1:1 tracking did.
                     .pointerInput(onNext, onPrevious) {
-                        val thresholdPx = 32.dp.toPx()
+                        // Was 32dp — together with the higher DRAG_MULTIPLIER
+                        // above, a swipe now needs roughly 15dp of real finger
+                        // travel to commit instead of ~24dp, a lighter flick
+                        // rather than a deliberate drag.
+                        val thresholdPx = 24.dp.toPx()
                         val flingPx = size.width.toFloat() * EXIT_DISTANCE_FRACTION
                         detectHorizontalDragGestures(
                             onDragEnd = {
@@ -218,28 +226,32 @@ fun ReadingCard(
                                 scope.launch {
                                     when {
                                         finalDrag <= -thresholdPx -> {
-                                            dragOffset.animateTo(-flingPx, tween(160))
+                                            // Accelerate curve (starts slow,
+                                            // speeds up) for the ayah leaving
+                                            // — reads as it being flung away.
+                                            dragOffset.animateTo(-flingPx, tween(160, easing = FastOutLinearInEasing))
                                             onNext()
                                             dragOffset.snapTo(flingPx)
-                                            dragOffset.animateTo(
-                                                0f,
-                                                spring(
-                                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                                    stiffness = Spring.StiffnessMedium,
-                                                ),
-                                            )
+                                            // Decelerate curve (starts fast,
+                                            // eases into place) for the new
+                                            // ayah arriving — a plain spring
+                                            // here starts at zero velocity
+                                            // right as the content swaps in,
+                                            // so the first several frames were
+                                            // barely-there motion and next to
+                                            // no visible fade-in before it
+                                            // caught up: the "no effect" feel.
+                                            // This tween moves — and so fades
+                                            // in, since contentAlpha below is
+                                            // driven straight off this value —
+                                            // from the very first frame.
+                                            dragOffset.animateTo(0f, tween(240, easing = LinearOutSlowInEasing))
                                         }
                                         finalDrag >= thresholdPx -> {
-                                            dragOffset.animateTo(flingPx, tween(160))
+                                            dragOffset.animateTo(flingPx, tween(160, easing = FastOutLinearInEasing))
                                             onPrevious()
                                             dragOffset.snapTo(-flingPx)
-                                            dragOffset.animateTo(
-                                                0f,
-                                                spring(
-                                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                                    stiffness = Spring.StiffnessMedium,
-                                                ),
-                                            )
+                                            dragOffset.animateTo(0f, tween(240, easing = LinearOutSlowInEasing))
                                         }
                                         else -> dragOffset.animateTo(
                                             0f,

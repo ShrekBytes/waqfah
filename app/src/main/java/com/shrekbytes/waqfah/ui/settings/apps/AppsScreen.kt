@@ -2,6 +2,7 @@ package com.shrekbytes.waqfah.ui.settings.apps
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -128,7 +130,17 @@ internal fun AppRow(row: AppRowState, onClick: () -> Unit) {
             Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(colors.accentSoft),
             contentAlignment = Alignment.Center,
         ) {
-            Text(row.app.label.take(1).uppercase(), color = colors.ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            val icon = row.app.icon
+            if (icon != null) {
+                // The 11.dp clip on the Box above already masks this to match
+                // the letter-avatar fallback's shape — real launcher icons
+                // (adaptive icons especially) come as square/edge-to-edge
+                // art, not pre-rounded, so without it they'd look like a
+                // visibly different shape from every row that falls back.
+                Image(bitmap = icon.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize())
+            } else {
+                Text(row.app.label.take(1).uppercase(), color = colors.ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
         }
         Text(row.app.label, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
         AppCheckbox(checked = row.isMonitored)
