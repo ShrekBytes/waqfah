@@ -6,7 +6,7 @@ import com.shrekbytes.waqfah.R
 // updating numbers or names never touches UI code.
 object SupportInfo {
     const val REPO_URL = "https://github.com/ShrekBytes/waqfah"
-    const val CONTACT_EMAIL = "hello@shrekbytes.com"
+    const val CONTACT_EMAIL = "shrekbytes@duck.com"
 
     // TODO(user): replace placeholder numbers with real accounts, and the
     // drawable placeholders (ic_bkash/ic_rocket/ic_nagad) with official icons.
