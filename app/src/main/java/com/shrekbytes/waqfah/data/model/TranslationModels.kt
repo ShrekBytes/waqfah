@@ -14,7 +14,7 @@ object TranslationCatalog {
     val all = listOf(
         TranslationMeta("sahih", "Sahih International", TranslationLanguage.ENGLISH, isBundled = true, downloadUrl = null),
         TranslationMeta("hilalimuhsinkhan", "Hilali & Muhsin Khan", TranslationLanguage.ENGLISH, isBundled = false, downloadUrl = "https://raw.githubusercontent.com/ShrekBytes/waqfah/main/translations/en/hilalimuhsinkhan.db"),
-        TranslationMeta("yusufali", "Yusuf Ali", TranslationLanguage.ENGLISH, isBundled = false, downloadUrl = "https://raw.githubusercontent.com/ShrekBytes/waqfah/main/yusufali.db"),
+        TranslationMeta("yusufali", "Yusuf Ali", TranslationLanguage.ENGLISH, isBundled = false, downloadUrl = "https://raw.githubusercontent.com/ShrekBytes/waqfah/main/translations/en/yusufali.db"),
         TranslationMeta("pickthall", "Pickthall", TranslationLanguage.ENGLISH, isBundled = false, downloadUrl = "https://raw.githubusercontent.com/ShrekBytes/waqfah/main/translations/en/pickthall.db"),
         TranslationMeta("maududi", "Al Maududi", TranslationLanguage.ENGLISH, isBundled = false, downloadUrl = "https://raw.githubusercontent.com/ShrekBytes/waqfah/main/translations/en/maududi.db"),
         TranslationMeta("arberry", "Arberry", TranslationLanguage.ENGLISH, isBundled = false, downloadUrl = "https://raw.githubusercontent.com/ShrekBytes/waqfah/main/translations/en/arberry.db"),
