@@ -2,21 +2,26 @@ package com.shrekbytes.waqfah.ui.about
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shrekbytes.waqfah.BuildConfig
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.SettingsNavRow
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
@@ -36,7 +41,12 @@ fun AboutScreen(
             Modifier.fillMaxWidth().padding(vertical = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("اقرأ", color = colors.ink, fontSize = 40.sp)
+            Image(
+                painter = painterResource(R.drawable.ic_logo_mark),
+                contentDescription = "Waqfah logo",
+                modifier = Modifier.size(72.dp),
+                colorFilter = ColorFilter.tint(colors.ink),
+            )
             Spacer(Modifier.height(6.dp))
             Text(
                 "WAQFAH",

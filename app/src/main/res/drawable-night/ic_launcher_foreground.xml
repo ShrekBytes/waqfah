@@ -6,18 +6,25 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Left page (its straight inner edge doubles as half of the pause mark) -->
-    <path
-        android:fillColor="#93A87D"
-        android:pathData="M50.2031,33.3281 C44.9297,28.8984 36.4922,26.7891 28.0547,27.6328 L28.0547,69.8203 C36.4922,68.9766 44.9297,71.0859 50.2031,75.5156 Z"
-        android:strokeColor="#93A87D"
-        android:strokeLineJoin="round"
-        android:strokeWidth="4.21875" />
-    <!-- Right page (mirrored) -->
-    <path
-        android:fillColor="#93A87D"
-        android:pathData="M57.7969,33.3281 C63.0703,28.8984 71.5078,26.7891 79.9453,27.6328 L79.9453,69.8203 C71.5078,68.9766 63.0703,71.0859 57.7969,75.5156 Z"
-        android:strokeColor="#93A87D"
-        android:strokeLineJoin="round"
-        android:strokeWidth="4.21875" />
+    <!-- Scaled down so the mark sits comfortably inside the adaptive-icon safe zone -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.7"
+        android:scaleY="0.7">
+        <!-- Left page (its straight inner edge doubles as half of the pause mark) -->
+        <path
+            android:fillColor="#93A87D"
+            android:pathData="M50.2031,33.3281 C44.9297,28.8984 36.4922,26.7891 28.0547,27.6328 L28.0547,69.8203 C36.4922,68.9766 44.9297,71.0859 50.2031,75.5156 Z"
+            android:strokeColor="#93A87D"
+            android:strokeLineJoin="round"
+            android:strokeWidth="4.21875" />
+        <!-- Right page (mirrored) -->
+        <path
+            android:fillColor="#93A87D"
+            android:pathData="M57.7969,33.3281 C63.0703,28.8984 71.5078,26.7891 79.9453,27.6328 L79.9453,69.8203 C71.5078,68.9766 63.0703,71.0859 57.7969,75.5156 Z"
+            android:strokeColor="#93A87D"
+            android:strokeLineJoin="round"
+            android:strokeWidth="4.21875" />
+    </group>
 </vector>
