@@ -12,7 +12,7 @@
         android:pivotY="54"
         android:scaleX="0.7"
         android:scaleY="0.7">
-        android:translateY="3">
+        android:translateY="7">
         <!-- Left page (its straight inner edge doubles as half of the pause mark) -->
         <path
             android:fillColor="#93A87D"
