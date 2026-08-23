@@ -9,7 +9,14 @@
          same background + centered icon from this theme, then swaps to
          postSplashScreenTheme when installSplashScreen() runs. Background and
          icon colors are configuration-qualified (@color/splash_*), so the
-         splash follows the device's light/dark theme automatically. -->
+         splash follows the DEVICE light/dark setting automatically.
+
+         Accepted limitation: on Android 12+ the system draws the splash before
+         the process starts, so the in-app selectable themes (CREAM/RETRO/
+         STONE and forced LIGHT/DARK) cannot influence it — a light-themed app
+         on a dark-mode device gets the dark splash. Intentionally not worked
+         around (no theme detection / SDK branching); the splash hands off
+         straight into fully themed content instead. -->
     <style name="Theme.Waqfah.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
