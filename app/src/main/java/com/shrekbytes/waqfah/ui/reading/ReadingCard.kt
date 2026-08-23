@@ -93,7 +93,22 @@ import kotlinx.coroutines.launch
 // tracks the finger 1:1 as soon as a drag starts, so it visibly slides in
 // alongside the current ayah leaving, the way turning a physical page shows
 // you the next one arriving rather than a blank gap.
-private const val COMMIT_THRESHOLD_FRACTION = 0.3f
+//
+// Absolute distance, not a fraction of screen width — a fraction (this was
+// 30% of the width) meant committing needed 100dp+ of real finger travel on
+// a typical phone, far more than the swipe should take. A fixed distance
+// keeps that travel small and consistent regardless of device size.
+private val COMMIT_THRESHOLD_DISTANCE = 56.dp
+
+// Plays whenever a swipe is released under the commit threshold (or the
+// gesture is cancelled outright) to return the content to center. Was a
+// bouncier, stiffer spring (DampingRatioMediumBouncy + StiffnessMedium) —
+// snappy enough to feel like an abrupt yank back rather than a soft settle,
+// which is very noticeable now that under-threshold releases happen often
+// (the threshold itself is intentionally light — see COMMIT_THRESHOLD_DISTANCE
+// above). No bounce/overshoot (DampingRatioNoBouncy) and a gentler stiffness
+// reads as a calm return instead of a hard snap.
+private val CANCEL_SPRING = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
 
 @Composable
 fun ReadingCard(
@@ -117,14 +132,14 @@ fun ReadingCard(
     // Also the at-rest base case (0f) whenever nothing is being dragged.
     val dragOffset = remember { Animatable(0f) }
 
-    // The pointerInput block below is long-lived — it only restarts if
-    // onNext/onPrevious themselves change identity, not on every ayah
-    // navigation — so it can't just close over `state` directly without
-    // risking a stale nextPreview/previousPreview from whatever ayah was
-    // showing when the gesture detector was first installed. rememberUpdatedState
-    // keeps a stable holder whose .value is always the latest `state`,
-    // readable from inside that long-lived coroutine without needing to
-    // restart it (which would risk cutting off a drag mid-gesture).
+    // The pointerInput block below is installed once and never restarts
+    // (keyed on Unit — see its comment) so a drag in progress can never get
+    // cut off by a recomposition. rememberUpdatedState is what makes that
+    // safe: each holder's .value always reflects the latest onNext/
+    // onPrevious/handleMarkRead/state without needing the block itself to
+    // restart to pick up a change.
+    val latestOnNext = rememberUpdatedState(onNext)
+    val latestOnPrevious = rememberUpdatedState(onPrevious)
     val latestState = rememberUpdatedState(state)
 
     // Bumped on every mark-read, whether it came from double-tapping the
@@ -145,6 +160,7 @@ fun ReadingCard(
         markReadTrigger++
         onMarkRead()
     }
+    val latestHandleMarkRead = rememberUpdatedState(handleMarkRead)
 
     Column(modifier.fillMaxSize()) {
         if (state.isLoading) {
@@ -197,20 +213,37 @@ fun ReadingCard(
                     // below) in lockstep, so the incoming ayah's real
                     // content is visibly sliding in from the edge for the
                     // whole gesture, not just after release. Letting go
-                    // past COMMIT_THRESHOLD_FRACTION of the width finishes
-                    // that same slide the rest of the way to a full page,
-                    // then swaps the underlying ayah in (awaited, so the
-                    // dragOffset reset that follows is a no-op visually —
-                    // what was drawn as the peek a frame ago is drawn as
-                    // "current" at the exact same position next frame).
-                    // Letting go under threshold springs back to center.
-                    .pointerInput(onNext, onPrevious) {
+                    // past COMMIT_THRESHOLD_DISTANCE finishes that same
+                    // slide the rest of the way to a full page, then swaps
+                    // the underlying ayah in (awaited, so the dragOffset
+                    // reset that follows is a no-op visually — what was
+                    // drawn as the peek a frame ago is drawn as "current" at
+                    // the exact same position next frame). Letting go under
+                    // threshold gently springs back to center — see
+                    // CANCEL_SPRING below.
+                    //
+                    // Keyed on Unit — installed once, never restarted for
+                    // the whole life of this composable, rather than on
+                    // onNext/onPrevious (their identity as callable
+                    // references isn't strictly guaranteed stable across
+                    // recompositions). A restart mid-gesture tears down an
+                    // in-progress drag exactly as if the finger had lifted,
+                    // without it actually having done so, which is what
+                    // made this feel like it randomly "let go" while still
+                    // held. rememberUpdatedState (see latestOnNext/
+                    // latestOnPrevious/latestState above) is what makes a
+                    // never-restarting block safe to read fresh values from
+                    // anyway. The double-tap-to-mark-read detector below
+                    // stays in its own separate pointerInput, also
+                    // Unit-keyed — an earlier attempt at merging both into
+                    // one block as concurrent coroutines made touches
+                    // occasionally not register at all, so two independent
+                    // modifiers (the standard way Compose apps combine
+                    // drag + tap on one element) is the safer, better-tested
+                    // shape here.
+                    .pointerInput(Unit) {
                         val pageWidthPx = size.width.toFloat()
-                        // 30% of the width, not a full drag — releasing
-                        // partway through an already-visible peek should
-                        // finish the turn, not snap back and force a
-                        // second attempt.
-                        val commitThresholdPx = pageWidthPx * COMMIT_THRESHOLD_FRACTION
+                        val commitThresholdPx = COMMIT_THRESHOLD_DISTANCE.toPx()
                         detectHorizontalDragGestures(
                             onDragEnd = {
                                 val finalDrag = dragOffset.value
@@ -218,31 +251,20 @@ fun ReadingCard(
                                     when {
                                         finalDrag <= -commitThresholdPx && latestState.value.nextPreview != null -> {
                                             dragOffset.animateTo(-pageWidthPx, tween(220, easing = FastOutSlowInEasing))
-                                            onNext()
+                                            latestOnNext.value()
                                             dragOffset.snapTo(0f)
                                         }
                                         finalDrag >= commitThresholdPx && latestState.value.previousPreview != null -> {
                                             dragOffset.animateTo(pageWidthPx, tween(220, easing = FastOutSlowInEasing))
-                                            onPrevious()
+                                            latestOnPrevious.value()
                                             dragOffset.snapTo(0f)
                                         }
-                                        else -> dragOffset.animateTo(
-                                            0f,
-                                            spring(
-                                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                stiffness = Spring.StiffnessMedium,
-                                            ),
-                                        )
+                                        else -> dragOffset.animateTo(0f, CANCEL_SPRING)
                                     }
                                 }
                             },
                             onDragCancel = {
-                                scope.launch {
-                                    dragOffset.animateTo(
-                                        0f,
-                                        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-                                    )
-                                }
+                                scope.launch { dragOffset.animateTo(0f, CANCEL_SPRING) }
                             },
                         ) { change, dragAmount ->
                             change.consume()
@@ -252,8 +274,8 @@ fun ReadingCard(
                             }
                         }
                     }
-                    .pointerInput(handleMarkRead) {
-                        detectTapGestures(onDoubleTap = { handleMarkRead() })
+                    .pointerInput(Unit) {
+                        detectTapGestures(onDoubleTap = { latestHandleMarkRead.value() })
                     },
                 ) {
                     val pageWidthPx = constraints.maxWidth.toFloat()

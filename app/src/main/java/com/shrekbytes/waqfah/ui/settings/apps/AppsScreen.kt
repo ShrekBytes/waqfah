@@ -1,6 +1,11 @@
 package com.shrekbytes.waqfah.ui.settings.apps
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -91,12 +96,49 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit) {
         WaqfahSearchField(value = state.searchQuery, onValueChange = viewModel::setSearchQuery)
         Spacer(Modifier.height(6.dp))
 
-        if (state.apps.isEmpty()) {
-            EmptyListNote("No apps found")
+        when {
+            state.isLoading -> AppsListSkeleton(Modifier.weight(1f))
+            state.apps.isEmpty() -> EmptyListNote("No apps found")
+            else -> LazyColumn(Modifier.weight(1f)) {
+                items(state.apps, key = { it.app.packageName }) { row ->
+                    AppRow(row, onClick = { viewModel.toggle(row.app) })
+                }
+            }
         }
-        LazyColumn(Modifier.weight(1f)) {
-            items(state.apps, key = { it.app.packageName }) { row ->
-                AppRow(row, onClick = { viewModel.toggle(row.app) })
+    }
+}
+
+// internal, not private: reused as-is by OnboardChooseAppsScreen. Shown for
+// the second or two getInstalledLaunchableApps() takes on a real device (it
+// loads and downscales every app's icon — see MonitoredAppsRepository)
+// instead of either a blank list or a misleading "No apps found". Rows are
+// sized to match AppRow exactly (same 36dp icon box, same spacing, same
+// 21dp checkbox slot) so nothing visibly shifts once the real rows swap in.
+// A fixed count rather than one row per eventual app — the real count isn't
+// known yet, and a handful of rows already reads clearly as "a list is
+// loading" without needing to guess it.
+@Composable
+internal fun AppsListSkeleton(modifier: Modifier = Modifier) {
+    val colors = WaqfahTheme.colors
+    val transition = rememberInfiniteTransition(label = "apps_skeleton_pulse")
+    val pulseAlpha by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.85f,
+        animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "apps_skeleton_pulse_alpha",
+    )
+    val barColor = colors.line.copy(alpha = pulseAlpha)
+
+    Column(modifier) {
+        repeat(10) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(13.dp),
+            ) {
+                Box(Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(barColor))
+                Box(Modifier.weight(1f).height(14.dp).clip(RoundedCornerShape(4.dp)).background(barColor))
+                Box(Modifier.size(21.dp).clip(RoundedCornerShape(7.dp)).background(barColor))
             }
         }
     }

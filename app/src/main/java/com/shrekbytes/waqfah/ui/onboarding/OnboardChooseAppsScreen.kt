@@ -22,6 +22,7 @@ import com.shrekbytes.waqfah.ui.components.WaqfahBackButton
 import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 import com.shrekbytes.waqfah.ui.components.WaqfahSearchField
 import com.shrekbytes.waqfah.ui.settings.apps.AppRow
+import com.shrekbytes.waqfah.ui.settings.apps.AppsListSkeleton
 import com.shrekbytes.waqfah.ui.settings.apps.AppsViewModel
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
@@ -69,12 +70,13 @@ fun OnboardChooseAppsScreen(
         WaqfahSearchField(value = state.searchQuery, onValueChange = viewModel::setSearchQuery)
         Spacer(Modifier.height(6.dp))
 
-        if (state.apps.isEmpty()) {
-            EmptyListNote("No apps found")
-        }
-        LazyColumn(Modifier.weight(1f)) {
-            items(state.apps, key = { it.app.packageName }) { row ->
-                AppRow(row, onClick = { viewModel.toggle(row.app) })
+        when {
+            state.isLoading -> AppsListSkeleton(Modifier.weight(1f))
+            state.apps.isEmpty() -> EmptyListNote("No apps found")
+            else -> LazyColumn(Modifier.weight(1f)) {
+                items(state.apps, key = { it.app.packageName }) { row ->
+                    AppRow(row, onClick = { viewModel.toggle(row.app) })
+                }
             }
         }
 

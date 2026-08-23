@@ -26,6 +26,13 @@ data class AppsUiState(
     val cooldownMinutes: Int = 5,
     val searchQuery: String = "",
     val apps: List<AppRowState> = emptyList(),
+    // True until getInstalledLaunchableApps() (which now also loads and
+    // downscales every icon — see MonitoredAppsRepository) actually
+    // completes. apps.isEmpty() alone can't tell "still loading" apart from
+    // "genuinely no matches" (e.g. a search query with no hits), which is
+    // what let the screen show "No apps found" for the second or two this
+    // takes on a real device, before the real list ever had a chance to load.
+    val isLoading: Boolean = true,
 )
 
 @HiltViewModel
@@ -36,10 +43,13 @@ class AppsViewModel @Inject constructor(
 
     private val searchQuery = MutableStateFlow("")
 
+    private val isLoadingApps = MutableStateFlow(true)
+
     // PackageManager.queryIntentActivities scans every installed package, so it
     // runs once off the main thread rather than inline in the combine below.
     private val installedApps: StateFlow<List<InstalledApp>> = flow {
         emit(withContext(Dispatchers.Default) { monitoredAppsRepository.getInstalledLaunchableApps() })
+        isLoadingApps.value = false
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Narrowed to just the one field this screen cares about — combining the
@@ -56,7 +66,8 @@ class AppsViewModel @Inject constructor(
         monitoredAppsRepository.monitoredApps,
         searchQuery,
         installedApps,
-    ) { cooldown, monitored, query, allApps ->
+        isLoadingApps,
+    ) { cooldown, monitored, query, allApps, loading ->
         val monitoredIds = monitored.map { it.packageName }.toSet()
         AppsUiState(
             cooldownMinutes = cooldown,
@@ -64,6 +75,7 @@ class AppsViewModel @Inject constructor(
             apps = allApps
                 .filter { it.label.contains(query, ignoreCase = true) }
                 .map { AppRowState(it, it.packageName in monitoredIds) },
+            isLoading = loading,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppsUiState())
 
