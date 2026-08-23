@@ -75,7 +75,7 @@ fun GratitudeScreen(onBack: () -> Unit) {
         Spacer(Modifier.height(22.dp))
         SectionTitle("Credits")
         Text(
-            "Quran text, translations (including Sahih International and Al-Bayan), and Arabic fonts " +
+            "Quran text, translations (including Sahih International and Taisirul), and Arabic fonts " +
                 "(Digital Khatt, Me Quran, Amiri, KFGQPC Nastaleeq) belong to their respective publishers " +
                 "and authors. Waqfah is grateful to make use of their work.",
             color = colors.inkMuted,

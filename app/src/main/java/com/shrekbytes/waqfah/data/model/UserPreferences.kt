@@ -32,7 +32,7 @@ data class UserPreferences(
     val translationDisplay: AidLanguage = AidLanguage.ENGLISH,
     val translationFontSize: Int = 18,
     val activeTranslationEnglish: String = "sahih",
-    val activeTranslationBengali: String = "bayan",
+    val activeTranslationBengali: String = "taisirul",
     val cooldownMinutes: Int = 30,
     val appActive: Boolean = true,
     val hasCompletedOnboarding: Boolean = false,
