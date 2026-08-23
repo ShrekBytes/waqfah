@@ -65,8 +65,13 @@ class ReadingViewModel @Inject constructor(
         }
     }
 
-    fun next() = step { quranRepository.getNextVerse(it) }
-    fun previous() = step { quranRepository.getPreviousVerse(it) }
+    // Suspend, not fire-and-forget — ReadingCard's swipe handling awaits
+    // these directly so it can finish the peek animation, swap the
+    // underlying ayah, and reset its own offset to 0 in strict sequence
+    // (see the pointerInput block there), rather than racing a
+    // separately-launched coroutine the way a plain callback would.
+    suspend fun next() = step { quranRepository.getNextVerse(it) }
+    suspend fun previous() = step { quranRepository.getPreviousVerse(it) }
 
     // Toggles the current ayah's read status — tapping an already-marked
     // ayah unmarks it again, rather than read status only ever going one
@@ -129,8 +134,8 @@ class ReadingViewModel @Inject constructor(
         launch()
     }
 
-    private fun step(load: suspend (Int) -> VerseEntity?) = viewModelScope.launch {
-        val fromId = currentVerse?.id ?: return@launch
+    private suspend fun step(load: suspend (Int) -> VerseEntity?) {
+        val fromId = currentVerse?.id ?: return
         currentVerse = load(fromId)
         currentVerse?.let { settingsRepository.setLastViewedVerseId(it.id) }
         // A fresh ayah always starts on the real default translation — any
@@ -211,6 +216,15 @@ class ReadingViewModel @Inject constructor(
             AidLanguage.BENGALI -> verse.bnTransliteration
         }
 
+        // Loaded every render — not just on navigation — so a display
+        // setting change (font size, script, etc.) updates the peek content
+        // too, and it's ready to reveal the instant a swipe starts rather
+        // than only once one is already underway. getNextVerse/
+        // getPreviousVerse wrap around (see QuranRepository), so these are
+        // only ever null on a genuinely empty Quran table.
+        val nextPreview = quranRepository.getNextVerse(verse.id)?.let { buildPreview(it, prefs) }
+        val previousPreview = quranRepository.getPreviousVerse(verse.id)?.let { buildPreview(it, prefs) }
+
         _uiState.update { current ->
             current.copy(
                 isLoading = false,
@@ -233,8 +247,42 @@ class ReadingViewModel @Inject constructor(
                 translationHasAlternates = downloadedTranslations.size > 1,
                 isMarkedRead = isRead,
                 // triggeredAppLabel intentionally untouched — owned by setTriggeredPackage()
+                nextPreview = nextPreview,
+                previousPreview = previousPreview,
             )
         }
+    }
+
+    // Shares the current ayah's rendering logic above minus the bits that
+    // only make sense for the ayah actually being read (translationOverrideId,
+    // isMarkedRead, isPaused, the surah-name header) — always the real
+    // default translation, since a peeked neighbour isn't in compare mode.
+    private suspend fun buildPreview(verse: VerseEntity, prefs: UserPreferences): AyahPreview {
+        val translationLanguage = when (prefs.translationDisplay) {
+            AidLanguage.NONE -> null
+            AidLanguage.ENGLISH -> TranslationLanguage.ENGLISH
+            AidLanguage.BENGALI -> TranslationLanguage.BENGALI
+        }
+        val meta = translationLanguage?.let { activeTranslation(it, prefs) }
+        val translationText = meta?.let { translationRepository.getText(it, verse.id) }
+        val translitText = when (prefs.pronunciation) {
+            AidLanguage.NONE -> null
+            AidLanguage.ENGLISH -> verse.enTransliteration
+            AidLanguage.BENGALI -> verse.bnTransliteration
+        }
+        return AyahPreview(
+            ayahLabel = "${localizeDigits(verse.surahNo, prefs.surahNameLanguage)}:${localizeDigits(verse.ayahNo, prefs.surahNameLanguage)}",
+            arabicText = when (prefs.arabicScript) {
+                ArabicScript.INDOPAK -> verse.arabicIndopak
+                ArabicScript.UTHMANI -> verse.arabicUthmani
+            },
+            arabicFont = prefs.arabicFont,
+            arabicFontSize = prefs.arabicFontSize,
+            translitText = translitText,
+            translitFontSize = prefs.translitFontSize,
+            translationText = translationText,
+            translationFontSize = prefs.translationFontSize,
+        )
     }
 
     private fun activeTranslation(lang: TranslationLanguage, prefs: UserPreferences): TranslationMeta {

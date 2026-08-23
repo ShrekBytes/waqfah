@@ -3,9 +3,7 @@ package com.shrekbytes.waqfah.ui.reading
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -20,6 +18,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -60,6 +59,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,33 +83,24 @@ import com.shrekbytes.waqfah.ui.components.ChevronDirection
 import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import com.shrekbytes.waqfah.ui.theme.toFontFamily
-import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
-// How much further the content travels than the finger physically does while
-// swiping — see the pointerInput block below for why. Raised from 1.35x so
-// the same physical flick now crosses the threshold with noticeably less
-// finger travel (paired with the lower thresholdPx below).
-private const val DRAG_MULTIPLIER = 1.6f
-
-// The post-threshold "complete the swipe" animation used to travel the
-// content a full box-width off screen before swapping in the next ayah, then
-// a full box-width back in from the other side — a real page's worth of
-// empty travel in each direction, which read as a big, disconnected jump
-// between ayahs rather than a swipe between close neighbours. Fading the
-// content out (see contentAlpha, below the pointerInput block) well before
-// it reaches this fraction of the width means the data swap is already
-// invisible long before full width, so the whole transition can cover much
-// less ground without the swap ever popping into view.
-private const val EXIT_DISTANCE_FRACTION = 0.5f
+// A committed swipe used to release the finger, watch the current ayah slide
+// fully off screen, and only *then* have the next one appear — a real page's
+// worth of "nothing there yet" in between. Now the neighbouring ayah's real
+// content (see AyahPreview / AyahPeekPage below) sits right off-screen and
+// tracks the finger 1:1 as soon as a drag starts, so it visibly slides in
+// alongside the current ayah leaving, the way turning a physical page shows
+// you the next one arriving rather than a blank gap.
+private const val COMMIT_THRESHOLD_FRACTION = 0.3f
 
 @Composable
 fun ReadingCard(
     state: ReadingUiState,
     onMarkRead: () -> Unit,
-                onNext: () -> Unit,
-                onPrevious: () -> Unit,
+                onNext: suspend () -> Unit,
+                onPrevious: suspend () -> Unit,
                 onResume: () -> Unit,
                 onCycleTranslation: (forward: Boolean) -> Unit,
                 onResetTranslation: () -> Unit,
@@ -120,11 +111,21 @@ fun ReadingCard(
     val scope = rememberCoroutineScope()
 
     // Drives the ayah content's horizontal position: follows the finger
-    // live while dragging, then either springs back to 0 (swipe released
-    // under threshold) or flies fully off/on-screen (swipe past threshold —
-    // see the pointerInput block below). Also the button-free base case
-    // (0f, at rest) whenever nothing is being dragged.
+    // 1:1 live while dragging, then either springs back to 0 (swipe
+    // released under threshold) or finishes the rest of the way to a full
+    // page width (swipe past threshold — see the pointerInput block below).
+    // Also the at-rest base case (0f) whenever nothing is being dragged.
     val dragOffset = remember { Animatable(0f) }
+
+    // The pointerInput block below is long-lived — it only restarts if
+    // onNext/onPrevious themselves change identity, not on every ayah
+    // navigation — so it can't just close over `state` directly without
+    // risking a stale nextPreview/previousPreview from whatever ayah was
+    // showing when the gesture detector was first installed. rememberUpdatedState
+    // keeps a stable holder whose .value is always the latest `state`,
+    // readable from inside that long-lived coroutine without needing to
+    // restart it (which would risk cutting off a drag mid-gesture).
+    val latestState = rememberUpdatedState(state)
 
     // Bumped on every mark-read, whether it came from double-tapping the
     // card or tapping the pill itself, so MarkReadPill can play a small
@@ -190,68 +191,40 @@ fun ReadingCard(
                     // next, same direction convention as
                     // carousels/stories/etc.
                     //
-                    // dragOffset drives a live, finger-following
-                    // horizontal translation on the content below (see
-                    // its .offset{} modifier) instead of only reacting
-                    // once the gesture ends — a swipe with zero visible
-                    // motion until release read as unresponsive.
-                    // Crossing the threshold continues straight into a
-                    // slide-through: the current ayah finishes sliding
-                    // out to EXIT_DISTANCE_FRACTION of the width — by
-                    // which point it's already faded to fully
-                    // transparent (see contentAlpha below) —
-                    // onNext()/onPrevious() swaps the underlying content
-                    // while it's invisible (so the swap itself is never
-                    // visible, regardless of exactly how long the DB
-                    // read takes), then the new ayah fades and slides in
-                    // from the opposite side. Letting go early, under
-                    // threshold, just springs back to center instead.
-                    //
-                    // DRAG_MULTIPLIER makes the content travel further
-                    // than the finger does, and thresholdPx is
-                    // deliberately small — a light flick, not a
-                    // full-width drag — so reaching it takes noticeably
-                    // less physical movement than an 80dp threshold at
-                    // 1:1 tracking did.
+                    // dragOffset tracks the finger 1:1 (no amplification)
+                    // and drives the current ayah's position *and* the
+                    // neighbouring ayah's peek position (see AyahPeekPage
+                    // below) in lockstep, so the incoming ayah's real
+                    // content is visibly sliding in from the edge for the
+                    // whole gesture, not just after release. Letting go
+                    // past COMMIT_THRESHOLD_FRACTION of the width finishes
+                    // that same slide the rest of the way to a full page,
+                    // then swaps the underlying ayah in (awaited, so the
+                    // dragOffset reset that follows is a no-op visually —
+                    // what was drawn as the peek a frame ago is drawn as
+                    // "current" at the exact same position next frame).
+                    // Letting go under threshold springs back to center.
                     .pointerInput(onNext, onPrevious) {
-                        // Was 32dp — together with the higher DRAG_MULTIPLIER
-                        // above, a swipe now needs roughly 15dp of real finger
-                        // travel to commit instead of ~24dp, a lighter flick
-                        // rather than a deliberate drag.
-                        val thresholdPx = 24.dp.toPx()
-                        val flingPx = size.width.toFloat() * EXIT_DISTANCE_FRACTION
+                        val pageWidthPx = size.width.toFloat()
+                        // 30% of the width, not a full drag — releasing
+                        // partway through an already-visible peek should
+                        // finish the turn, not snap back and force a
+                        // second attempt.
+                        val commitThresholdPx = pageWidthPx * COMMIT_THRESHOLD_FRACTION
                         detectHorizontalDragGestures(
                             onDragEnd = {
                                 val finalDrag = dragOffset.value
                                 scope.launch {
                                     when {
-                                        finalDrag <= -thresholdPx -> {
-                                            // Accelerate curve (starts slow,
-                                            // speeds up) for the ayah leaving
-                                            // — reads as it being flung away.
-                                            dragOffset.animateTo(-flingPx, tween(160, easing = FastOutLinearInEasing))
+                                        finalDrag <= -commitThresholdPx && latestState.value.nextPreview != null -> {
+                                            dragOffset.animateTo(-pageWidthPx, tween(220, easing = FastOutSlowInEasing))
                                             onNext()
-                                            dragOffset.snapTo(flingPx)
-                                            // Decelerate curve (starts fast,
-                                            // eases into place) for the new
-                                            // ayah arriving — a plain spring
-                                            // here starts at zero velocity
-                                            // right as the content swaps in,
-                                            // so the first several frames were
-                                            // barely-there motion and next to
-                                            // no visible fade-in before it
-                                            // caught up: the "no effect" feel.
-                                            // This tween moves — and so fades
-                                            // in, since contentAlpha below is
-                                            // driven straight off this value —
-                                            // from the very first frame.
-                                            dragOffset.animateTo(0f, tween(240, easing = LinearOutSlowInEasing))
+                                            dragOffset.snapTo(0f)
                                         }
-                                        finalDrag >= thresholdPx -> {
-                                            dragOffset.animateTo(flingPx, tween(160, easing = FastOutLinearInEasing))
+                                        finalDrag >= commitThresholdPx && latestState.value.previousPreview != null -> {
+                                            dragOffset.animateTo(pageWidthPx, tween(220, easing = FastOutSlowInEasing))
                                             onPrevious()
-                                            dragOffset.snapTo(-flingPx)
-                                            dragOffset.animateTo(0f, tween(240, easing = LinearOutSlowInEasing))
+                                            dragOffset.snapTo(0f)
                                         }
                                         else -> dragOffset.animateTo(
                                             0f,
@@ -274,8 +247,8 @@ fun ReadingCard(
                         ) { change, dragAmount ->
                             change.consume()
                             scope.launch {
-                                val moved = dragOffset.value + dragAmount * DRAG_MULTIPLIER
-                                dragOffset.snapTo(moved.coerceIn(-flingPx * 1.05f, flingPx * 1.05f))
+                                val moved = dragOffset.value + dragAmount
+                                dragOffset.snapTo(moved.coerceIn(-pageWidthPx, pageWidthPx))
                             }
                         }
                     }
@@ -283,18 +256,19 @@ fun ReadingCard(
                         detectTapGestures(onDoubleTap = { handleMarkRead() })
                     },
                 ) {
-                    // Same "half the box width" fade distance as flingPx
-                    // above (EXIT_DISTANCE_FRACTION) — computed here from
-                    // BoxWithConstraints' own `constraints` (no density
-                    // conversion needed) so the ayah's alpha can be driven
-                    // straight from dragOffset.value, the same way
-                    // MarkReadPill drives its bounce scale from
-                    // bounce.value below. Read directly here (not deferred
-                    // via a graphicsLayer{} block) so this only recomposes
-                    // the single Column below on each drag/fling frame,
-                    // not the whole card.
-                    val exitPx = constraints.maxWidth * EXIT_DISTANCE_FRACTION
-                    val contentAlpha = if (exitPx <= 0f) 1f else (1f - (abs(dragOffset.value) / exitPx)).coerceIn(0f, 1f)
+                    val pageWidthPx = constraints.maxWidth.toFloat()
+
+                    // Sit just off-screen to either side and slide in
+                    // alongside the current ayah as dragOffset moves — see
+                    // AyahPeekPage below. Absent (e.g. a genuinely empty
+                    // Quran table) just means that edge has nothing to
+                    // reveal; the drag still clamps to ±pageWidthPx either way.
+                    state.previousPreview?.let { preview ->
+                        AyahPeekPage(preview = preview, minHeight = maxHeight, offsetPx = { -pageWidthPx + dragOffset.value })
+                    }
+                    state.nextPreview?.let { preview ->
+                        AyahPeekPage(preview = preview, minHeight = maxHeight, offsetPx = { pageWidthPx + dragOffset.value })
+                    }
 
                     // heightIn(min = viewport height) is the trick: when the
                     // ayah's natural content is shorter than the screen, the
@@ -308,11 +282,6 @@ fun ReadingCard(
                         Modifier
                         .fillMaxWidth()
                         .heightIn(min = maxHeight)
-                        // Fades the ayah out as it approaches
-                        // EXIT_DISTANCE_FRACTION of the width (in either
-                        // direction) and back in as it returns to
-                        // center — see contentAlpha above.
-                        .alpha(contentAlpha)
                         // Read in the layout phase (not composition), so
                         // a dragging finger updates position/redraw
                         // only, without forcing a full recomposition
@@ -454,6 +423,75 @@ fun ReadingCard(
     }
 }
 
+// A non-interactive rendering of a neighbouring ayah (see AyahPreview),
+// positioned just off to one side of the current ayah and animated in
+// lockstep with the same drag gesture — this is what makes a swipe reveal
+// real content sliding in from the edge instead of a blank gap. Deliberately
+// missing the current page's interactive bits (translation-switcher arrows,
+// double-tap zone): those only make sense once this ayah actually becomes
+// current, at which point it's ReadingCard's main Column rendering it, not
+// this one — so there's nothing to carry over.
+@Composable
+private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Float) {
+    val colors = WaqfahTheme.colors
+    // Keyed on ayahLabel so scrolling this peek (an edge case — you'd need
+    // to scroll and swipe at once) doesn't leak into whatever ayah gets
+    // peeked here next, the way an unkeyed rememberScrollState would.
+    val scrollState = remember(preview.ayahLabel) { ScrollState(0) }
+
+    Column(
+        Modifier
+        .fillMaxWidth()
+        .heightIn(min = minHeight)
+        // offsetPx is a lambda, not a plain value, so this stays a
+        // layout-phase read (same as the current ayah's offset below) —
+        // a dragging finger updates position only, no recomposition per frame.
+        .offset { IntOffset(offsetPx().roundToInt(), 0) }
+        .verticalScroll(scrollState)
+        .padding(horizontal = 28.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.height(14.dp))
+        NumDivider(preview.ayahLabel)
+        Spacer(Modifier.height(24.dp))
+        Text(
+            preview.arabicText,
+            color = colors.ink,
+            textAlign = TextAlign.Center,
+            fontFamily = preview.arabicFont.toFontFamily(),
+            fontSize = preview.arabicFontSize.sp,
+            lineHeight = (preview.arabicFontSize * 2f).sp,
+        )
+        preview.translitText?.let {
+            Spacer(Modifier.height(20.dp))
+            Text(
+                it,
+                color = colors.inkMuted,
+                textAlign = TextAlign.Center,
+                fontSize = preview.translitFontSize.sp,
+                fontStyle = FontStyle.Italic,
+                lineHeight = (preview.translitFontSize * 1.7f).sp,
+                modifier = Modifier.widthIn(max = 280.dp),
+            )
+        }
+        preview.translationText?.let { translationText ->
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
+            Spacer(Modifier.height(24.dp))
+            Text(
+                translationText,
+                color = colors.inkMuted,
+                textAlign = TextAlign.Center,
+                fontSize = preview.translationFontSize.sp,
+                lineHeight = (preview.translationFontSize * 1.7f).sp,
+                modifier = Modifier.widthIn(max = 280.dp),
+            )
+        }
+        Spacer(Modifier.height(14.dp))
+    }
+}
+
 // Placeholder shown in place of the header (surah name + total label) and
 // main content while state.isLoading is true — one composable, one shared
 // pulse, rather than two independently-timed animations that could drift
@@ -500,6 +538,7 @@ private fun SkeletonBar(width: Dp, height: Dp, color: Color) {
     Box(Modifier.width(width).height(height).clip(RoundedCornerShape(6.dp)).background(color))
 }
 
+
 @Composable
 private fun NumDivider(label: String) {
     val colors = WaqfahTheme.colors
@@ -510,9 +549,14 @@ private fun NumDivider(label: String) {
     }
 }
 
+// onClick is suspend because RemArrow is also how onNext/onPrevious get
+// triggered outside a swipe (tapping the arrows directly) — IconButton
+// itself only takes a plain () -> Unit, so this launches onClick in its own
+// scope rather than pushing that plumbing onto every call site.
 @Composable
-private fun RemArrow(direction: ChevronDirection, onClick: () -> Unit, contentDescription: String) {
-    IconButton(onClick = onClick, modifier = Modifier.size(44.dp)) {
+private fun RemArrow(direction: ChevronDirection, onClick: suspend () -> Unit, contentDescription: String) {
+    val scope = rememberCoroutineScope()
+    IconButton(onClick = { scope.launch { onClick() } }, modifier = Modifier.size(44.dp)) {
         ChevronIcon(
             direction = direction,
             tint = WaqfahTheme.colors.inkMuted,
