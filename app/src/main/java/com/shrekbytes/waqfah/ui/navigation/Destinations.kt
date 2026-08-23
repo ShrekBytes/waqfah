@@ -18,3 +18,10 @@ sealed interface WaqfahDestination
 @Serializable data class TranslationsSettings(val languageCode: String) : WaqfahDestination
 @Serializable data object PermissionsSettings : WaqfahDestination
 @Serializable data object AppsSettings : WaqfahDestination
+@Serializable data object PermissionsRationale : WaqfahDestination
+
+@Serializable data object About : WaqfahDestination
+@Serializable data object PrivacyPolicy : WaqfahDestination
+@Serializable data object Faq : WaqfahDestination
+@Serializable data object Gratitude : WaqfahDestination
+@Serializable data object Donate : WaqfahDestination

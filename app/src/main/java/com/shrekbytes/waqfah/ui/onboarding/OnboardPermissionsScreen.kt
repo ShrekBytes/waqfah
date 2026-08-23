@@ -1,12 +1,15 @@
 package com.shrekbytes.waqfah.ui.onboarding
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -21,6 +24,7 @@ import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 @Composable
 fun OnboardPermissionsScreen(
     viewModel: OnboardPermissionsViewModel = hiltViewModel(),
+    onOpenRationale: () -> Unit = {},
     onBack: () -> Unit,
     onComplete: () -> Unit,
 ) {
@@ -51,6 +55,13 @@ fun OnboardPermissionsScreen(
             color = colors.inkMuted,
             fontSize = 14.sp,
             lineHeight = 21.sp,
+        )
+        Text(
+            "Why Waqfah needs these?",
+            color = colors.accent,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenRationale),
         )
         Spacer(Modifier.height(6.dp))
         val (usage, overlay, battery) = PermissionCatalog.all

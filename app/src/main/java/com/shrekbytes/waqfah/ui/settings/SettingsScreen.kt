@@ -49,6 +49,9 @@ fun SettingsScreen(
     onOpenReadingDisplay: () -> Unit,
     onOpenApps: () -> Unit,
     onOpenPermissions: () -> Unit,
+    onOpenAbout: () -> Unit,
+    onOpenFaq: () -> Unit,
+    onOpenDonate: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
@@ -149,6 +152,11 @@ fun SettingsScreen(
 
         SectionTitle("Permissions")
         SettingsNavRow("App permissions", "Review anytime", onOpenPermissions)
+
+        SectionTitle("More")
+        SettingsNavRow("Donate", "Support development", onOpenDonate)
+        SettingsNavRow("FAQ & troubleshooting", "Fixes for common issues", onOpenFaq)
+        SettingsNavRow("About", "Version, credits & links", onOpenAbout)
         Spacer(Modifier.height(24.dp))
     }
 }

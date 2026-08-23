@@ -29,6 +29,9 @@ fun MainScreen(
     onOpenReadingDisplay: () -> Unit,
     onOpenApps: () -> Unit,
     onOpenPermissions: () -> Unit,
+    onOpenAbout: () -> Unit,
+    onOpenFaq: () -> Unit,
+    onOpenDonate: () -> Unit,
 ) {
     // rememberSaveable survives Navigation3 disposing/recomposing this screen
     // when a settings sub-screen is pushed over it; plain remember resets.
@@ -52,6 +55,9 @@ fun MainScreen(
                     onOpenReadingDisplay = onOpenReadingDisplay,
                     onOpenApps = onOpenApps,
                     onOpenPermissions = onOpenPermissions,
+                    onOpenAbout = onOpenAbout,
+                    onOpenFaq = onOpenFaq,
+                    onOpenDonate = onOpenDonate,
                 )
             }
         }

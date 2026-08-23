@@ -44,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -218,7 +219,7 @@ fun InlineField(label: String, showDivider: Boolean = true, onClick: (() -> Unit
 
 // Flat, edge-to-edge press highlight instead of a bounded ripple.
 @Composable
-fun SettingsNavRow(title: String, subtitle: String, onClick: () -> Unit) {
+fun SettingsNavRow(title: String, subtitle: String, onClick: () -> Unit, external: Boolean = false) {
     val colors = WaqfahTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -240,7 +241,16 @@ fun SettingsNavRow(title: String, subtitle: String, onClick: () -> Unit) {
             Text(title, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.Medium)
             Text(subtitle, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 3.dp))
         }
-        Text("›", color = colors.inkSoft, fontSize = 14.sp)
+        if (external) {
+            // Outward-tilted chevron signals "opens a link" vs. drilling in.
+            ChevronIcon(
+                direction = ChevronDirection.RIGHT,
+                tint = colors.inkSoft,
+                modifier = Modifier.size(14.dp).rotate(-45f),
+            )
+        } else {
+            Text("›", color = colors.inkSoft, fontSize = 14.sp)
+        }
     }
 }
 
