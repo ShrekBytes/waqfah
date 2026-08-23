@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark-mode splash colors: same tones as BasePalettes.Dark and the
+     drawable-night launcher icons, so the splash is indistinguishable from a
+     dark-themed cold start. -->
+<resources>
+
+    <!-- Same ink-dark tone as BasePalettes.Dark.background -->
+    <color name="splash_background">#1E1C18</color>
+
+    <!-- Book-mark accent: SAGE dark variant, matching drawable-night/ic_launcher_foreground -->
+    <color name="splash_mark">#93A87D</color>
+</resources>

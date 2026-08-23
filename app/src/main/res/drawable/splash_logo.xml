@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Waqfah splash icon: open Quran whose parted pages form a subtle pause mark.
+     Same geometry as ic_logo_mark; colors come from @color/splash_mark so the
+     drawable automatically follows light/dark via values/values-night. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.8"
+        android:scaleY="0.8">
+        <!-- Left page (its straight inner edge doubles as half of the pause mark) -->
+        <path
+            android:fillColor="@color/splash_mark"
+            android:pathData="M50.2031,33.3281 C44.9297,28.8984 36.4922,26.7891 28.0547,27.6328 L28.0547,69.8203 C36.4922,68.9766 44.9297,71.0859 50.2031,75.5156 Z"
+            android:strokeColor="@color/splash_mark"
+            android:strokeLineJoin="round"
+            android:strokeWidth="4.21875" />
+        <!-- Right page (mirrored) -->
+        <path
+            android:fillColor="@color/splash_mark"
+            android:pathData="M57.7969,33.3281 C63.0703,28.8984 71.5078,26.7891 79.9453,27.6328 L79.9453,69.8203 C71.5078,68.9766 63.0703,71.0859 57.7969,75.5156 Z"
+            android:strokeColor="@color/splash_mark"
+            android:strokeLineJoin="round"
+            android:strokeWidth="4.21875" />
+    </group>
+</vector>

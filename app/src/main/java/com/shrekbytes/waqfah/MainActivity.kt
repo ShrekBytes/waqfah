@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.SideEffect
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
@@ -28,12 +30,25 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var permissionsRepository: PermissionsRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Must run before super.onCreate(): on Android 12+ it hands control to
+        // the system SplashScreen (started from Theme.Waqfah.Starting), and on
+        // older versions it draws the compat splash and swaps in
+        // postSplashScreenTheme. No separate SplashActivity involved.
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Hold the splash until DataStore's first value resolves, so the first
+        // visible frame is already painted in the user's chosen theme instead
+        // of a blank unthemed flash between the splash and real content.
+        var contentReady = false
+        splashScreen.setKeepOnScreenCondition { !contentReady }
 
         setContent {
             val prefs by settingsRepository.preferences.collectAsStateWithLifecycle(initialValue = null)
             val hasCompletedOnboarding = prefs?.hasCompletedOnboarding
+
+            SideEffect { contentReady = hasCompletedOnboarding != null }
 
             WaqfahTheme(
                 theme = prefs?.theme ?: AppTheme.SYSTEM,

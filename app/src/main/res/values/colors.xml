@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash screen colors. Resolved per configuration at launch: the base set
+     matches the Light palette / launcher, values-night overrides them for dark
+     mode so the splash always lands on the same surface the app opens with. -->
+<resources>
+
+    <!-- Same paper tone as BasePalettes.Light.background and the launcher background -->
+    <color name="splash_background">#F6F3EC</color>
+
+    <!-- Book-mark accent: SAGE light variant, matching ic_launcher_foreground -->
+    <color name="splash_mark">#71835F</color>
+</resources>

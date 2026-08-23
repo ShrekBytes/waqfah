@@ -2,4 +2,17 @@
 <resources>
 
     <style name="Theme.Waqfah" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Cold-start splash for MainActivity (no separate SplashActivity).
+         On Android 12+ the system reads these attributes for its native
+         SplashScreen; on older versions the androidx compat library draws the
+         same background + centered icon from this theme, then swaps to
+         postSplashScreenTheme when installSplashScreen() runs. Background and
+         icon colors are configuration-qualified (@color/splash_*), so the
+         splash follows the device's light/dark theme automatically. -->
+    <style name="Theme.Waqfah.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.Waqfah</item>
+    </style>
 </resources>
