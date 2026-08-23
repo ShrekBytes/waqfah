@@ -7,7 +7,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
+import com.shrekbytes.waqfah.detection.AppMonitorService
 import com.shrekbytes.waqfah.ui.navigation.Main
 import com.shrekbytes.waqfah.ui.navigation.WaqfahNavDisplay
 import com.shrekbytes.waqfah.ui.navigation.Welcome
@@ -17,13 +19,13 @@ import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-// Handles normal app usage only (onboarding, Home, Settings) — the
-// accessibility-triggered reading screen is TriggerActivity, a separate
-// Activity on purpose. See its doc comment for why.
+// Handles normal app usage (onboarding, Home, Settings). The triggered reading
+// screen is TriggerActivity — a separate Activity on purpose, see its doc.
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     @Inject lateinit var settingsRepository: SettingsRepository
+    @Inject lateinit var permissionsRepository: PermissionsRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,31 +40,25 @@ class MainActivity : ComponentActivity() {
                 accentColor = prefs?.accentColor ?: AccentColor.SAGE,
             ) {
                 if (hasCompletedOnboarding == null) {
-                    Unit // one blank frame while DataStore's first value loads
+                    Unit // blank frame while DataStore's first value loads
                 } else {
-                    // Decided exactly once, from whichever value the flag had
-                    // on this first real composition, then never
-                    // recalculated. WaqfahNavDisplay owns its own back stack
-                    // from here on — onboarding finishing pushes
-                    // Main(SETTINGS) onto it directly (see
-                    // WaqfahNavDisplay's OnboardPermissions.onComplete).
-                    //
-                    // This used to branch live on hasCompletedOnboarding
-                    // instead (a `when` with a separate WaqfahNavDisplay call
-                    // per branch), which was the actual bug behind "onboarding
-                    // still takes you to Home": the moment onboarding set the
-                    // flag to true, Compose tore down the false-branch's
-                    // WaqfahNavDisplay(Welcome) — back stack, freshly-pushed
-                    // Main(SETTINGS), and all — and mounted a brand new
-                    // true-branch WaqfahNavDisplay(Main()) with a fresh,
-                    // default-Home back stack, discarding the push before it
-                    // was ever seen. Locking the destination in with
-                    // `remember` keeps this the same composable instance for
-                    // the rest of the session, so that push actually sticks.
+                    // Locked in once on the first real composition so the back
+                    // stack built here survives onboarding flipping the flag —
+                    // branching live on it would tear down and remount the nav
+                    // display mid-flow, discarding the post-onboarding push.
                     val startDestination = remember { if (hasCompletedOnboarding) Main() else Welcome }
                     WaqfahNavDisplay(startDestination = startDestination)
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-checked on every resume: the permissions may have just been granted
+        // in system settings. Starting an already-running service is a no-op.
+        if (permissionsRepository.hasRequiredPermissions()) {
+            AppMonitorService.start(this)
         }
     }
 }

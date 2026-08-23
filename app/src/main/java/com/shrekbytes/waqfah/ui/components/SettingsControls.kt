@@ -58,15 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
-// The app's one shared "primary CTA" style — also used directly by the
-// "Open App" trigger button in ReadingScreen.kt, so every full-width
-// call-to-action in the app shares the same height, type size, and color
-// language rather than each screen rolling its own. Accent-colored (not a
-// plain dark/ink pill) to match every other interactive accent in the app —
-// the switch knob, chips, Mark Read — so it reads as "the same design
-// system" rather than a one-off. 48dp is a standard comfortable touch
-// target; the previous 52dp with the same small text underneath just left
-// visibly excess padding.
+// The app's one shared primary CTA style.
 @Composable
 fun WaqfahPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val colors = WaqfahTheme.colors
@@ -88,11 +80,8 @@ fun WaqfahPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = 
 
 enum class ChevronDirection { LEFT, RIGHT }
 
-// The prototype draws every chevron (back button, and the prev/next ayah
-// arrows in ReadingCard) from the same thin two-segment path — `M11 4L6 9L11
-// 14` in its 18x18 icon viewBox — rather than a filled arrowhead glyph.
-// Material's ArrowBack/KeyboardArrowLeft/Right icons are visibly heavier and
-// don't match, so this reproduces that exact path instead.
+// Thin two-segment chevron matching the app's icon style, where Material's
+// filled arrow glyphs are visibly heavier.
 @Composable
 fun ChevronIcon(direction: ChevronDirection, tint: Color, modifier: Modifier = Modifier) {
     Canvas(modifier) {
@@ -112,8 +101,6 @@ fun ChevronIcon(direction: ChevronDirection, tint: Color, modifier: Modifier = M
     }
 }
 
-// Matches the prototype's `.icon-back`: a 34dp circle, transparent by
-// default (same color as the screen behind it), holding just the chevron.
 @Composable
 fun WaqfahBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors
@@ -130,10 +117,7 @@ fun WaqfahBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
-// Matches the prototype's `.search-box`: a hairline pill/rounded-rect field
-// with a magnifier and inline placeholder, rather than Material's floating-
-// label OutlinedTextField (which sits noticeably taller and reads as a form
-// field, not the light search affordance the prototype uses).
+// Hairline pill search field rather than Material's floating-label text field.
 @Composable
 fun WaqfahSearchField(
     value: String,
@@ -168,8 +152,6 @@ fun WaqfahSearchField(
     }
 }
 
-// Matches the prototype's `.empty-note`, shown instead of the app list when
-// a search filters it down to nothing.
 @Composable
 fun EmptyListNote(text: String, modifier: Modifier = Modifier) {
     Text(
@@ -204,10 +186,8 @@ fun FieldLabel(text: String) {
     )
 }
 
-// Matches the prototype's `.field`: label on its own line, its control
-// below, then (usually) a hairline divider marking the boundary with the
-// next field. Pass `showDivider = false` for the last field in a section —
-// matches the prototype's per-field `border-bottom:none` override.
+// Label on top, control below, hairline divider after (pass showDivider = false
+// for the last field in a section).
 @Composable
 fun SettingsField(showDivider: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
     val colors = WaqfahTheme.colors
@@ -215,10 +195,7 @@ fun SettingsField(showDivider: Boolean = true, content: @Composable ColumnScope.
     if (showDivider) HorizontalDivider(color = colors.line)
 }
 
-// Matches the prototype's `.field-inline`: label and control share one row
-// instead of the control dropping to its own line below the label — used
-// for steppers and single-value pickers, never for chip groups (those wrap
-// to multiple lines, so they stay label-on-top via SettingsField).
+// Label and control share one row — for steppers and single-value pickers.
 @Composable
 fun InlineField(label: String, showDivider: Boolean = true, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
     val colors = WaqfahTheme.colors
@@ -226,8 +203,7 @@ fun InlineField(label: String, showDivider: Boolean = true, onClick: (() -> Unit
         Modifier
             .fillMaxWidth()
             .let {
-                // Clip before clickable so the ripple is bounded to a rounded
-                // rect instead of filling the row's sharp-cornered full width.
+                // Clip before clickable so the ripple is bounded to a rounded rect.
                 if (onClick != null) it.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick) else it
             }
             .padding(horizontal = 6.dp, vertical = 16.dp),
@@ -240,12 +216,7 @@ fun InlineField(label: String, showDivider: Boolean = true, onClick: (() -> Unit
     if (showDivider) HorizontalDivider(color = colors.line)
 }
 
-// A rounded-rect ripple bounded to just this row reads as a small, isolated
-// blob rather than feedback on "the whole line" it sits on. Swapping it for
-// a flat, edge-to-edge highlight that fills the row's full, sharp-cornered
-// width — no ripple, no rounding — instead makes press feedback read as the
-// entire horizontal line lighting up at once, closer to a native list-row
-// press than a card-style ripple.
+// Flat, edge-to-edge press highlight instead of a bounded ripple.
 @Composable
 fun SettingsNavRow(title: String, subtitle: String, onClick: () -> Unit) {
     val colors = WaqfahTheme.colors
@@ -289,11 +260,8 @@ fun SettingsToggleRow(title: String, subtitle: String, checked: Boolean, onToggl
     }
 }
 
-// Settings > Permissions: a toggle-switch row, matching every other on/off
-// setting in the app. Tapping it — whether currently on or off — opens the
-// relevant system settings screen, since real accessibility/battery
-// permissions can only be granted or reviewed there, not flipped in place;
-// the switch position simply reflects current status.
+// Permissions row: tapping always opens system settings (these permissions
+// can't be flipped in place); the switch only reflects current status.
 @Composable
 fun PermissionRow(title: String, subtitle: String, granted: Boolean, onOpenSettings: () -> Unit) {
     val colors = WaqfahTheme.colors
@@ -311,11 +279,7 @@ fun PermissionRow(title: String, subtitle: String, granted: Boolean, onOpenSetti
     }
 }
 
-// Onboarding permissions list: same flat, unbordered row structure as the
-// Settings version, but with an actual "Grant" button instead of a toggle
-// switch — these can only be granted (or reviewed) from system settings, not
-// flipped in place. Only the button itself is tappable, same as how only
-// the switch (not the whole row) is tappable on the Settings version.
+// Onboarding variant with a Grant button instead of a toggle.
 @Composable
 fun OnboardPermissionRow(title: String, subtitle: String, granted: Boolean, onOpenSettings: () -> Unit) {
     val colors = WaqfahTheme.colors
@@ -349,9 +313,7 @@ fun OnboardPermissionRow(title: String, subtitle: String, granted: Boolean, onOp
     }
 }
 
-// A custom pill toggle rather than Material3's Switch — the prototype's
-// toggle is a plain 44x26 pill with a sliding knob, noticeably slimmer than
-// Material's default.
+// Slim custom pill toggle rather than Material3's Switch.
 @Composable
 fun WaqfahSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors

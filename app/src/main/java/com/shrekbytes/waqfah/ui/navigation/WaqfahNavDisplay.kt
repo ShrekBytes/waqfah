@@ -21,21 +21,11 @@ import com.shrekbytes.waqfah.ui.settings.translations.TranslationsScreen
 
 @Composable
 fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
-    // In-memory only for now — surviving process death needs a Saver built on
-    // kotlinx.serialization; add that once the data layer has something worth
-    // restoring beyond what's already persisted in Room/DataStore.
     val backStack = remember { mutableStateListOf<WaqfahDestination>(startDestination) }
 
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
-        // Forward: new screen slides in from the right, old one slides out left.
-        // Back: reverse of that. The default is a crossfade, which read as
-        // "screens randomly swapping" rather than a clear forward/back sense
-        // of place. This only applies to genuine drill-in/back navigation
-        // (Settings -> Apps/Permissions/etc, onboarding steps) — switching
-        // between the Home and Settings tabs no longer goes through this at
-        // all, see MainScreen.
         transitionSpec = {
             slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
         },
@@ -65,12 +55,7 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                 OnboardPermissionsScreen(
                     onBack = { backStack.removeLastOrNull() },
                     onComplete = {
-                        // First-run only: land on the Settings tab right after
-                        // onboarding. Home and Settings are tabs of the same
-                        // screen now, not separate backstack entries, so
-                        // there's nothing to keep "underneath" — pressing back
-                        // from here returns to the Home tab first (see
-                        // MainScreen's BackHandler) before exiting.
+                        // First-run only: land on the Settings tab after onboarding.
                         backStack.clear()
                         backStack.add(Main(initialTab = WaqfahTab.SETTINGS))
                     },

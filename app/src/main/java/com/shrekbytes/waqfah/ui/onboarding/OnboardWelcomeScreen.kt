@@ -74,16 +74,7 @@ fun OnboardWelcomeScreen(onGetStarted: () -> Unit) {
     }
 }
 
-// A compact "->" rather than the app's usual full-width WaqfahPrimaryButton
-// pinned to the screen's bottom edge — sitting right under the welcome copy,
-// as part of the same centered block, a small arrow reads as "get started"
-// without needing a label, and keeps this first screen feeling minimal
-// rather than form-like. Sized by content (48dp tall, width from padding)
-// rather than a fixed square, with the same RoundedCornerShape(50) every
-// other button in the app uses (WaqfahPrimaryButton, MarkReadPill, chips) —
-// on a wider-than-tall shape that becomes a proper pill/capsule with rounded
-// ends, not the rounded *square* a fixed 56x56 box with a flat corner radius
-// read as before.
+// Compact content-sized arrow button under the welcome copy.
 @Composable
 private fun GetStartedButton(onClick: () -> Unit) {
     val colors = WaqfahTheme.colors

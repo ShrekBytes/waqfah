@@ -7,12 +7,8 @@ enum class ReadingMode { SEQUENTIAL, RANDOM }
 enum class NameDisplayLanguage { ENGLISH, BENGALI, ARABIC }
 enum class AidLanguage { NONE, ENGLISH, BENGALI }
 
-// Which of quran_core.db's two verse-text columns (arabic_indopak /
-// arabic_uthmani) is rendered on the Reading screen. Each script has its own,
-// disjoint set of fonts below (a Uthmani font drawing Indopak glyphs, or vice
-// versa, doesn't render correctly), so switching script also needs to move
-// the selected font into the new script's set — see
-// ReadingDisplayViewModel.setArabicScript().
+// Which of quran_core.db's two verse-text columns is rendered. Each script has
+// its own disjoint set of fonts below — see ReadingDisplayViewModel.setArabicScript().
 enum class ArabicScript { INDOPAK, UTHMANI }
 
 enum class ArabicFont(val script: ArabicScript) {

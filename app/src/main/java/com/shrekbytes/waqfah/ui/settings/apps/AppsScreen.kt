@@ -55,9 +55,8 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
 
-    // Not built on SettingsScaffold: the app list can run to 100+ installed
-    // apps, so it needs a LazyColumn rather than sitting inside one big
-    // scrolling Column with everything else.
+    // Not SettingsScaffold: the app list needs a LazyColumn rather than one big
+    // scrolling Column.
     Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
         WaqfahBackButton(onClick = onBack)
         Text(
@@ -108,15 +107,8 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit) {
     }
 }
 
-// internal, not private: reused as-is by OnboardChooseAppsScreen. Shown for
-// the second or two getInstalledLaunchableApps() takes on a real device (it
-// loads and downscales every app's icon — see MonitoredAppsRepository)
-// instead of either a blank list or a misleading "No apps found". Rows are
-// sized to match AppRow exactly (same 36dp icon box, same spacing, same
-// 21dp checkbox slot) so nothing visibly shifts once the real rows swap in.
-// A fixed count rather than one row per eventual app — the real count isn't
-// known yet, and a handful of rows already reads clearly as "a list is
-// loading" without needing to guess it.
+// internal, not private: reused by OnboardChooseAppsScreen. Rows sized to match
+// AppRow exactly so nothing visibly shifts once real rows swap in.
 @Composable
 internal fun AppsListSkeleton(modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors
@@ -144,11 +136,7 @@ internal fun AppsListSkeleton(modifier: Modifier = Modifier) {
     }
 }
 
-// internal, not private: reused as-is by OnboardChooseAppsScreen.
-// Same flat, full-line press highlight as SettingsNavRow (see its comment)
-// rather than a bounded ripple — this row previously had indication = null
-// with nothing in its place, so presses on the app list gave no feedback
-// at all.
+// internal, not private: reused by OnboardChooseAppsScreen.
 @Composable
 internal fun AppRow(row: AppRowState, onClick: () -> Unit) {
     val colors = WaqfahTheme.colors
@@ -174,11 +162,7 @@ internal fun AppRow(row: AppRowState, onClick: () -> Unit) {
         ) {
             val icon = row.app.icon
             if (icon != null) {
-                // The 11.dp clip on the Box above already masks this to match
-                // the letter-avatar fallback's shape — real launcher icons
-                // (adaptive icons especially) come as square/edge-to-edge
-                // art, not pre-rounded, so without it they'd look like a
-                // visibly different shape from every row that falls back.
+                // The Box's clip masks square launcher icons to match the letter avatar.
                 Image(bitmap = icon.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize())
             } else {
                 Text(row.app.label.take(1).uppercase(), color = colors.ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -189,8 +173,7 @@ internal fun AppRow(row: AppRowState, onClick: () -> Unit) {
     }
 }
 
-// A compact rounded-square checkbox matching the prototype, rather than
-// Material3's default Checkbox (a noticeably different, larger shape).
+// Compact rounded-square checkbox instead of Material3's larger default shape.
 @Composable
 private fun AppCheckbox(checked: Boolean) {
     val colors = WaqfahTheme.colors

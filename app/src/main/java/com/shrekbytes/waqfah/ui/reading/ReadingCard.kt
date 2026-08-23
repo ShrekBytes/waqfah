@@ -83,76 +83,47 @@ import com.shrekbytes.waqfah.ui.components.ChevronDirection
 import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import com.shrekbytes.waqfah.ui.theme.toFontFamily
-import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
-// A committed swipe used to release the finger, watch the current ayah slide
-// fully off screen, and only *then* have the next one appear — a real page's
-// worth of "nothing there yet" in between. Now the neighbouring ayah's real
-// content (see AyahPreview / AyahPeekPage below) sits right off-screen and
-// tracks the finger 1:1 as soon as a drag starts, so it visibly slides in
-// alongside the current ayah leaving, the way turning a physical page shows
-// you the next one arriving rather than a blank gap.
-//
-// Absolute distance, not a fraction of screen width — a fraction (this was
-// 30% of the width) meant committing needed 100dp+ of real finger travel on
-// a typical phone, far more than the swipe should take. A fixed distance
-// keeps that travel small and consistent regardless of device size.
+// Fixed absolute distance (not a fraction of screen width) so commit travel is
+// small and consistent across device sizes.
 private val COMMIT_THRESHOLD_DISTANCE = 56.dp
 
-// Plays whenever a swipe is released under the commit threshold (or the
-// gesture is cancelled outright) to return the content to center. Was a
-// bouncier, stiffer spring (DampingRatioMediumBouncy + StiffnessMedium) —
-// snappy enough to feel like an abrupt yank back rather than a soft settle,
-// which is very noticeable now that under-threshold releases happen often
-// (the threshold itself is intentionally light — see COMMIT_THRESHOLD_DISTANCE
-// above). No bounce/overshoot (DampingRatioNoBouncy) and a gentler stiffness
-// reads as a calm return instead of a hard snap.
+// Calm, bounce-free return to center on under-threshold release / cancellation.
 private val CANCEL_SPRING = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
 
 @Composable
 fun ReadingCard(
     state: ReadingUiState,
     onMarkRead: () -> Unit,
-                onNext: suspend () -> Unit,
-                onPrevious: suspend () -> Unit,
-                onResume: () -> Unit,
-                onCycleTranslation: (forward: Boolean) -> Unit,
-                onResetTranslation: () -> Unit,
-                bottomBar: @Composable () -> Unit,
-                modifier: Modifier = Modifier,
+    onNext: suspend () -> Unit,
+    onPrevious: suspend () -> Unit,
+    onResume: () -> Unit,
+    onCycleTranslation: (forward: Boolean) -> Unit,
+    onResetTranslation: () -> Unit,
+    bottomBar: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val colors = WaqfahTheme.colors
     val scope = rememberCoroutineScope()
 
-    // Drives the ayah content's horizontal position: follows the finger
-    // 1:1 live while dragging, then either springs back to 0 (swipe
-    // released under threshold) or finishes the rest of the way to a full
-    // page width (swipe past threshold — see the pointerInput block below).
-    // Also the at-rest base case (0f) whenever nothing is being dragged.
+    // Follows the finger 1:1 while dragging; springs back to 0 under threshold,
+    // animates to a full page width past it.
     val dragOffset = remember { Animatable(0f) }
 
-    // The pointerInput block below is installed once and never restarts
-    // (keyed on Unit — see its comment) so a drag in progress can never get
-    // cut off by a recomposition. rememberUpdatedState is what makes that
-    // safe: each holder's .value always reflects the latest onNext/
-    // onPrevious/handleMarkRead/state without needing the block itself to
-    // restart to pick up a change.
+    // The pointerInput blocks below are installed once (Unit-keyed) so a drag in
+    // progress can never be cut off by recomposition; rememberUpdatedState keeps
+    // their callbacks reading fresh values without restarting the blocks.
     val latestOnNext = rememberUpdatedState(onNext)
     val latestOnPrevious = rememberUpdatedState(onPrevious)
     val latestState = rememberUpdatedState(state)
 
-    // Bumped on every mark-read, whether it came from double-tapping the
-    // card or tapping the pill itself, so MarkReadPill can play a small
-    // "live" bounce each time — including repeat taps on an already-marked
-    // ayah, not just the false->true transition.
+    // Bumped on every mark-read so MarkReadPill can play its bounce each time.
     var markReadTrigger by remember { mutableIntStateOf(0) }
 
-    // Whether the translation's left/right "compare sources" arrows are
-    // currently revealed. Purely local UI state — the actual text swap lives
-    // in ReadingViewModel — reset whenever the ayah itself changes (via
-    // ayahLabel below) so switching ayahs doesn't leave a stale switcher open
-    // pointed at the ayah that's no longer on screen.
+    // Local UI state for the translation compare arrows — reset when the ayah
+    // changes so the switcher never stays open across an ayah switch.
     var translationSwitcherOpen by remember { mutableStateOf(false) }
     LaunchedEffect(state.ayahLabel) { translationSwitcherOpen = false }
 
@@ -164,19 +135,12 @@ fun ReadingCard(
 
     Column(modifier.fillMaxSize()) {
         if (state.isLoading) {
-            // The header and body used to render immediately regardless of
-            // isLoading — which was never actually read anywhere — so a cold
-            // app open showed a flash of genuinely blank layout (empty surah
-            // name, empty ayah text) instead of any loading indication,
-            // until the first DB read resolved. One shared skeleton, filling
-            // the same space the header + body normally take, replaces that
-            // blank flash — see ReadingSkeleton below.
             ReadingSkeleton(Modifier.weight(1f).fillMaxWidth())
         } else {
             CompositionLocalProvider(LocalLayoutDirection provides state.surahNameDirection) {
                 Column(
                     Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 6.dp),
-                       horizontalAlignment = Alignment.CenterHorizontally,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(3.dp))
@@ -187,8 +151,8 @@ fun ReadingCard(
             if (state.isPaused) {
                 Column(
                     Modifier.weight(1f).fillMaxWidth().padding(24.dp),
-                       verticalArrangement = Arrangement.Center,
-                       horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text("Waqfah is off right now.", color = colors.inkMuted, fontSize = 14.sp)
                     TextButton(onClick = onResume) {
@@ -198,93 +162,57 @@ fun ReadingCard(
             } else {
                 BoxWithConstraints(
                     Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    // Horizontal-only, so it doesn't compete with the
-                    // vertical scroll below: a plain vertical drag never
-                    // accumulates meaningful horizontal distance. Swipe
-                    // left (finger moves left, content "advances") ->
-                    // next, same direction convention as
-                    // carousels/stories/etc.
-                    //
-                    // dragOffset tracks the finger 1:1 (no amplification)
-                    // and drives the current ayah's position *and* the
-                    // neighbouring ayah's peek position (see AyahPeekPage
-                    // below) in lockstep, so the incoming ayah's real
-                    // content is visibly sliding in from the edge for the
-                    // whole gesture, not just after release. Letting go
-                    // past COMMIT_THRESHOLD_DISTANCE finishes that same
-                    // slide the rest of the way to a full page, then swaps
-                    // the underlying ayah in (awaited, so the dragOffset
-                    // reset that follows is a no-op visually — what was
-                    // drawn as the peek a frame ago is drawn as "current" at
-                    // the exact same position next frame). Letting go under
-                    // threshold gently springs back to center — see
-                    // CANCEL_SPRING below.
-                    //
-                    // Keyed on Unit — installed once, never restarted for
-                    // the whole life of this composable, rather than on
-                    // onNext/onPrevious (their identity as callable
-                    // references isn't strictly guaranteed stable across
-                    // recompositions). A restart mid-gesture tears down an
-                    // in-progress drag exactly as if the finger had lifted,
-                    // without it actually having done so, which is what
-                    // made this feel like it randomly "let go" while still
-                    // held. rememberUpdatedState (see latestOnNext/
-                    // latestOnPrevious/latestState above) is what makes a
-                    // never-restarting block safe to read fresh values from
-                    // anyway. The double-tap-to-mark-read detector below
-                    // stays in its own separate pointerInput, also
-                    // Unit-keyed — an earlier attempt at merging both into
-                    // one block as concurrent coroutines made touches
-                    // occasionally not register at all, so two independent
-                    // modifiers (the standard way Compose apps combine
-                    // drag + tap on one element) is the safer, better-tested
-                    // shape here.
-                    .pointerInput(Unit) {
-                        val pageWidthPx = size.width.toFloat()
-                        val commitThresholdPx = COMMIT_THRESHOLD_DISTANCE.toPx()
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                val finalDrag = dragOffset.value
-                                scope.launch {
-                                    when {
-                                        finalDrag <= -commitThresholdPx && latestState.value.nextPreview != null -> {
-                                            dragOffset.animateTo(-pageWidthPx, tween(220, easing = FastOutSlowInEasing))
-                                            latestOnNext.value()
-                                            dragOffset.snapTo(0f)
+                        .weight(1f)
+                        .fillMaxWidth()
+                        // Horizontal-only dragging: swipe left -> next ayah, same
+                        // direction convention as carousels/stories. Kept separate
+                        // from the double-tap detector because merging both into one
+                        // block made touches occasionally not register.
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures(
+                                onDragEnd = {
+                                    // Read here, not at block-install time, so the value
+                                    // stays correct after rotation/config changes.
+                                    val pageWidthPx = size.width.toFloat()
+                                    val commitThresholdPx = COMMIT_THRESHOLD_DISTANCE.toPx()
+                                    val finalDrag = dragOffset.value
+                                    scope.launch {
+                                        when {
+                                            finalDrag <= -commitThresholdPx && latestState.value.nextPreview != null -> {
+                                                dragOffset.animateTo(-pageWidthPx, tween(220, easing = FastOutSlowInEasing))
+                                                latestOnNext.value()
+                                                dragOffset.snapTo(0f)
+                                            }
+                                            finalDrag >= commitThresholdPx && latestState.value.previousPreview != null -> {
+                                                dragOffset.animateTo(pageWidthPx, tween(220, easing = FastOutSlowInEasing))
+                                                latestOnPrevious.value()
+                                                dragOffset.snapTo(0f)
+                                            }
+                                            else -> dragOffset.animateTo(0f, CANCEL_SPRING)
                                         }
-                                        finalDrag >= commitThresholdPx && latestState.value.previousPreview != null -> {
-                                            dragOffset.animateTo(pageWidthPx, tween(220, easing = FastOutSlowInEasing))
-                                            latestOnPrevious.value()
-                                            dragOffset.snapTo(0f)
-                                        }
-                                        else -> dragOffset.animateTo(0f, CANCEL_SPRING)
                                     }
+                                },
+                                onDragCancel = {
+                                    scope.launch { dragOffset.animateTo(0f, CANCEL_SPRING) }
+                                },
+                            ) { change, dragAmount ->
+                                change.consume()
+                                scope.launch {
+                                    val pageWidthPx = size.width.toFloat()
+                                    val moved = dragOffset.value + dragAmount
+                                    dragOffset.snapTo(moved.coerceIn(-pageWidthPx, pageWidthPx))
                                 }
-                            },
-                            onDragCancel = {
-                                scope.launch { dragOffset.animateTo(0f, CANCEL_SPRING) }
-                            },
-                        ) { change, dragAmount ->
-                            change.consume()
-                            scope.launch {
-                                val moved = dragOffset.value + dragAmount
-                                dragOffset.snapTo(moved.coerceIn(-pageWidthPx, pageWidthPx))
                             }
                         }
-                    }
-                    .pointerInput(Unit) {
-                        detectTapGestures(onDoubleTap = { latestHandleMarkRead.value() })
-                    },
+                        .pointerInput(Unit) {
+                            detectTapGestures(onDoubleTap = { latestHandleMarkRead.value() })
+                        },
                 ) {
                     val pageWidthPx = constraints.maxWidth.toFloat()
 
-                    // Sit just off-screen to either side and slide in
-                    // alongside the current ayah as dragOffset moves — see
-                    // AyahPeekPage below. Absent (e.g. a genuinely empty
-                    // Quran table) just means that edge has nothing to
-                    // reveal; the drag still clamps to ±pageWidthPx either way.
+                    // Peek pages sit just off-screen and slide in alongside the
+                    // current ayah as dragOffset moves. A null preview just means
+                    // that edge has nothing to reveal.
                     state.previousPreview?.let { preview ->
                         AyahPeekPage(preview = preview, minHeight = maxHeight, offsetPx = { -pageWidthPx + dragOffset.value })
                     }
@@ -292,52 +220,42 @@ fun ReadingCard(
                         AyahPeekPage(preview = preview, minHeight = maxHeight, offsetPx = { pageWidthPx + dragOffset.value })
                     }
 
-                    // heightIn(min = viewport height) is the trick: when the
-                    // ayah's natural content is shorter than the screen, the
-                    // Column is stretched to fill it, so Arrangement.Center
-                    // has room to actually center things. When content is
-                    // longer than the screen (a long ayah + translation),
-                    // the natural height already exceeds that minimum, so
-                    // the min has no effect — it just lays out top-to-bottom
-                    // and scrolls normally.
+                    // heightIn(min = viewport height) lets Arrangement.Center center short
+                    // content while long content still lays out top-to-bottom and scrolls.
                     Column(
                         Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = maxHeight)
-                        // Read in the layout phase (not composition), so
-                        // a dragging finger updates position/redraw
-                        // only, without forcing a full recomposition
-                        // every frame.
-                        .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 28.dp),
-                           verticalArrangement = Arrangement.Center,
-                           horizontalAlignment = Alignment.CenterHorizontally,
+                            .fillMaxWidth()
+                            .heightIn(min = maxHeight)
+                            // Layout-phase read: dragging updates position/redraw only,
+                            // no recomposition per frame.
+                            .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 28.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Spacer(Modifier.height(14.dp))
                         NumDivider(state.ayahLabel)
                         Spacer(Modifier.height(24.dp))
                         Text(
                             state.arabicText,
-                             color = colors.ink,
-                             textAlign = TextAlign.Center,
-                             fontFamily = state.arabicFont.toFontFamily(),
-                             fontSize = state.arabicFontSize.sp,
-                             // Arabic diacritics (tashkeel) sit above/below the letter and
-                             // get clipped by a normal Latin-text line height — this needs
-                             // noticeably more room.
-                             lineHeight = (state.arabicFontSize * 2f).sp,
+                            color = colors.ink,
+                            textAlign = TextAlign.Center,
+                            fontFamily = state.arabicFont.toFontFamily(),
+                            fontSize = state.arabicFontSize.sp,
+                            // Extra room so Arabic diacritics aren't clipped.
+                            lineHeight = (state.arabicFontSize * 2f).sp,
                         )
                         state.translitText?.let {
                             Spacer(Modifier.height(20.dp))
                             Text(
                                 it,
-                                 color = colors.inkMuted,
-                                 textAlign = TextAlign.Center,
-                                 fontSize = state.translitFontSize.sp,
-                                 fontStyle = FontStyle.Italic,
-                                 lineHeight = (state.translitFontSize * 1.7f).sp,
-                                 modifier = Modifier.widthIn(max = 280.dp),
+                                color = colors.inkMuted,
+                                textAlign = TextAlign.Center,
+                                fontSize = state.translitFontSize.sp,
+                                fontStyle = FontStyle.Italic,
+                                lineHeight = (state.translitFontSize * 1.7f).sp,
+                                modifier = Modifier.widthIn(max = 280.dp),
                             )
                         }
                         state.translationText?.let { translationText ->
@@ -346,22 +264,18 @@ fun ReadingCard(
                             Spacer(Modifier.height(24.dp))
 
                             if (state.translationHasAlternates) {
-                                // Small uppercase source label — e.g. "THE
-                                // CLEAR QURAN" — only while the switcher is
-                                // open, so it doesn't clutter normal reading
-                                // but confirms exactly what's being previewed.
                                 AnimatedVisibility(
                                     visible = translationSwitcherOpen,
                                     enter = fadeIn() + expandVertically(),
-                                                   exit = fadeOut() + shrinkVertically(),
+                                    exit = fadeOut() + shrinkVertically(),
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
                                             (state.translationSourceName ?: "").uppercase(),
-                                             color = colors.accent,
-                                             fontSize = 10.5.sp,
-                                             fontWeight = FontWeight.SemiBold,
-                                             letterSpacing = 0.6.sp,
+                                            color = colors.accent,
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = 0.6.sp,
                                         )
                                         Spacer(Modifier.height(10.dp))
                                     }
@@ -370,44 +284,34 @@ fun ReadingCard(
                                     AnimatedVisibility(
                                         visible = translationSwitcherOpen,
                                         enter = fadeIn() + expandHorizontally(),
-                                                       exit = fadeOut() + shrinkHorizontally(),
+                                        exit = fadeOut() + shrinkHorizontally(),
                                     ) {
                                         TranslationSwitchArrow(direction = ChevronDirection.LEFT) { onCycleTranslation(false) }
                                     }
                                     Text(
                                         translationText,
-                                         color = colors.inkMuted,
-                                         textAlign = TextAlign.Center,
-                                         fontSize = state.translationFontSize.sp,
-                                         lineHeight = (state.translationFontSize * 1.7f).sp,
-                                         modifier = Modifier
-                                         .widthIn(max = 280.dp)
-                                         // Tapping toggles a lightweight, per-ayah
-                                         // "compare translations" mode: reveals
-                                         // left/right arrows to preview any other
-                                         // downloaded translation for just this
-                                         // ayah, without ever touching the real
-                                         // default (see
-                                         // ReadingViewModel.cycleTranslationSource).
-                                         // Closing it (tapping again) reverts to
-                                         // the default. This claims single taps
-                                         // landing on the translation text itself,
-                                         // so double-tapping specifically on this
-                                         // text won't also trigger mark-read —
-                                         // double-tapping anywhere else on the
-                                         // ayah still does.
-                                         .clickable(
-                                             interactionSource = remember { MutableInteractionSource() },
-                                                    indication = null,
-                                         ) {
-                                             translationSwitcherOpen = !translationSwitcherOpen
-                                             if (!translationSwitcherOpen) onResetTranslation()
-                                         },
+                                        color = colors.inkMuted,
+                                        textAlign = TextAlign.Center,
+                                        fontSize = state.translationFontSize.sp,
+                                        lineHeight = (state.translationFontSize * 1.7f).sp,
+                                        modifier = Modifier
+                                            .widthIn(max = 280.dp)
+                                            // Tapping toggles compare mode for this ayah only;
+                                            // closing reverts to the default. Claims single taps
+                                            // landing on the text, so double-tapping here won't
+                                            // also trigger mark-read.
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                            ) {
+                                                translationSwitcherOpen = !translationSwitcherOpen
+                                                if (!translationSwitcherOpen) onResetTranslation()
+                                            },
                                     )
                                     AnimatedVisibility(
                                         visible = translationSwitcherOpen,
                                         enter = fadeIn() + expandHorizontally(),
-                                                       exit = fadeOut() + shrinkHorizontally(),
+                                        exit = fadeOut() + shrinkHorizontally(),
                                     ) {
                                         TranslationSwitchArrow(direction = ChevronDirection.RIGHT) { onCycleTranslation(true) }
                                     }
@@ -415,11 +319,11 @@ fun ReadingCard(
                             } else {
                                 Text(
                                     translationText,
-                                     color = colors.inkMuted,
-                                     textAlign = TextAlign.Center,
-                                     fontSize = state.translationFontSize.sp,
-                                     lineHeight = (state.translationFontSize * 1.7f).sp,
-                                     modifier = Modifier.widthIn(max = 280.dp),
+                                    color = colors.inkMuted,
+                                    textAlign = TextAlign.Center,
+                                    fontSize = state.translationFontSize.sp,
+                                    lineHeight = (state.translationFontSize * 1.7f).sp,
+                                    modifier = Modifier.widthIn(max = 280.dp),
                                 )
                             }
                         }
@@ -445,32 +349,22 @@ fun ReadingCard(
     }
 }
 
-// A non-interactive rendering of a neighbouring ayah (see AyahPreview),
-// positioned just off to one side of the current ayah and animated in
-// lockstep with the same drag gesture — this is what makes a swipe reveal
-// real content sliding in from the edge instead of a blank gap. Deliberately
-// missing the current page's interactive bits (translation-switcher arrows,
-// double-tap zone): those only make sense once this ayah actually becomes
-// current, at which point it's ReadingCard's main Column rendering it, not
-// this one — so there's nothing to carry over.
+// A non-interactive rendering of a neighbouring ayah, positioned just off to
+// one side and animated in lockstep with the drag gesture.
 @Composable
 private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Float) {
     val colors = WaqfahTheme.colors
-    // Keyed on ayahLabel so scrolling this peek (an edge case — you'd need
-    // to scroll and swipe at once) doesn't leak into whatever ayah gets
-    // peeked here next, the way an unkeyed rememberScrollState would.
+    // Keyed so scroll position never leaks into whichever ayah gets peeked next.
     val scrollState = remember(preview.ayahLabel) { ScrollState(0) }
 
     Column(
         Modifier
-        .fillMaxWidth()
-        .heightIn(min = minHeight)
-        // offsetPx is a lambda, not a plain value, so this stays a
-        // layout-phase read (same as the current ayah's offset below) —
-        // a dragging finger updates position only, no recomposition per frame.
-        .offset { IntOffset(offsetPx().roundToInt(), 0) }
-        .verticalScroll(scrollState)
-        .padding(horizontal = 28.dp),
+            .fillMaxWidth()
+            .heightIn(min = minHeight)
+            // Lambda keeps this a layout-phase read — no recomposition per frame.
+            .offset { IntOffset(offsetPx().roundToInt(), 0) }
+            .verticalScroll(scrollState)
+            .padding(horizontal = 28.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -514,25 +408,16 @@ private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Fl
     }
 }
 
-// Placeholder shown in place of the header (surah name + total label) and
-// main content while state.isLoading is true — one composable, one shared
-// pulse, rather than two independently-timed animations that could drift
-// out of phase with each other.
+// One shared skeleton with one shared pulse for the loading state.
 @Composable
 private fun ReadingSkeleton(modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors
-
-    // A gentle pulse between two close alpha values reads clearly as "still
-    // loading" without needing a moving shimmer sweep (a gradient sliding
-    // across each bar) — much less code for a state that, backed by a local
-    // SQLite read, is realistically only ever on screen for a handful of
-    // frames anyway.
     val transition = rememberInfiniteTransition(label = "skeleton_pulse")
     val pulseAlpha by transition.animateFloat(
         initialValue = 0.35f,
         targetValue = 0.85f,
         animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-                                              label = "skeleton_pulse_alpha",
+        label = "skeleton_pulse_alpha",
     )
     val barColor = colors.line.copy(alpha = pulseAlpha)
 
@@ -560,7 +445,6 @@ private fun SkeletonBar(width: Dp, height: Dp, color: Color) {
     Box(Modifier.width(width).height(height).clip(RoundedCornerShape(6.dp)).background(color))
 }
 
-
 @Composable
 private fun NumDivider(label: String) {
     val colors = WaqfahTheme.colors
@@ -571,10 +455,8 @@ private fun NumDivider(label: String) {
     }
 }
 
-// onClick is suspend because RemArrow is also how onNext/onPrevious get
-// triggered outside a swipe (tapping the arrows directly) — IconButton
-// itself only takes a plain () -> Unit, so this launches onClick in its own
-// scope rather than pushing that plumbing onto every call site.
+// onClick is suspend because onNext/onPrevious are awaited mid-gesture; the
+// scope lives here so call sites stay plain.
 @Composable
 private fun RemArrow(direction: ChevronDirection, onClick: suspend () -> Unit, contentDescription: String) {
     val scope = rememberCoroutineScope()
@@ -587,10 +469,7 @@ private fun RemArrow(direction: ChevronDirection, onClick: suspend () -> Unit, c
     }
 }
 
-// Smaller and accent-tinted (vs. RemArrow's muted 44dp ayah-navigation
-// arrows) — this is a secondary, "you're in compare mode" affordance sitting
-// right next to the translation text, not a primary nav control, so it
-// should read as noticeably lighter-weight.
+// Smaller, accent-tinted secondary affordance next to the translation text.
 @Composable
 private fun TranslationSwitchArrow(direction: ChevronDirection, onClick: () -> Unit) {
     val contentDescription = if (direction == ChevronDirection.LEFT) "Previous translation" else "Next translation"
@@ -606,64 +485,46 @@ private fun TranslationSwitchArrow(direction: ChevronDirection, onClick: () -> U
 @Composable
 private fun MarkReadPill(marked: Boolean, markReadTrigger: Int, onClick: () -> Unit) {
     val colors = WaqfahTheme.colors
-    // Pending (not yet marked) is the call-to-action, so it gets the loud
-    // solid-accent treatment — that's what should draw the eye. Once marked,
-    // the state should quietly recede rather than compete for attention, so
-    // it switches to the same soft, muted treatment used everywhere else for
-    // a low-emphasis state (this was previously backwards: marked was the
-    // louder of the two, which read as more prominent than the actual
-    // pending action).
+    // Pending is the call-to-action (solid accent); marked recedes to soft accent.
     val backgroundColor by animateColorAsState(if (marked) colors.accentSoft else colors.accent, label = "mark_read_bg")
     val contentColor by animateColorAsState(if (marked) colors.accent else colors.accentInk, label = "mark_read_content")
 
-    // Crossfade measures each branch on its own and defaults to top-start
-    // alignment for whichever one isn't the current bounding box, so the
-    // checkmark rendered pinned to the left edge of the (wider, text-sized)
-    // box for most of the transition and only snapped to center once the old
-    // content was gone — "comes in on the left, then jumps to center" — and
-    // re-measuring both branches every frame showed up as visible frame
-    // drops. Keeping both the text and the icon permanently composed,
-    // stacked in the same centered Box, and animating only their opacity
-    // sidesteps both problems: nothing ever moves, and each frame is a pure
-    // redraw with no relayout.
+    // Text and icon stay permanently composed in one centered Box; animating
+    // only their alpha means nothing moves and each frame is a pure redraw.
     val checkAlpha by animateFloatAsState(if (marked) 1f else 0f, label = "mark_read_check_alpha")
     val textAlpha by animateFloatAsState(if (marked) 0f else 1f, label = "mark_read_text_alpha")
 
-    // A small bounce on every mark-read tap (double-tap on the card or
-    // tapping the pill itself) — not just the false->true transition — so
-    // the pill itself feels "live" and gives the double-tap gesture some
-    // acknowledgement without needing a separate effect just for it.
+    // Bounce on every tap, including repeat taps on an already-marked ayah.
     val bounce = remember { Animatable(1f) }
     LaunchedEffect(markReadTrigger) {
         if (markReadTrigger == 0) return@LaunchedEffect
-            bounce.snapTo(0.86f)
-            bounce.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+        bounce.snapTo(0.86f)
+        bounce.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
     }
 
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(50),
-            color = backgroundColor,
-            contentColor = contentColor,
-            modifier = Modifier
+        color = backgroundColor,
+        contentColor = contentColor,
+        modifier = Modifier
             .scale(bounce.value)
             .defaultMinSize(minWidth = 124.dp)
             .semantics { contentDescription = if (marked) "Marked read" else "Mark read" },
     ) {
         Box(Modifier.padding(horizontal = 22.dp, vertical = 11.dp), contentAlignment = Alignment.Center) {
-            // Text is the wider of the two, so it's what reserves the pill's
-            // footprint at all times. Its own semantics are cleared since the
-            // Surface above already carries the accessible label for both states.
+            // Text reserves the pill's footprint at all times; its own semantics
+            // are cleared since the Surface carries the label for both states.
             Text(
                 "Mark Read",
-                 fontSize = 13.sp,
-                 fontWeight = FontWeight.SemiBold,
-                 modifier = Modifier.alpha(textAlpha).clearAndSetSemantics {},
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.alpha(textAlpha).clearAndSetSemantics {},
             )
             Icon(
                 Icons.Default.Check,
-                 contentDescription = null,
-                 modifier = Modifier.size(17.dp).alpha(checkAlpha),
+                contentDescription = null,
+                modifier = Modifier.size(17.dp).alpha(checkAlpha),
             )
         }
     }

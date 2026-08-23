@@ -10,9 +10,6 @@ interface MonitoredAppDao {
     @Query("SELECT * FROM monitored_apps")
     fun observeAll(): Flow<List<MonitoredAppEntity>>
 
-    @Query("SELECT package_name FROM monitored_apps")
-    suspend fun getAllPackageNames(): List<String>
-
     @Upsert
     suspend fun upsert(app: MonitoredAppEntity)
 

@@ -33,8 +33,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideWaqfahAppDatabase(@ApplicationContext context: Context): WaqfahAppDatabase =
-        // No destructive-migration fallback here on purpose — read_verses is
-        // real user progress. Add proper Migration objects if this schema changes.
+        // No destructive-migration fallback — read_verses is real user progress;
+        // add proper Migration objects if this schema ever changes.
         Room.databaseBuilder(context, WaqfahAppDatabase::class.java, "waqfah_app.db").build()
 
     @Provides

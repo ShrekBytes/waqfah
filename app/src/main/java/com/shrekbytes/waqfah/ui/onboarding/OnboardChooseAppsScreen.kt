@@ -3,7 +3,6 @@ package com.shrekbytes.waqfah.ui.onboarding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,8 +25,7 @@ import com.shrekbytes.waqfah.ui.settings.apps.AppsListSkeleton
 import com.shrekbytes.waqfah.ui.settings.apps.AppsViewModel
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
-// Not built on OnboardingScaffold: the app list needs a LazyColumn, same
-// reasoning as the Settings Apps screen (see AppsScreen.kt).
+// Not OnboardingScaffold: the app list needs a LazyColumn (see AppsScreen.kt).
 @Composable
 fun OnboardChooseAppsScreen(
     viewModel: AppsViewModel = hiltViewModel(),

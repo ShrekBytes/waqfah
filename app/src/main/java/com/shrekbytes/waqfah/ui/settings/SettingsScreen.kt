@@ -153,10 +153,8 @@ fun SettingsScreen(
     }
 }
 
-// The prototype's accent swatch active-state is a box-shadow double ring — a
-// background-colored gap, then an ink ring beyond it — rather than a border
-// sitting flush against the swatch. Outer size stays fixed at 42dp whether
-// selected or not so the row doesn't jitter as the halo appears/disappears.
+// Fixed outer size whether selected or not so the row doesn't jitter as the
+// selection halo appears/disappears.
 @Composable
 private fun AccentSwatch(color: Color, isSelected: Boolean, onClick: () -> Unit) {
     val colors = WaqfahTheme.colors

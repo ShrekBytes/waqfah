@@ -25,13 +25,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// HomeScreen and ReadingScreen live in separate Activities now (MainActivity
-// and TriggerActivity respectively — see TriggerActivity's doc comment for
-// why), so each gets its own instance of this ViewModel; they're not sharing
-// one via Activity-scoped Hilt injection the way they used to. That's fine:
-// everything that needs to survive across them (current verse position via
-// SettingsRepository.lastViewedVerseId, read status via
-// ReadingProgressRepository) is already persisted, not held only in memory.
+// HomeScreen and ReadingScreen live in separate Activities (MainActivity and
+// TriggerActivity), so each gets its own instance. Everything that must survive
+// across them — reading position and read status — is persisted in
+// DataStore/Room, not held in memory.
 @HiltViewModel
 class ReadingViewModel @Inject constructor(
     private val quranRepository: QuranRepository,
@@ -44,12 +41,9 @@ class ReadingViewModel @Inject constructor(
     private var currentVerse: VerseEntity? = null
     private var latestPrefs = UserPreferences()
 
-    // Session-local "compare translations" override for the current ayah —
-    // null means "show the real default" (prefs.activeTranslationEnglish/
-    // Bengali). Set by cycleTranslationSource(), cleared by
-    // resetTranslationSource() and by step() on every next()/previous(), so
-    // it never outlives the ayah it was opened on and never touches the
-    // persisted default.
+    // Session-local "compare translations" override for the current ayah; null
+    // means show the real default. Cleared on every step() so it never outlives
+    // the ayah it was opened on.
     private var translationOverrideId: String? = null
 
     private val _uiState = MutableStateFlow(ReadingUiState())
@@ -65,26 +59,15 @@ class ReadingViewModel @Inject constructor(
         }
     }
 
-    // Suspend, not fire-and-forget — ReadingCard's swipe handling awaits
-    // these directly so it can finish the peek animation, swap the
-    // underlying ayah, and reset its own offset to 0 in strict sequence
-    // (see the pointerInput block there), rather than racing a
-    // separately-launched coroutine the way a plain callback would.
+    // Suspend so ReadingCard can await these mid-gesture to sequence the swipe
+    // animation, verse swap, and offset reset strictly.
     suspend fun next() = step { quranRepository.getNextVerse(it) }
     suspend fun previous() = step { quranRepository.getPreviousVerse(it) }
 
-    // Toggles the current ayah's read status — tapping an already-marked
-    // ayah unmarks it again, rather than read status only ever going one
-    // way. Only affects the current ayah — doesn't move on to another one.
-    // Whether a *later* session shows a fresh ayah is handled separately by
-    // skipAlreadyRead() below, when a new ReadingViewModel instance loads.
     fun markCurrentRead() = viewModelScope.launch {
         val verse = currentVerse ?: return@launch
         val newIsRead = !_uiState.value.isMarkedRead
-        // Update the UI first, write to Room after — an optimistic update.
-        // Waiting on the suspend DB write before showing any visual feedback
-        // is what made this feel laggy: the animation didn't even start until
-        // the write finished.
+        // Optimistic UI update first — awaiting the DB write delays feedback.
         _uiState.update { it.copy(isMarkedRead = newIsRead) }
         if (newIsRead) {
             readingProgressRepository.markRead(verse.id)
@@ -95,11 +78,9 @@ class ReadingViewModel @Inject constructor(
 
     fun resume() = viewModelScope.launch { settingsRepository.setAppActive(true) }
 
-    // Steps the reading screen's translation preview to the next/previous
-    // *downloaded* translation for the active display language, wrapping
-    // around. This only ever updates translationOverrideId — the user's real
-    // default (settingsRepository) is never touched, so it's a pure "let me
-    // peek at another wording" action.
+    // Steps the preview to the next/previous downloaded translation for the
+    // active display language, wrapping around. Never touches the persisted
+    // default — pure "peek at another wording" for this ayah only.
     fun cycleTranslationSource(forward: Boolean) = viewModelScope.launch {
         val lang = when (latestPrefs.translationDisplay) {
             AidLanguage.NONE -> return@launch
@@ -110,14 +91,12 @@ class ReadingViewModel @Inject constructor(
         if (downloaded.size < 2) return@launch
         val currentId = translationOverrideId ?: activeTranslation(lang, latestPrefs).id
         val currentIndex = downloaded.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
-        val step = if (forward) 1 else -1
-        translationOverrideId = downloaded[(currentIndex + step + downloaded.size) % downloaded.size].id
+        val stepDir = if (forward) 1 else -1
+        translationOverrideId = downloaded[(currentIndex + stepDir + downloaded.size) % downloaded.size].id
         render(latestPrefs)
     }
 
-    // Drops the preview back to the real default — called when the user
-    // closes the on-screen switcher, so "compare mode" always ends back on
-    // the actual setting rather than whatever was last previewed.
+    // Drops the preview back to the real default when the switcher closes.
     fun resetTranslationSource() = viewModelScope.launch {
         if (translationOverrideId == null) return@launch
         translationOverrideId = null
@@ -138,25 +117,15 @@ class ReadingViewModel @Inject constructor(
         val fromId = currentVerse?.id ?: return
         currentVerse = load(fromId)
         currentVerse?.let { settingsRepository.setLastViewedVerseId(it.id) }
-        // A fresh ayah always starts on the real default translation — any
-        // compare-mode preview was specific to the ayah being left behind.
+        // A fresh ayah always starts on the real default translation.
         translationOverrideId = null
         render(latestPrefs)
     }
 
-    // Reading-mode note: this only picks the *starting* verse for a fresh
-    // session (new ReadingViewModel instance — see the class doc comment).
-    // The prev/next arrows always step sequentially by id regardless of mode
-    // — "next ayah" reads as sequential motion even in random mode, since
-    // the prototype doesn't otherwise define what "random-mode next" would
-    // mean.
-    //
-    // Sequential mode resumes from lastViewedVerseId so you pick up where
-    // you left off. Random mode deliberately ignores it and always rolls a
-    // fresh random ayah — resuming here would make Random behave exactly
-    // like Sequential after the very first launch (once lastViewedVerseId is
-    // set, which happens below on every load), which was the bug: Random
-    // effectively only ever randomized once, ever.
+    // Picks the *starting* verse of a fresh session only; prev/next always step
+    // sequentially by id regardless of mode. Sequential resumes from
+    // lastViewedVerseId; Random ignores it deliberately (resuming would make it
+    // behave exactly like Sequential after the first launch).
     private suspend fun loadStartingVerse(prefs: UserPreferences): VerseEntity? {
         val start = when (prefs.readingMode) {
             ReadingMode.RANDOM -> quranRepository.getRandomVerse()
@@ -164,21 +133,16 @@ class ReadingViewModel @Inject constructor(
                 ?: quranRepository.getFirstVerse()
         }
         val landed = skipAlreadyRead(start)
-        // Save the landing spot so sequential mode's *next* fresh load
-        // resumes from here directly, instead of re-scanning past the same
-        // read verses again. (Random mode overwrites this again next time
-        // anyway, since it never reads it back.)
+        // Save the landing spot so sequential mode's next fresh load resumes
+        // from here instead of re-scanning past the same read verses.
         if (landed != null && landed.id != prefs.lastViewedVerseId) {
             settingsRepository.setLastViewedVerseId(landed.id)
         }
         return landed
     }
 
-    // markCurrentRead() keeps lastViewedVerseId pointing at an unread ayah in
-    // the normal case, but the saved position can still land on an
-    // already-read one — e.g. the user stepped backward with the arrows and
-    // left the app there. Step forward past it rather than show it again.
-    // Bounded so a fully-read Quran can't loop forever.
+    // The saved position can land on an already-read verse (e.g. after stepping
+    // backward); skip forward past it, bounded so a fully-read Quran can't loop.
     private suspend fun skipAlreadyRead(start: VerseEntity?): VerseEntity? {
         var verse = start
         repeat(MAX_SKIP_STEPS) {
@@ -199,11 +163,8 @@ class ReadingViewModel @Inject constructor(
             AidLanguage.ENGLISH -> TranslationLanguage.ENGLISH
             AidLanguage.BENGALI -> TranslationLanguage.BENGALI
         }
-        // Downloaded alternatives for the active display language — what
-        // cycleTranslationSource() cycles through and what decides whether
-        // the reading screen's switcher shows at all. Catalog entries that
-        // aren't actually downloaded have no local text to preview, so
-        // they're excluded here rather than only checked at cycle-time.
+        // Downloaded alternatives decide whether the switcher shows at all;
+        // catalog entries without a local file have nothing to preview.
         val downloadedTranslations = translationLanguage
             ?.let { lang -> TranslationCatalog.all.filter { it.language == lang && translationRepository.isDownloaded(it) } }
             .orEmpty()
@@ -216,12 +177,8 @@ class ReadingViewModel @Inject constructor(
             AidLanguage.BENGALI -> verse.bnTransliteration
         }
 
-        // Loaded every render — not just on navigation — so a display
-        // setting change (font size, script, etc.) updates the peek content
-        // too, and it's ready to reveal the instant a swipe starts rather
-        // than only once one is already underway. getNextVerse/
-        // getPreviousVerse wrap around (see QuranRepository), so these are
-        // only ever null on a genuinely empty Quran table.
+        // Refreshed every render so display-setting changes update peek content
+        // too, ready before a swipe even starts.
         val nextPreview = quranRepository.getNextVerse(verse.id)?.let { buildPreview(it, prefs) }
         val previousPreview = quranRepository.getPreviousVerse(verse.id)?.let { buildPreview(it, prefs) }
 
@@ -246,17 +203,16 @@ class ReadingViewModel @Inject constructor(
                 translationSourceName = shownMeta?.name,
                 translationHasAlternates = downloadedTranslations.size > 1,
                 isMarkedRead = isRead,
-                // triggeredAppLabel intentionally untouched — owned by setTriggeredPackage()
+                // triggeredAppLabel untouched — owned by setTriggeredPackage()
                 nextPreview = nextPreview,
                 previousPreview = previousPreview,
             )
         }
     }
 
-    // Shares the current ayah's rendering logic above minus the bits that
-    // only make sense for the ayah actually being read (translationOverrideId,
-    // isMarkedRead, isPaused, the surah-name header) — always the real
-    // default translation, since a peeked neighbour isn't in compare mode.
+    // Like render(), minus what only applies to the ayah actually being read
+    // (override mode, read status, header) and always with the real default
+    // translation — a peeked neighbour isn't in compare mode.
     private suspend fun buildPreview(verse: VerseEntity, prefs: UserPreferences): AyahPreview {
         val translationLanguage = when (prefs.translationDisplay) {
             AidLanguage.NONE -> null

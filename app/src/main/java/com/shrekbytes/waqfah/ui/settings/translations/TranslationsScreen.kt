@@ -74,16 +74,12 @@ private fun TranslationRow(
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
                 when {
                     row.isDownloading -> Text(
-                        // Percentage only once the server's told us a
-                        // Content-Length to compute it from — see
-                        // TranslationRepository.downloadOverNetwork().
+                        // Percentage only once a Content-Length is known.
                         row.downloadProgress?.let { "Downloading… ${(it * 100).roundToInt()}%" } ?: "Downloading…",
                         color = colors.inkMuted.copy(alpha = 0.5f),
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    // Retrying just re-runs onDownload — TranslationsViewModel.download()
-                    // clears the previous error the moment a new attempt starts.
                     row.errorMessage != null -> Text(
                         "Failed — Retry",
                         color = colors.danger,
@@ -92,13 +88,7 @@ private fun TranslationRow(
                         modifier = Modifier.clickable(onClick = onDownload),
                     )
                     row.isActive -> Text("✓ Active", color = colors.accent, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
-                    // Bundled (built-in) translations ship in the APK and can't
-                    // meaningfully be "downloaded" or "deleted" — they're always
-                    // available. Showing Download/Delete for them was what let a
-                    // bundled row flicker to "Download" once it wasn't active
-                    // (isDownloaded reflects a lazy on-disk copy, not whether the
-                    // translation is actually available) and, from there, be
-                    // deleted like a real download. Select is the only action.
+                    // Bundled translations can't meaningfully be downloaded or deleted.
                     row.meta.isBundled -> Text(
                         "Select",
                         color = colors.accent,
@@ -122,8 +112,6 @@ private fun TranslationRow(
                             modifier = Modifier.clickable(onClick = onDelete),
                         )
                     }
-                    // No ".tr-btn.download" override in the prototype, so this
-                    // stays the base .tr-btn color (ink-muted), not accent.
                     else -> Text(
                         "Download",
                         color = colors.inkMuted,

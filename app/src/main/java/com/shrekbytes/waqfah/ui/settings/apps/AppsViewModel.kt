@@ -26,12 +26,8 @@ data class AppsUiState(
     val cooldownMinutes: Int = 5,
     val searchQuery: String = "",
     val apps: List<AppRowState> = emptyList(),
-    // True until getInstalledLaunchableApps() (which now also loads and
-    // downscales every icon — see MonitoredAppsRepository) actually
-    // completes. apps.isEmpty() alone can't tell "still loading" apart from
-    // "genuinely no matches" (e.g. a search query with no hits), which is
-    // what let the screen show "No apps found" for the second or two this
-    // takes on a real device, before the real list ever had a chance to load.
+    // True until getInstalledLaunchableApps() completes — apps.isEmpty() alone
+    // can't tell "still loading" from "no search hits".
     val isLoading: Boolean = true,
 )
 
@@ -42,21 +38,16 @@ class AppsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
-
     private val isLoadingApps = MutableStateFlow(true)
 
-    // PackageManager.queryIntentActivities scans every installed package, so it
-    // runs once off the main thread rather than inline in the combine below.
+    // queryIntentActivities scans every installed package — run off the main thread.
     private val installedApps: StateFlow<List<InstalledApp>> = flow {
         emit(withContext(Dispatchers.Default) { monitoredAppsRepository.getInstalledLaunchableApps() })
         isLoadingApps.value = false
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    // Narrowed to just the one field this screen cares about — combining the
-    // full UserPreferences meant an unrelated change anywhere else (theme,
-    // font size, active translation…) rebuilt and reassigned this whole
-    // filtered/mapped list, which is very likely what scrolling felt laggy
-    // against: not the scroll itself, but list recomputation racing it.
+    // Narrowed to cooldownMinutes only so unrelated preference changes don't
+    // rebuild the whole filtered list.
     private val cooldownMinutes = settingsRepository.preferences
         .map { it.cooldownMinutes }
         .distinctUntilChanged()

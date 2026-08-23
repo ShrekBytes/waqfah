@@ -16,7 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 
-// Only ever reached via TriggerActivity now — see its doc comment.
+// Only ever reached via TriggerActivity — see its doc comment.
 @Composable
 fun ReadingScreen(triggeredPackage: String, viewModel: ReadingViewModel = hiltViewModel()) {
     val context = LocalContext.current
@@ -24,11 +24,8 @@ fun ReadingScreen(triggeredPackage: String, viewModel: ReadingViewModel = hiltVi
 
     LaunchedEffect(triggeredPackage) { viewModel.setTriggeredPackage(triggeredPackage) }
 
-    // The target app's task is still alive (just paused) underneath this
-    // screen — simply finishing on back-press would fall through to it,
-    // which looks exactly like "the app opened on its own" even though the
-    // user pressed back specifically to avoid that. Go to the home screen
-    // instead, which is a much more honest "I changed my mind" outcome.
+    // The target app is still paused underneath; finishing on back-press would
+    // fall through to it, which looks like Waqfah opened the app. Go home instead.
     BackHandler {
         context.startActivity(
             Intent(Intent.ACTION_MAIN).apply {

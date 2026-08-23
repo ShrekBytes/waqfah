@@ -1,7 +1,4 @@
 <resources>
     <string name="app_name">Waqfah</string>
-
-    <string name="accessibility_service_description">
-        Notices when one of your selected apps opens, so Waqfah can show a reading screen first. It only checks which app is in the foreground — it cannot read screen content.
-    </string>
+    <string name="monitor_notification_title">Running in the background</string>
 </resources>

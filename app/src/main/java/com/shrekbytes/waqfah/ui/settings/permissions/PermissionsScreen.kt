@@ -24,8 +24,6 @@ fun PermissionsScreen(viewModel: PermissionsViewModel = hiltViewModel(), onBack:
     val context = LocalContext.current
     val colors = WaqfahTheme.colors
 
-    // Permission state can only change while the user is away in system
-    // settings, so re-check whenever this screen comes back into view.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
     SettingsScaffold(title = "Permissions", onBack = onBack) {
@@ -36,12 +34,18 @@ fun PermissionsScreen(viewModel: PermissionsViewModel = hiltViewModel(), onBack:
             lineHeight = 21.sp,
         )
         Spacer(Modifier.height(6.dp))
-        val (accessibility, battery) = PermissionCatalog.all
+        val (usage, overlay, battery) = PermissionCatalog.all
         PermissionRow(
-            title = accessibility.name,
-            subtitle = accessibility.description,
-            granted = state.accessibilityEnabled,
-            onOpenSettings = { context.startActivity(viewModel.accessibilitySettingsIntent()) },
+            title = usage.name,
+            subtitle = usage.description,
+            granted = state.usageAccessGranted,
+            onOpenSettings = { context.startActivity(viewModel.usageAccessSettingsIntent()) },
+        )
+        PermissionRow(
+            title = overlay.name,
+            subtitle = overlay.description,
+            granted = state.overlayGranted,
+            onOpenSettings = { context.startActivity(viewModel.overlaySettingsIntent()) },
         )
         PermissionRow(
             title = battery.name,

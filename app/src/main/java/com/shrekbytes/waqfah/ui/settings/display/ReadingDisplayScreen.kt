@@ -72,8 +72,7 @@ fun ReadingDisplayScreen(
         }
         SettingsField {
             FieldLabel("Font")
-            // Each script has its own font list (see ArabicFont.script) — only
-            // the fonts that actually match the selected script's glyphs show up.
+            // Each script has its own font list — only matching fonts show.
             ChipGroup(
                 options = ArabicFont.entries
                     .filter { it.script == prefs.arabicScript }

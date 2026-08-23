@@ -65,8 +65,8 @@ fun OnboardReadingPrefsScreen(
             selected = prefs.pronunciation,
             onSelect = { lang ->
                 viewModel.setPronunciation(lang)
-                // Matches the surah-name display language to whatever's picked
-                // here, so onboarding doesn't ask for the same choice twice.
+                // Match the surah-name language to the pronunciation choice so
+                // onboarding doesn't ask for it twice.
                 viewModel.setSurahNameLanguage(
                     when (lang) {
                         AidLanguage.ENGLISH -> NameDisplayLanguage.ENGLISH
@@ -86,24 +86,14 @@ fun OnboardReadingPrefsScreen(
     }
 }
 
-// Fixed sample verse (Surah Al-Ikhlas 112:1) — matches the prototype's static
-// live-preview rather than pulling from the real database, since this just
-// needs to illustrate what the pronunciation/translation chips do.
+// Fixed sample verse (Al-Ikhlas 112:1) with a constant card height so the
+// footprint never moves as fields appear/disappear.
 @Composable
 private fun OnboardingPreviewCard(prefs: UserPreferences) {
     val colors = WaqfahTheme.colors
     Column(
         Modifier
             .fillMaxWidth()
-            // Fixed height instead of wrapping content: with pronunciation
-            // and translation both set to "None" there's only the surah
-            // name/number/Arabic line left, and a content-sized box shrank
-            // down around just that — a visibly smaller card right when the
-            // user is choosing what to show. A constant height (comfortably
-            // roomy for every field combination, and a bit taller than the
-            // old fully-expanded size) plus centering the content vertically
-            // (see verticalArrangement below) means the box's footprint
-            // never moves; only what's inside it changes.
             .height(236.dp)
             .clip(RoundedCornerShape(16.dp))
             .border(1.dp, colors.line, RoundedCornerShape(16.dp))
@@ -123,9 +113,6 @@ private fun OnboardingPreviewCard(prefs: UserPreferences) {
             textAlign = TextAlign.Center,
         )
 
-        // Previously only checked *whether* to show something (!= NONE) but
-        // never which language — English text showed even when Bengali was
-        // selected, since it was the only string hardcoded in here.
         val translit = when (prefs.pronunciation) {
             AidLanguage.NONE -> null
             AidLanguage.ENGLISH -> "Qul huwa Allāhu aḥad."

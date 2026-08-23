@@ -27,11 +27,9 @@ class ReadingDisplayViewModel @Inject constructor(
     fun setReadingMode(mode: ReadingMode) = viewModelScope.launch { settingsRepository.setReadingMode(mode) }
     fun setSurahNameLanguage(lang: NameDisplayLanguage) = viewModelScope.launch { settingsRepository.setSurahNameLanguage(lang) }
 
-    // Indopak and Uthmani each have their own, disjoint font list (see
-    // ArabicFont.script) — a font picked for one script draws the wrong
-    // glyphs for the other, so switching script also moves the selection
-    // onto that script's first font rather than leaving a stale, mismatched
-    // one in place.
+    // The two scripts have disjoint font lists; a font picked for one draws the
+    // wrong glyphs for the other, so switching script moves the selection onto
+    // the new script's first font.
     fun setArabicScript(script: ArabicScript) = viewModelScope.launch {
         settingsRepository.setArabicScript(script)
         val currentFont = prefs.value.arabicFont

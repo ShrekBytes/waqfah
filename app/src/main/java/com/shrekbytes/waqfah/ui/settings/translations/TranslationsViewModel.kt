@@ -23,12 +23,9 @@ data class TranslationRowState(
     val isDownloaded: Boolean,
     val isActive: Boolean,
     val isDownloading: Boolean,
-    // 0f..1f while a network download is in flight and the server sent a
-    // Content-Length; null when not downloading, or downloading but the
-    // fraction isn't known yet (bundled copies, or a server without one).
+    // 0f..1f while downloading with a known Content-Length; null otherwise.
     val downloadProgress: Float?,
-    // Set after a failed download, cleared the moment that translation
-    // starts downloading again. Null the rest of the time.
+    // Set after a failed download, cleared when a retry starts.
     val errorMessage: String?,
 )
 
@@ -38,19 +35,13 @@ class TranslationsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
-    // Keyed by TranslationMeta.id rather than a single value — downloads for
-    // different translations (even within the same language) are independent
-    // coroutines and can genuinely run at the same time, so a single
-    // "currently downloading id" would get clobbered by whichever one
-    // started or finished last.
+    // Keyed by id — downloads for different translations run concurrently.
     private val downloadingIds = MutableStateFlow<Set<String>>(emptySet())
     private val downloadProgress = MutableStateFlow<Map<String, Float>>(emptyMap())
     private val downloadErrors = MutableStateFlow<Map<String, String>>(emptyMap())
 
-    // Ticks up after every download()/delete() so the derived rows below re-read
-    // TranslationRepository.isDownloaded() from disk. A real app might instead
-    // track downloaded ids as rows in Room for proper reactivity — fine as a
-    // simple nudge for now, since downloads/deletes are rare, user-initiated actions.
+    // Bumped after every download()/delete() so rows re-read isDownloaded() from
+    // disk — a simple nudge instead of tracking downloads in Room.
     private val refreshTrigger = MutableStateFlow(0)
 
     private val rowFlows = mutableMapOf<TranslationLanguage, StateFlow<List<TranslationRowState>>>()
@@ -102,10 +93,8 @@ class TranslationsViewModel @Inject constructor(
     }
 
     fun delete(meta: TranslationMeta) = viewModelScope.launch {
-        // Defensive: the row UI no longer offers a Delete action for bundled
-        // translations (see TranslationsScreen), but guard it here too so
-        // this can never wipe a translation the app relies on always being
-        // available as a fallback.
+        // The UI never offers Delete for bundled translations, but guard here
+        // too so a bundled fallback can never be wiped.
         if (meta.isBundled) return@launch
         translationRepository.delete(meta)
         refreshTrigger.update { it + 1 }

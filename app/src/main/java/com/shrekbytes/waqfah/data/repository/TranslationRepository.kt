@@ -16,6 +16,7 @@ import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URI
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,16 +24,15 @@ import javax.inject.Singleton
 class TranslationRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    private val openDatabases = mutableMapOf<String, TranslationDatabase>()
+    // ConcurrentHashMap: getText() runs on arbitrary dispatchers while
+    // download()/delete() run on others.
+    private val openDatabases = ConcurrentHashMap<String, TranslationDatabase>()
 
     fun isDownloaded(meta: TranslationMeta): Boolean = fileFor(meta).exists()
 
     suspend fun getText(meta: TranslationMeta, verseId: Int): String? {
-        // Bundled translations ship in the APK's assets, but nothing copies
-        // them into internal storage until this is actually needed — that
-        // copy was previously only triggered by the Translations screen's
-        // manual Download button, which nothing else in the app required
-        // visiting. Do it here instead, once, the first time it's needed.
+        // Bundled translations ship in the APK assets and are copied into
+        // internal storage once, the first time they're needed.
         if (meta.isBundled && !isDownloaded(meta)) {
             try {
                 download(meta)
@@ -46,28 +46,19 @@ class TranslationRepository @Inject constructor(
         return try {
             open(meta).translationDao().getText(verseId)
         } catch (e: Exception) {
-            // Most likely cause if this fires: the .db file's actual schema
-            // doesn't match TranslationEntity (table `translations`, columns
-            // `verse_id INTEGER PRIMARY KEY` + `text TEXT`) — check with
-            // `SELECT sql FROM sqlite_master WHERE name = 'translations';`
-            // the same way the quran_core.db schema mismatch was diagnosed.
             Log.e(TAG, "Failed reading '${meta.id}' for verse $verseId", e)
             null
         }
     }
 
     /**
-     * Downloads [meta] into internal storage — a plain asset copy for bundled
-     * translations, a real network fetch otherwise. [onProgress] is called
-     * with a 0f..1f fraction while a network download is in flight and the
-     * server sent a Content-Length (never called for bundled copies, which
-     * are effectively instant).
+     * Downloads [meta] into internal storage — an asset copy for bundled
+     * translations, a network fetch otherwise. [onProgress] receives a 0f..1f
+     * fraction while downloading (never for bundled copies).
      *
-     * Cancellation-safe and crash-safe: the network body is written to a
-     * `.tmp` file that's only renamed into place after it's fully downloaded
-     * and verified to actually be a sqlite db matching the expected schema,
-     * so a failed, cancelled, or malformed download never leaves
-     * `isDownloaded(meta)` returning true for a half-written or garbage file.
+     * Cancellation-safe and crash-safe: the body is written to a `.tmp` file
+     * that's renamed into place only after being fully downloaded and verified
+     * as a sqlite db matching the expected schema.
      */
     suspend fun download(meta: TranslationMeta, onProgress: (Float) -> Unit = {}) {
         val target = fileFor(meta)
@@ -78,10 +69,7 @@ class TranslationRepository @Inject constructor(
             val url = meta.downloadUrl
                 ?: error("No download URL configured for '${meta.id}'")
             withContext(Dispatchers.IO) {
-                // runInterruptible lets coroutine cancellation (e.g. the user
-                // leaves the Translations screen mid-download) interrupt the
-                // blocking socket read below instead of it silently
-                // continuing to download in the background to nowhere.
+                // Lets coroutine cancellation interrupt the blocking socket read.
                 runInterruptible { downloadOverNetwork(meta, url, target, onProgress) }
             }
         }
@@ -93,7 +81,6 @@ class TranslationRepository @Inject constructor(
     }
 
     private fun copyBundled(meta: TranslationMeta, target: File) {
-        // Already shipped in the APK — "downloading" is a local copy, no network needed.
         context.assets.open("translations/${meta.language.code}/${meta.id}.db").use { input ->
             target.outputStream().use { output -> input.copyTo(output) }
         }
@@ -115,7 +102,7 @@ class TranslationRepository @Inject constructor(
                 throw IOException("Server returned HTTP $code while downloading '${meta.id}'")
             }
 
-            val totalBytes = connection.contentLengthLong // -1 if the server didn't send one
+            val totalBytes = connection.contentLengthLong // -1 if not sent
             var bytesRead = 0L
             connection.inputStream.use { input ->
                 tmp.outputStream().use { output ->
@@ -132,8 +119,7 @@ class TranslationRepository @Inject constructor(
 
             validateSqliteFile(tmp, meta.id)
 
-            // Atomic on the common case (same filesystem, internal storage);
-            // fall back to copy+delete for the rare case it isn't.
+            // Atomic on the common case (same filesystem); fall back otherwise.
             if (!tmp.renameTo(target)) {
                 tmp.copyTo(target, overwrite = true)
                 tmp.delete()
@@ -147,10 +133,9 @@ class TranslationRepository @Inject constructor(
         }
     }
 
-    // Two cheap checks, in order of cost, so a bad download URL (wrong link,
-    // a 404 page saved as "success", an HTML redirect, etc.) is caught here
-    // with a clear message rather than surfacing later as a silent null from
-    // getText() or a confusing Room crash.
+    // Cheap checks so a bad URL (404 page saved as "success", HTML redirect…)
+    // fails with a clear error instead of surfacing later as a silent null or
+    // a confusing Room crash.
     private fun validateSqliteFile(file: File, id: String) {
         val header = ByteArray(SQLITE_MAGIC.size)
         try {

@@ -45,11 +45,8 @@ class SettingsRepository @Inject constructor(
     suspend fun setOnboardingComplete(complete: Boolean) = edit { it[SettingsKeys.ONBOARDING_COMPLETE] = complete }
     suspend fun setLastViewedVerseId(id: Int) = edit { it[SettingsKeys.LAST_VIEWED_VERSE_ID] = id }
 
-    // Companion to setLastViewedVerseId — lets a fresh reading session fall
-    // back to initialVerse() (first ayah, or a new random one) again instead
-    // of resuming a specific verse. Used by resetProgress() so "reset
-    // progress" and "which ayah opens next" stay a single source of truth
-    // instead of the reading position silently surviving a reset.
+    // Companion to setLastViewedVerseId — "reset progress" must also drop the
+    // reading position, not just the read-verse table.
     suspend fun clearLastViewedVerseId() = edit { it.remove(SettingsKeys.LAST_VIEWED_VERSE_ID) }
 
     suspend fun setActiveTranslation(language: TranslationLanguage, id: String) = edit {
@@ -82,9 +79,7 @@ private fun Preferences.toUserPreferences() = UserPreferences(
     lastViewedVerseId = this[SettingsKeys.LAST_VIEWED_VERSE_ID],
 )
 
-// this[key]?.let { Enum.valueOf(it) } throws if the stored string no longer
-// matches any constant — exactly what would've happened to anyone who'd
-// already picked "Noorani" before that enum value got renamed. Falls back to
-// the default instead of crashing.
+// Falls back to the default instead of crashing when the stored string no
+// longer matches any enum constant (e.g. after a rename).
 private inline fun <reified T : Enum<T>> Preferences.enumOrDefault(key: Preferences.Key<String>, default: T): T =
     this[key]?.let { stored -> enumValues<T>().firstOrNull { it.name == stored } } ?: default

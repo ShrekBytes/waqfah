@@ -13,7 +13,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class OnboardPermissionsUiState(
-    val accessibilityEnabled: Boolean = false,
+    val usageAccessGranted: Boolean = false,
+    val overlayGranted: Boolean = false,
     val batteryExempted: Boolean = false,
 )
 
@@ -28,22 +29,22 @@ class OnboardPermissionsViewModel @Inject constructor(
 
     init { refresh() }
 
-    // Each permission has its own Grant button (see OnboardPermissionsScreen) —
-    // no more forcing accessibility-then-battery in a fixed sequence. Status
-    // can only change while the user is away in system settings, so the
-    // screen re-checks this on every resume.
+    // Status can only change while the user is away in system settings, so the
+    // screen re-checks on every resume (see OnboardPermissionsScreen).
     fun refresh() {
         _uiState.value = OnboardPermissionsUiState(
-            accessibilityEnabled = permissionsRepository.isAccessibilityServiceEnabled(),
+            usageAccessGranted = permissionsRepository.hasUsageAccess(),
+            overlayGranted = permissionsRepository.canDrawOverlays(),
             batteryExempted = permissionsRepository.isIgnoringBatteryOptimizations(),
         )
     }
 
-    fun accessibilitySettingsIntent(): Intent = permissionsRepository.accessibilitySettingsIntent()
+    fun usageAccessSettingsIntent(): Intent = permissionsRepository.usageAccessSettingsIntent()
+    fun overlaySettingsIntent(): Intent = permissionsRepository.overlaySettingsIntent()
     fun batteryOptimizationRequestIntent(): Intent = permissionsRepository.batteryOptimizationRequestIntent()
 
-    // Gated in the UI (see OnboardPermissionsScreen's `allGranted`) — this
-    // just records completion once both permissions are actually granted.
+    // Gated in the UI (see OnboardPermissionsScreen's allGranted) — this just
+    // records completion once all permissions are actually granted.
     fun completeOnboarding() = viewModelScope.launch {
         settingsRepository.setOnboardingComplete(true)
     }

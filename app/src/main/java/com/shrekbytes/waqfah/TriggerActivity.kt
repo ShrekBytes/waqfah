@@ -14,16 +14,13 @@ import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-// Deliberately separate from MainActivity. This one is only ever launched by
-// WaqfahAccessibilityService as a brief interstitial before a monitored app
-// opens — android:excludeFromRecents="true" (manifest) keeps it out of the
-// system app-switcher, which a shared MainActivity couldn't do without also
-// hiding the app when the user opens it normally to browse or change
-// settings. See ReadingScreen's BackHandler for why pressing back here goes
-// to the home screen instead of just finishing this Activity: the target
-// app's task is still alive, paused, right underneath — finishing without
-// redirecting would reveal it, which looks like Waqfah "opened the app" on
-// its own.
+// Launched by AppMonitorService as a brief interstitial before a monitored app
+// opens. Background activity starts are normally blocked on Android 10+ but are
+// exempted for apps holding SYSTEM_ALERT_WINDOW. excludeFromRecents + empty
+// taskAffinity (manifest) keep each trigger a fresh, short-lived instance that
+// never clutters the system app-switcher. Back goes to the home screen (see
+// ReadingScreen's BackHandler) because the target app is still paused
+// underneath — finishing without redirecting would reveal it.
 @AndroidEntryPoint
 class TriggerActivity : ComponentActivity() {
 

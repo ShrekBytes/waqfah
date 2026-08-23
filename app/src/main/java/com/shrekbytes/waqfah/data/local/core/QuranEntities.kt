@@ -15,10 +15,8 @@ data class SurahEntity(
     @ColumnInfo(name = "ayah_count") val ayahCount: Int,
 )
 
-// Matches the updated quran_core.db schema: arabic_text was split into two
-// separate script columns so the Reading screen can switch between them
-// (see ArabicScript + ReadingViewModel.render()) without needing a second
-// database or table.
+// arabic_text is split into two script columns so the Reading screen can switch
+// between scripts without a second database or table.
 @Entity(tableName = "verses", indices = [Index(value = ["surah_no", "ayah_no"], unique = true)])
 data class VerseEntity(
     @PrimaryKey val id: Int,

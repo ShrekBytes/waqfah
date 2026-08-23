@@ -5,18 +5,12 @@ import androidx.room.Query
 
 @Dao
 interface SurahDao {
-    @Query("SELECT * FROM surahs ORDER BY surah_no")
-    suspend fun getAll(): List<SurahEntity>
-
     @Query("SELECT * FROM surahs WHERE surah_no = :surahNo")
     suspend fun getBySurahNo(surahNo: Int): SurahEntity?
 }
 
 @Dao
 interface VerseDao {
-    @Query("SELECT * FROM verses WHERE surah_no = :surahNo AND ayah_no = :ayahNo LIMIT 1")
-    suspend fun getVerse(surahNo: Int, ayahNo: Int): VerseEntity?
-
     @Query("SELECT * FROM verses WHERE id = :id")
     suspend fun getVerseById(id: Int): VerseEntity?
 

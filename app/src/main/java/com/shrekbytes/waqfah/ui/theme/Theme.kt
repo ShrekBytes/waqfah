@@ -38,11 +38,8 @@ private fun WaqfahColors.withAccent(accentColor: AccentColor, isDark: Boolean): 
 
 private fun resolveColors(theme: AppTheme, isSystemDark: Boolean, accentColor: AccentColor): WaqfahColors =
     when (theme) {
-        AppTheme.SYSTEM -> if (isSystemDark) {
-            BasePalettes.Dark.withAccent(accentColor, isDark = true)
-        } else {
-            BasePalettes.Light.withAccent(accentColor, isDark = false)
-        }
+        AppTheme.SYSTEM -> if (isSystemDark) BasePalettes.Dark.withAccent(accentColor, isDark = true)
+        else BasePalettes.Light.withAccent(accentColor, isDark = false)
         AppTheme.LIGHT -> BasePalettes.Light.withAccent(accentColor, isDark = false)
         AppTheme.DARK -> BasePalettes.Dark.withAccent(accentColor, isDark = true)
         AppTheme.CREAM -> BasePalettes.Cream
@@ -60,11 +57,8 @@ fun WaqfahTheme(
 ) {
     val colors = resolveColors(theme, isSystemInDarkTheme(), accentColor)
 
-    // enableEdgeToEdge() (in MainActivity) makes the system bars transparent so
-    // content can draw behind them — it does NOT know our theme's colors, so
-    // its default icon-contrast guess only follows system light/dark, not
-    // whichever of our 6 themes is picked. Set it explicitly here, reactively,
-    // whenever the resolved background actually changes.
+    // enableEdgeToEdge()'s icon-contrast guess only follows system light/dark;
+    // set it explicitly from whichever theme background actually resolved.
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -78,12 +72,8 @@ fun WaqfahTheme(
 
     CompositionLocalProvider(LocalWaqfahColors provides colors) {
         MaterialTheme(typography = WaqfahTypography) {
-            // The Surface fills the full window — including behind the status/
-            // nav bars — so its background color paints edge-to-edge. Only the
-            // inner Box is inset with safeDrawingPadding(), so actual content
-            // (text, buttons) stays clear of the bars without the background
-            // itself stopping short of them and exposing the window's own
-            // (unthemed, white-by-default) background underneath.
+            // Surface paints edge-to-edge; only the inner Box gets safe-drawing
+            // insets so content clears the bars without exposing an unthemed gap.
             Surface(modifier = Modifier.fillMaxSize(), color = colors.background, contentColor = colors.ink) {
                 Box(Modifier.safeDrawingPadding()) {
                     content()

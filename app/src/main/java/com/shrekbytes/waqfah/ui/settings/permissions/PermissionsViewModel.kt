@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 data class PermissionsUiState(
-    val accessibilityEnabled: Boolean = false,
+    val usageAccessGranted: Boolean = false,
+    val overlayGranted: Boolean = false,
     val batteryExempted: Boolean = false,
 )
 
@@ -24,16 +25,17 @@ class PermissionsViewModel @Inject constructor(
 
     init { refresh() }
 
-    // These are real system permissions, not something the app can flip on its
-    // own — the screen can only report status and hand off to system settings,
-    // so call this again whenever the screen resumes (see PermissionsScreen).
+    // Status can only change while the user is away in system settings, so the
+    // screen calls this again on every resume (see PermissionsScreen).
     fun refresh() {
         _uiState.value = PermissionsUiState(
-            accessibilityEnabled = permissionsRepository.isAccessibilityServiceEnabled(),
+            usageAccessGranted = permissionsRepository.hasUsageAccess(),
+            overlayGranted = permissionsRepository.canDrawOverlays(),
             batteryExempted = permissionsRepository.isIgnoringBatteryOptimizations(),
         )
     }
 
-    fun accessibilitySettingsIntent(): Intent = permissionsRepository.accessibilitySettingsIntent()
+    fun usageAccessSettingsIntent(): Intent = permissionsRepository.usageAccessSettingsIntent()
+    fun overlaySettingsIntent(): Intent = permissionsRepository.overlaySettingsIntent()
     fun batteryOptimizationRequestIntent(): Intent = permissionsRepository.batteryOptimizationRequestIntent()
 }

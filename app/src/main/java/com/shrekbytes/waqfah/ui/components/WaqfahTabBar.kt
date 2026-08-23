@@ -51,16 +51,9 @@ fun WaqfahTabBar(selected: WaqfahTab, onHomeClick: () -> Unit, onSettingsClick: 
     }
 }
 
-// No default Material ripple here on purpose — a generic gray ripple reads
-// as a completely different visual language from the accent-soft pill that
-// marks the selected tab, so pressing an *unselected* tab used to flash one
-// effect and then, if it becomes selected, settle into a totally different
-// one. Instead, press and selection share the exact same pill: pressing
-// previews it (dimmer, slightly smaller), selecting commits it (full color).
-// The pill's entrance also swaps a plain fade for a low-bounce spring so it
-// feels like it *lands* rather than just dissolving in, and the whole item
-// gets a tiny press-down scale for extra tactile feedback in place of the
-// ripple.
+// No default ripple: pressing previews the selection pill (dimmer, smaller),
+// selecting commits it (full color). Selected icons settle slightly smaller —
+// the pill's fill carries the active signal, the icon doesn't grow to match.
 @Composable
 private fun TabItem(label: String, icon: ImageVector, isSelected: Boolean, onClick: () -> Unit, colors: WaqfahColors) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -75,15 +68,6 @@ private fun TabItem(label: String, icon: ImageVector, isSelected: Boolean, onCli
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "tab_pill_color",
     )
-    // Selected already reads as "bigger" than unselected purely from its
-    // background pill + padding — scaling it up further on top of that
-    // doubled up the emphasis and made the unselected icon look small by
-    // comparison, when it's really the plain, unadorned one and doesn't need
-    // to shrink at all. So the direction here is deliberately the reverse of
-    // what you'd first reach for: full-size icon at rest, a slight settle as
-    // it's pressed, landing a touch smaller once selected — the pill's own
-    // fill is what carries the "this one's active" signal, the icon doesn't
-    // need to grow to match it.
     val pillScale by animateFloatAsState(
         targetValue = if (isSelected) 0.85f else if (isPressed) 0.95f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
