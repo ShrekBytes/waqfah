@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Waqfah launcher foreground: open Quran whose parted pages form a subtle pause mark.
-     Light palette sage accent #71835F. Geometry scaled from design/icon.svg (512x512 -> 108x108). -->
+     Light palette sage accent #71835F. Geometry scaled from the 512x512 source SVG -> 108x108. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"

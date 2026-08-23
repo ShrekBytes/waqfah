@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Waqfah launcher foreground (dark theme): parted-book mark in #93A87D.
-     Geometry scaled from design/icon-dark.svg (512x512 -> 108x108). -->
+     Geometry scaled from the 512x512 dark-theme source SVG -> 108x108. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
