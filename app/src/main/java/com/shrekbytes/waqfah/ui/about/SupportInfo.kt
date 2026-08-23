@@ -23,12 +23,11 @@ object SupportInfo {
         DonationAccount("Nagad", "01XXXXXXXXX", "Personal", R.drawable.ic_nagad),
     )
 
-    // TODO(user): swap the example.com placeholders for real profiles.
     data class Contributor(val name: String, val role: String, val url: String? = null)
 
     val contributors = listOf(
         Contributor("ShrekBytes", "Design & development", "https://github.com/shrekbytes"),
-        Contributor("Md. Mahbob Alam", "Testing & feedback", "https://example.com"),
-        Contributor("Tahmid Alam Tamim", "Testing & feedback", "https://example.com"),
+        Contributor("Md. Mahbob Alam", "Testing & feedback", "https://github.com/emptymahbob"),
+        Contributor("Tahmid Alam Tamim", "Testing & feedback", "https://github.com/Mr-Explorer142"),
     )
 }
