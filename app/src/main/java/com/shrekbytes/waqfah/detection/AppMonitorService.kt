@@ -10,7 +10,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -47,12 +49,26 @@ import javax.inject.Inject
 //    event several times per launch). Leaving for ANY other app re-arms it;
 //    the persisted per-app interval then decides whether the next open is
 //    allowed through.
+//  - Indirect entries are never paused: share-sheet targets, "Open with" file
+//    viewers and download-grabbers like 1DM/ADM surface a worker activity of
+//    the target app rather than a user-initiated open. These are spotted by
+//    pairing consecutive ACTIVITY_RESUMED events (a system chooser/resolver
+//    immediately before) or by matching the resumed activity against the
+//    package's non-launcher SEND/VIEW intent-filter handlers. Pausing there
+//    would make sharing/forwarding painful without adding value; notification
+//    taps and fully internal launches remain indistinguishable from real opens
+//    via public APIs and still trigger.
 //  - The interval stepper's 0 ("Off") keeps detection on: every fresh open
 //    triggers, but returning to an app that left the foreground less than
 //    OFF_SESSION_GAP_MS ago counts as the same session and stays quiet — so
 //    minimize/switch-back doesn't re-show.
 @AndroidEntryPoint
 class AppMonitorService : Service() {
+
+    // One foreground observation from UsageStatsManager. The activity class is
+    // what tells a real open apart from an indirect entry (share target, file
+    // viewer, link grabber) — see isIndirectEntry.
+    private data class ResumedActivity(val packageName: String, val className: String?)
 
     @Inject lateinit var monitoredAppsRepository: MonitoredAppsRepository
     @Inject lateinit var settingsRepository: SettingsRepository
@@ -70,6 +86,16 @@ class AppMonitorService : Service() {
     // keep quick switch-backs from re-triggering.
     private var currentForeground: String? = null
     private val lastLeftForegroundAt = mutableMapOf<String, Long>()
+
+    // Most recent ACTIVITY_RESUMED component, kept across polls so consecutive
+    // events can be paired — that pairing is how picker-mediated entries are
+    // recognized even when the chooser flash is shorter than one poll.
+    private var lastResumedActivity: ResumedActivity? = null
+
+    // Lazily-built cache of each package's alternate entry-point activities
+    // (share targets, file/link viewers). Queried once per package on first
+    // encounter; the monitored set is small so no eviction is needed.
+    private val indirectEntryClassCache = HashMap<String, Set<String>>()
 
     // Polling pauses while the screen is off: no app switches can happen, so
     // every poll would be pure battery drain. The loop suspends on this flow
@@ -159,53 +185,128 @@ class AppMonitorService : Service() {
             }
 
             val windowEnd = System.currentTimeMillis()
-            val candidate = latestForegroundPackage(usageStatsManager, windowStart, windowEnd)
+            // Walk EVERY resume in the window instead of only the latest one:
+            // a chooser flash shorter than one poll can sit between the
+            // previous app and the target, and pairing consecutive events is
+            // what spots picker-mediated entries.
+            processResumedEvents(usageStatsManager, windowStart, windowEnd)
             windowStart = windowEnd
-
-            if (candidate == null || candidate == currentForeground) continue
-
-            // Note when the outgoing package left the foreground — used by the
-            // interval-Off rule below to tell a fresh open apart from a quick
-            // switch-back.
-            currentForeground?.let { left ->
-                lastLeftForegroundAt[left] = SystemClock.elapsedRealtime()
-                // Bound memory: only exits within OFF_SESSION_GAP_MS matter, so
-                // stale entries are dropped instead of accumulating forever.
-                while (lastLeftForegroundAt.size > MAX_TRACKED_EXITS) {
-                    lastLeftForegroundAt.remove(lastLeftForegroundAt.keys.first())
-                }
-            }
-            currentForeground = candidate
-
-            val monitored = monitoredAppsRepository.monitoredApps.first()
-            if (monitored.none { it.packageName == candidate }) continue
-
-            val prefs = settingsRepository.preferences.first()
-            if (!prefs.appActive) continue
-            if (prefs.cooldownMinutes <= 0) {
-                // Interval Off: still detect every open, but treat returning to
-                // an app that left the foreground moments ago (minimize,
-                // glance-away, straight switch-back) as the SAME session — no
-                // trigger. Coming back after the session gap counts as a fresh
-                // open again.
-                val leftAt = lastLeftForegroundAt[candidate]
-                if (leftAt != null && SystemClock.elapsedRealtime() - leftAt < OFF_SESSION_GAP_MS) continue
-            } else if (monitoredAppsRepository.isInCooldown(candidate, prefs.cooldownMinutes)) {
-                continue
-            }
-
-            Log.d(TAG, "Triggering reading screen for $candidate")
-            monitoredAppsRepository.recordShown(candidate)
-            launchReadingScreen(packageName = candidate)
         }
     }
+
+    private suspend fun processResumedEvents(manager: UsageStatsManager, from: Long, to: Long) {
+        val events = manager.queryEvents(from, to)
+        val event = UsageEvents.Event()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.eventType != UsageEvents.Event.ACTIVITY_RESUMED) continue
+            val current = ResumedActivity(event.packageName, event.className)
+            evaluateForegroundChange(lastResumedActivity, current)
+            lastResumedActivity = current
+        }
+    }
+
+    private suspend fun evaluateForegroundChange(previous: ResumedActivity?, current: ResumedActivity) {
+        val candidate = current.packageName
+        if (candidate == currentForeground) return
+
+        // Note when the outgoing package left the foreground — used by the
+        // interval-Off rule below to tell a fresh open apart from a quick
+        // switch-back.
+        currentForeground?.let { left ->
+            lastLeftForegroundAt[left] = SystemClock.elapsedRealtime()
+            // Bound memory: only exits within OFF_SESSION_GAP_MS matter, so
+            // stale entries are dropped instead of accumulating forever.
+            while (lastLeftForegroundAt.size > MAX_TRACKED_EXITS) {
+                lastLeftForegroundAt.remove(lastLeftForegroundAt.keys.first())
+            }
+        }
+        currentForeground = candidate
+
+        val monitored = monitoredAppsRepository.monitoredApps.first()
+        if (monitored.none { it.packageName == candidate }) return
+
+        // Share sheets, "Open with" dialogs and download-grabbers surface a
+        // worker activity of the target app, not a user-initiated open —
+        // pausing there makes sharing/forwarding painful without adding value.
+        if (isIndirectEntry(previous, current)) {
+            Log.d(TAG, "Skipping ${current.className} for $candidate — indirect entry")
+            return
+        }
+
+        val prefs = settingsRepository.preferences.first()
+        if (!prefs.appActive) return
+        if (prefs.cooldownMinutes <= 0) {
+            // Interval Off: still detect every open, but treat returning to
+            // an app that left the foreground moments ago (minimize,
+            // glance-away, straight switch-back) as the SAME session — no
+            // trigger. Coming back after the session gap counts as a fresh
+            // open again.
+            val leftAt = lastLeftForegroundAt[candidate]
+            if (leftAt != null && SystemClock.elapsedRealtime() - leftAt < OFF_SESSION_GAP_MS) return
+        } else if (monitoredAppsRepository.isInCooldown(candidate, prefs.cooldownMinutes)) {
+            return
+        }
+
+        Log.d(TAG, "Triggering reading screen for $candidate (${current.className})")
+        monitoredAppsRepository.recordShown(candidate)
+        launchReadingScreen(packageName = candidate)
+    }
+
+    // True when [current] looks like an entry through a picker or an alternate
+    // intent-filter activity rather than a fresh user-initiated open.
+    private fun isIndirectEntry(previous: ResumedActivity?, current: ResumedActivity): Boolean {
+        if (isSystemPicker(previous)) return true
+        val className = current.className ?: return false
+        return className in indirectEntryClasses(current.packageName)
+    }
+
+    private fun isSystemPicker(event: ResumedActivity?): Boolean {
+        val className = event?.className ?: return false
+        // The framework chooser/resolver runs under the "android" package;
+        // OEM skins subclass them elsewhere, hence the suffix heuristic.
+        return event.packageName == "android" ||
+            className.endsWith("ResolverActivity") ||
+            className.endsWith("ChooserActivity")
+    }
+
+    private fun indirectEntryClasses(packageName: String): Set<String> =
+        indirectEntryClassCache.getOrPut(packageName) {
+            val packageManager = applicationContext.packageManager
+            val classes = mutableSetOf<String>()
+            val probes = listOf(
+                Intent(Intent.ACTION_SEND).setType("*/*"),
+                Intent(Intent.ACTION_SEND_MULTIPLE).setType("*/*"),
+                // File opens ("Open with …") resolve by MIME type.
+                Intent(Intent.ACTION_VIEW).setTypeAndNormalize("*/*"),
+                // Link grabs (1DM/ADM-style) resolve by scheme; content://
+                // covers viewers registered for in-app file URIs.
+                Intent(Intent.ACTION_VIEW, Uri.parse("https://probe.waqfah.local/link")),
+                Intent(Intent.ACTION_VIEW, Uri.parse("content://probe.waqfah.local/file")),
+            )
+            for (probe in probes) {
+                for (info in packageManager.queryIntentActivities(probe, PackageManager.MATCH_DEFAULT_ONLY)) {
+                    if (info.activityInfo.packageName == packageName) {
+                        info.activityInfo.name?.let(classes::add)
+                    }
+                }
+            }
+            // The launcher activity IS how a normal open happens — never
+            // suppress it even if it also declares SEND/VIEW filters.
+            packageManager.getLaunchIntentForPackage(packageName)?.component?.className?.let(classes::remove)
+            classes
+        }
 
     private fun launchReadingScreen(packageName: String) {
         val intent = Intent(this, TriggerActivity::class.java).apply {
             putExtra(TriggerActivity.EXTRA_TRIGGERED_PACKAGE, packageName)
             // Required from a Service context; allowed in the background because
             // Waqfah holds SYSTEM_ALERT_WINDOW (see AndroidManifest).
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            // EXCLUDE_FROM_RECENTS mirrors the manifest attribute — some OEM
+            // recents screens only honor one or the other.
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS,
+            )
         }
         try {
             startActivity(intent)
@@ -213,11 +314,6 @@ class AppMonitorService : Service() {
             Log.e(TAG, "Failed to launch TriggerActivity for $packageName", e)
         }
     }
-
-    // Same scan as latestResumedPackage, minus Waqfah itself — the monitor must
-    // never react to its own interstitial coming to the front.
-    private fun latestForegroundPackage(manager: UsageStatsManager, from: Long, to: Long): String? =
-        latestResumedPackage(manager, from, to)?.takeUnless { it == packageName }
 
     companion object {
         private const val TAG = "AppMonitorService"
@@ -250,19 +346,19 @@ class AppMonitorService : Service() {
         fun isLatestForeground(context: Context, packageName: String): Boolean {
             val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             val now = System.currentTimeMillis()
-            return latestResumedPackage(manager, now - RECENT_EVENT_WINDOW_MS, now) == packageName
+            return latestResumedPackage(manager, now - RECENT_EVENT_WINDOW_MS, now)?.packageName == packageName
         }
 
-        private fun latestResumedPackage(manager: UsageStatsManager, from: Long, to: Long): String? {
+        private fun latestResumedPackage(manager: UsageStatsManager, from: Long, to: Long): ResumedActivity? {
             val events = manager.queryEvents(from, to)
             val event = UsageEvents.Event()
-            var latest: String? = null
+            var latest: ResumedActivity? = null
             var latestTimestamp = Long.MIN_VALUE
             while (events.hasNextEvent()) {
                 events.getNextEvent(event)
                 if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED && event.timeStamp >= latestTimestamp) {
                     latestTimestamp = event.timeStamp
-                    latest = event.packageName
+                    latest = ResumedActivity(event.packageName, event.className)
                 }
             }
             return latest

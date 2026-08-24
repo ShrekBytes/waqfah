@@ -178,9 +178,13 @@ class ReadingViewModel @Inject constructor(
         _uiState.update { it.copy(triggeredAppLabel = label) }
     }
 
-    fun openTriggeredApp(packageName: String, launch: () -> Unit) = viewModelScope.launch {
+    // Records that the interstitial session ended (dismissed via back or the
+    // open-app button). Refreshes the per-app shown timestamp so cooldown/
+    // interval bookkeeping stays accurate; revealing the underlying task is
+    // handled by the caller finishing the activity.
+    fun dismissInterstitial(packageName: String, onDismissed: () -> Unit) = viewModelScope.launch {
         monitoredAppsRepository.recordShown(packageName)
-        launch()
+        onDismissed()
     }
 
     // Caller must hold mutationMutex.

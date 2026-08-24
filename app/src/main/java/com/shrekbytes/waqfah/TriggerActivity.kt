@@ -21,10 +21,12 @@ import javax.inject.Inject
 // Launched by AppMonitorService as a brief interstitial before a monitored app
 // opens. Background activity starts are normally blocked on Android 10+ but are
 // exempted for apps holding SYSTEM_ALERT_WINDOW. excludeFromRecents + empty
-// taskAffinity (manifest) keep each trigger a fresh, short-lived instance that
-// never clutters the system app-switcher. Back goes to the home screen (see
-// ReadingScreen's BackHandler) because the target app is still paused
-// underneath — finishing without redirecting would reveal it.
+// taskAffinity + noHistory (manifest, mirrored by intent flags) keep each
+// trigger a fresh, short-lived instance that never clutters the system
+// app-switcher. Dismissing it — via back or the open-app button — simply
+// finishes the activity, revealing whatever screen of the target app is really
+// paused directly beneath (main UI, share sheet, file viewer), like a normal
+// back press. See ReadingScreen.
 @AndroidEntryPoint
 class TriggerActivity : ComponentActivity() {
 
@@ -83,7 +85,13 @@ class TriggerActivity : ComponentActivity() {
                 // CLEAR_TOP finishes the buried instance(s) of this activity in
                 // the task instead of stacking another one on top, so repeated
                 // self-raising apps can't pile up stale overlays.
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                // EXCLUDE_FROM_RECENTS mirrors the manifest attribute — some
+                // OEM recents screens only honor one or the other.
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS,
+                )
             },
         )
     }

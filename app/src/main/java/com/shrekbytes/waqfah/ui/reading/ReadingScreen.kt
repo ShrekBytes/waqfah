@@ -1,7 +1,6 @@
 package com.shrekbytes.waqfah.ui.reading
 
 import android.app.Activity
-import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,27 +46,23 @@ fun ReadingScreen(triggeredPackage: String, viewModel: ReadingViewModel = hiltVi
 
     LaunchedEffect(triggeredPackage) { viewModel.setTriggeredPackage(triggeredPackage) }
 
-    // The target app is still paused underneath; finishing on back-press would
-    // fall through to it, which looks like Waqfah opened the app. Go home instead.
-    BackHandler {
-        context.startActivity(
-            Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_HOME)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            },
-        )
+    // The interstitial sits directly on top of the target app's actual task, so
+    // finishing falls through to whatever screen was really opened (main UI,
+    // share sheet, file viewer) — exactly like a normal back press. No launch
+    // intent is needed; getLaunchIntentForPackage would only ever restart the
+    // app's main activity.
+    fun dismiss() {
         (context as? Activity)?.finish()
     }
+
+    BackHandler { dismiss() }
 
     WaqfahReadingContent(viewModel = viewModel) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
             WaqfahPrimaryButton(
                 text = stringResource(R.string.open_app_button, state.triggeredAppLabel ?: stringResource(R.string.app_name)),
                 onClick = {
-                    viewModel.openTriggeredApp(triggeredPackage) {
-                        context.packageManager.getLaunchIntentForPackage(triggeredPackage)?.let(context::startActivity)
-                        (context as? Activity)?.finish()
-                    }
+                    viewModel.dismissInterstitial(triggeredPackage) { dismiss() }
                 },
             )
         }
