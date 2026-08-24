@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -61,6 +62,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shrekbytes.waqfah.R
@@ -123,6 +125,23 @@ fun WaqfahBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             ChevronIcon(ChevronDirection.LEFT, tint = colors.inkMuted, modifier = Modifier.size(16.dp))
         }
     }
+}
+
+// Shared press-highlight treatment for flat list rows: soft highlight while
+// pressed, fading out slower than it fades in. No default ripple.
+@Composable
+fun Modifier.rowHighlight(onClick: () -> Unit): Modifier {
+    val colors = WaqfahTheme.colors
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val highlight by animateColorAsState(
+        targetValue = if (isPressed) colors.line.copy(alpha = 0.6f) else Color.Transparent,
+        animationSpec = tween(durationMillis = if (isPressed) 60 else 220),
+        label = "row_highlight",
+    )
+    return this
+        .background(highlight)
+        .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
 }
 
 // Hairline pill search field rather than Material's floating-label text field.
@@ -352,7 +371,8 @@ fun WaqfahSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier:
         Box(
             Modifier
                 .padding(3.dp)
-                .offset(x = knobOffset)
+                // Layout-phase read of the animated offset: no recomposition per frame.
+                .offset { IntOffset(knobOffset.roundToPx(), 0) }
                 .size(20.dp)
                 .clip(CircleShape)
                 .background(colors.background),
@@ -452,9 +472,7 @@ fun SettingsScaffold(title: String, onBack: () -> Unit, content: @Composable Col
         WaqfahBackButton(onClick = onBack)
         Text(
             title,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = (-0.2).sp,
+            style = MaterialTheme.typography.titleLarge,
             color = colors.ink,
             modifier = Modifier.padding(top = 8.dp, bottom = 10.dp),
         )

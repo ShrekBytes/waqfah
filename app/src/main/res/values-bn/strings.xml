@@ -45,7 +45,6 @@
     <string name="aid_none">নেই</string>
     <string name="aid_english">ইংরেজি</string>
     <string name="aid_bengali">বাংলা</string>
-    <string name="lang_arabic">আরবি</string>
 
     <!-- Permissions -->
     <string name="perm_usage_name">ব্যবহারের তথ্য দেখা (Usage access)</string>
@@ -139,7 +138,6 @@
     <!-- Reading screen -->
     <string name="mark_read">পঠিত করুন</string>
     <string name="cd_marked_read">পঠিত হিসেবে চিহ্নিত</string>
-    <string name="cd_mark_read">পঠিত হিসেবে চিহ্নিত করুন</string>
     <string name="cd_prev_ayah">আগের আয়াত</string>
     <string name="cd_next_ayah">পরের আয়াত</string>
     <string name="cd_prev_translation">আগের অনুবাদ</string>

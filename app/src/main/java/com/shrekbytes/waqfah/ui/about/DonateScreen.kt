@@ -45,7 +45,6 @@ fun DonateScreen(onBack: () -> Unit) {
     val clipboard = LocalClipboardManager.current
     var copiedIndex by remember { mutableStateOf<Int?>(null) }
 
-    // Clear the "Copied" confirmation after a moment.
     LaunchedEffect(copiedIndex) {
         if (copiedIndex != null) {
             delay(2000)

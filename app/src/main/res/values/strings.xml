@@ -45,7 +45,6 @@
     <string name="aid_none">None</string>
     <string name="aid_english">English</string>
     <string name="aid_bengali">Bengali</string>
-    <string name="lang_arabic">Arabic</string>
 
     <!-- Permissions -->
     <string name="perm_usage_name">Usage access</string>
@@ -139,7 +138,6 @@
     <!-- Reading screen -->
     <string name="mark_read">Mark Read</string>
     <string name="cd_marked_read">Marked read</string>
-    <string name="cd_mark_read">Mark read</string>
     <string name="cd_prev_ayah">Previous ayah</string>
     <string name="cd_next_ayah">Next ayah</string>
     <string name="cd_prev_translation">Previous translation</string>

@@ -1,7 +1,6 @@
 package com.shrekbytes.waqfah.data.repository
 
 import android.content.Context
-import android.content.res.Configuration
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -20,10 +19,7 @@ import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,27 +53,9 @@ class SettingsRepository @Inject constructor(
     }
 
     companion object {
-        // Called from each Activity's attachBaseContext — i.e. BEFORE Hilt
-        // injection — so it reads the persisted language synchronously (one tiny
-        // DataStore read) and wraps the base context in that locale. The Activity
-        // itself remains LocalContext (hiltViewModel requires an Activity
-        // context), but every resource/string resolves in the chosen language.
-        // SYSTEM returns the base context untouched.
-        fun withAppLocale(context: Context): Context {
-            val stored = runBlocking {
-                context.settingsDataStore.data.first()[SettingsKeys.APP_LANGUAGE]
-            }
-            val language = stored
-                ?.let { name -> AppLanguage.entries.firstOrNull { it.name == name } }
-                ?: AppLanguage.SYSTEM
-            if (language == AppLanguage.SYSTEM) return context
-
-            val locale = Locale.forLanguageTag(if (language == AppLanguage.BENGALI) "bn" else "en")
-            Locale.setDefault(locale)
-            val config = Configuration(context.resources.configuration)
-            config.setLocale(locale)
-            return context.createConfigurationContext(config)
-        }
+        // APP_LANGUAGE is only the UI-facing mirror of the selection; applying it
+        // to the system is AppCompatDelegate.setApplicationLocales' job (see
+        // SettingsViewModel), which also persists and recreates activities.
     }
 
     private suspend fun edit(transform: (MutablePreferences) -> Unit) {
@@ -85,7 +63,7 @@ class SettingsRepository @Inject constructor(
     }
 }
 
-private fun Preferences.toUserPreferences() = UserPreferences(
+internal fun Preferences.toUserPreferences() = UserPreferences(
     theme = enumOrDefault(SettingsKeys.THEME, AppTheme.SYSTEM),
     accentColor = enumOrDefault(SettingsKeys.ACCENT_COLOR, AccentColor.SAGE),
     appLanguage = enumOrDefault(SettingsKeys.APP_LANGUAGE, AppLanguage.SYSTEM),
@@ -107,5 +85,5 @@ private fun Preferences.toUserPreferences() = UserPreferences(
 
 // Falls back to the default instead of crashing when the stored string no
 // longer matches any enum constant (e.g. after a rename).
-private inline fun <reified T : Enum<T>> Preferences.enumOrDefault(key: Preferences.Key<String>, default: T): T =
+internal inline fun <reified T : Enum<T>> Preferences.enumOrDefault(key: Preferences.Key<String>, default: T): T =
     this[key]?.let { stored -> enumValues<T>().firstOrNull { it.name == stored } } ?: default

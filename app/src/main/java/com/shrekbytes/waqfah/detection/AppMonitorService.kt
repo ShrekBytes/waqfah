@@ -32,7 +32,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -97,9 +100,11 @@ class AppMonitorService : Service() {
     // encounter; the monitored set is small so no eviction is needed.
     private val indirectEntryClassCache = HashMap<String, Set<String>>()
 
-    // Polling pauses while the screen is off: no app switches can happen, so
-    // every poll would be pure battery drain. The loop suspends on this flow
-    // instead of waking up each interval.
+    // Polling pauses whenever detection is impossible or pointless — screen
+    // off, app paused via Settings, or no monitored apps selected. The loop
+    // suspends on this combined gate instead of waking up each interval, so
+    // idle time costs nothing; re-activating resumes polling within one flow
+    // emission with no added trigger latency.
     private val screenOn = MutableStateFlow(true)
 
     private val screenReceiver = object : BroadcastReceiver() {
@@ -167,8 +172,18 @@ class AppMonitorService : Service() {
         var windowStart = System.currentTimeMillis()
         var lastPermissionCheckAt = SystemClock.elapsedRealtime()
 
+        // True only when a foreground change could actually produce a trigger.
+        val monitorGate = combine(
+            settingsRepository.preferences.map { it.appActive }.distinctUntilChanged(),
+            monitoredAppsRepository.monitoredApps.map { it.isNotEmpty() }.distinctUntilChanged(),
+            screenOn,
+        ) { active, hasMonitoredApps, screenOnNow -> active && hasMonitoredApps && screenOnNow }
+
         while (serviceScope.isActive) {
-            screenOn.first { it }
+            monitorGate.first { it }
+            // Fresh window after every wake-up: never replay events accumulated
+            // while suspended — stale resumes could false-trigger.
+            windowStart = System.currentTimeMillis()
             delay(POLL_INTERVAL_MS)
 
             // AppOps is a binder IPC — throttled instead of paid every second.

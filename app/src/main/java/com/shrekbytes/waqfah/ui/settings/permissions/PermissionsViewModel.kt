@@ -3,6 +3,7 @@ package com.shrekbytes.waqfah.ui.settings.permissions
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shrekbytes.waqfah.data.model.PermissionKey
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +17,13 @@ data class PermissionsUiState(
     val usageAccessGranted: Boolean = false,
     val overlayGranted: Boolean = false,
     val batteryExempted: Boolean = false,
-)
+) {
+    fun isGranted(key: PermissionKey): Boolean = when (key) {
+        PermissionKey.USAGE_ACCESS -> usageAccessGranted
+        PermissionKey.OVERLAY -> overlayGranted
+        PermissionKey.BATTERY -> batteryExempted
+    }
+}
 
 // Shared by the onboarding permissions step and the Settings permissions
 // screen — each navigation entry gets its own instance.
@@ -41,9 +48,13 @@ class PermissionsViewModel @Inject constructor(
         )
     }
 
-    fun usageAccessSettingsIntent(): Intent = permissionsRepository.usageAccessSettingsIntent()
-    fun overlaySettingsIntent(): Intent = permissionsRepository.overlaySettingsIntent()
-    fun batteryOptimizationRequestIntent(): Intent = permissionsRepository.batteryOptimizationRequestIntent()
+    // One lookup per catalog entry — screens iterate PermissionCatalog.all and
+    // resolve state/intents by stable key instead of hardcoding each row.
+    fun settingsIntentFor(key: PermissionKey): Intent = when (key) {
+        PermissionKey.USAGE_ACCESS -> permissionsRepository.usageAccessSettingsIntent()
+        PermissionKey.OVERLAY -> permissionsRepository.overlaySettingsIntent()
+        PermissionKey.BATTERY -> permissionsRepository.batteryOptimizationRequestIntent()
+    }
 
     // Onboarding-only: Gated in the UI (see OnboardPermissionsScreen's
     // allGranted) — records completion once all permissions are actually granted.

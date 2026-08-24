@@ -1,13 +1,8 @@
 package com.shrekbytes.waqfah.ui.settings.apps
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,14 +19,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -48,6 +42,7 @@ import com.shrekbytes.waqfah.ui.components.InlineField
 import com.shrekbytes.waqfah.ui.components.Stepper
 import com.shrekbytes.waqfah.ui.components.WaqfahBackButton
 import com.shrekbytes.waqfah.ui.components.WaqfahSearchField
+import com.shrekbytes.waqfah.ui.components.rowHighlight
 import com.shrekbytes.waqfah.ui.components.skeletonPulseAlpha
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
@@ -62,9 +57,7 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit) {
         WaqfahBackButton(onClick = onBack)
         Text(
             stringResource(R.string.apps_title),
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = (-0.2).sp,
+            style = MaterialTheme.typography.titleLarge,
             color = colors.ink,
             modifier = Modifier.padding(top = 8.dp),
         )
@@ -138,18 +131,10 @@ internal fun AppsListSkeleton(modifier: Modifier = Modifier) {
 @Composable
 internal fun AppRow(row: AppRowState, onClick: () -> Unit) {
     val colors = WaqfahTheme.colors
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val rowHighlight by animateColorAsState(
-        targetValue = if (isPressed) colors.line.copy(alpha = 0.6f) else Color.Transparent,
-        animationSpec = tween(durationMillis = if (isPressed) 60 else 220),
-        label = "app_row_highlight",
-    )
     Row(
         Modifier
             .fillMaxWidth()
-            .background(rowHighlight)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .rowHighlight(onClick)
             .padding(horizontal = 4.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(13.dp),

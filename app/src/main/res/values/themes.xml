@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Waqfah" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- AppCompatActivity (per-app locales, see AppCompatDelegate) requires an
+         AppCompat-descendant theme. Compose paints everything, so the parent's
+         widgets/windowBackground defaults are never visible. -->
+    <style name="Theme.Waqfah" parent="Theme.AppCompat.DayNight.NoActionBar" />
 
     <!-- Cold-start splash for MainActivity (no separate SplashActivity).
          On Android 12+ the system reads these attributes for its native

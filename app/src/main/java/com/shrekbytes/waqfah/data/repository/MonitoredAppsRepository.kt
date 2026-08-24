@@ -11,7 +11,11 @@ import com.shrekbytes.waqfah.data.local.appstate.MonitoredAppEntity
 import com.shrekbytes.waqfah.data.local.appstate.WaqfahAppDatabase
 import com.shrekbytes.waqfah.data.model.InstalledApp
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,13 +31,12 @@ class MonitoredAppsRepository @Inject constructor(
 
     suspend fun remove(packageName: String) = appDatabase.monitoredAppDao().remove(packageName)
 
-    suspend fun isInCooldown(packageName: String, cooldownMinutes: Int): Boolean {
-        val lastShown = appDatabase.monitoredAppDao().getLastShown(packageName) ?: return false
-        val elapsedMs = System.currentTimeMillis() - lastShown
-        // Negative elapsed (clock rolled back / NTP resync) counts as expired,
-        // never as permanently cooling down.
-        return elapsedMs >= 0 && elapsedMs < cooldownMinutes * 60_000L
-    }
+    suspend fun isInCooldown(packageName: String, cooldownMinutes: Int): Boolean =
+        isWithinCooldown(
+            lastShownAt = appDatabase.monitoredAppDao().getLastShown(packageName),
+            now = System.currentTimeMillis(),
+            cooldownMinutes = cooldownMinutes,
+        )
 
     suspend fun recordShown(packageName: String) =
         appDatabase.monitoredAppDao().updateLastShown(packageName, System.currentTimeMillis())
@@ -44,28 +47,33 @@ class MonitoredAppsRepository @Inject constructor(
         null
     }
 
-    // Default flags only — MATCH_ALL also pulls in disabled components and
-    // hidden system services nobody would pick to monitor.
-    fun getInstalledLaunchableApps(): List<InstalledApp> {
+    // Runs off the main thread (see AppsViewModel.installedApps). Labels and
+    // icon bitmaps each bind against PackageManager, so they're resolved
+    // concurrently — on big app lists that cuts wall-clock roughly to the
+    // slowest entry instead of the sum of all of them.
+    suspend fun getInstalledLaunchableApps(): List<InstalledApp> = withContext(Dispatchers.Default) {
         val pm = context.packageManager
-        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        return pm.queryIntentActivities(intent, 0)
+        // Default flags only — MATCH_ALL also pulls in disabled components and
+        // hidden system services nobody would pick to monitor.
+        pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
+            .filter { it.activityInfo.packageName != context.packageName }
+            // Dedupe before rendering so duplicate activities don't pay icon cost.
+            .distinctBy { it.activityInfo.packageName }
             .map { info ->
-                InstalledApp(
-                    packageName = info.activityInfo.packageName,
-                    label = info.loadLabel(pm).toString(),
-                    icon = loadIconBitmap(info, pm),
-                )
+                async {
+                    InstalledApp(
+                        packageName = info.activityInfo.packageName,
+                        label = info.loadLabel(pm).toString(),
+                        icon = loadIconBitmap(info, pm),
+                    )
+                }
             }
-            .filter { it.packageName != context.packageName }
-            .distinctBy { it.packageName }
+            .awaitAll()
             .sortedBy { it.label.lowercase() }
     }
-
-    // Runs alongside the label load above (same off-main-thread call site — see
-    // AppsViewModel.installedApps). Icons are downscaled to a fixed pixel size
-    // so holding the whole list in memory stays cheap; AppRow displays them at
-    // a fixed 36dp regardless of device density.
+    // Icons are downscaled to a fixed pixel size so holding the whole list in
+    // memory stays cheap; AppRow displays them at a fixed 36dp regardless of
+    // device density.
     private fun loadIconBitmap(info: ResolveInfo, pm: PackageManager): Bitmap? =
         try {
             info.loadIcon(pm).toFixedSizeBitmap(ICON_SIZE_PX)
@@ -81,7 +89,16 @@ class MonitoredAppsRepository @Inject constructor(
         return bitmap
     }
 
-    private companion object {
+    companion object {
         const val ICON_SIZE_PX = 128
+
+        // Pure core of isInCooldown, extracted for unit testing. Negative
+        // elapsed (clock rolled back / NTP resync) counts as expired, never as
+        // permanently cooling down. A 0-minute interval (Off) never cools down.
+        fun isWithinCooldown(lastShownAt: Long?, now: Long, cooldownMinutes: Int): Boolean {
+            lastShownAt ?: return false
+            val elapsedMs = now - lastShownAt
+            return elapsedMs >= 0 && elapsedMs < cooldownMinutes * 60_000L
+        }
     }
 }

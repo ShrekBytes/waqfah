@@ -156,7 +156,10 @@ private fun TranslationLinkField(
     showDivider: Boolean = true,
 ) {
     val colors = WaqfahTheme.colors
-    val name = TranslationCatalog.all.first { it.language == language && it.id == activeId }.name
+    val name = TranslationCatalog.all
+        .firstOrNull { it.language == language && it.id == activeId }
+        ?.name
+        ?: TranslationCatalog.all.first { it.language == language && it.isBundled }.name
     InlineField(label, showDivider = showDivider, onClick = { onClick(language) }) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(name, color = colors.inkMuted, fontSize = 13.sp)

@@ -50,27 +50,13 @@ fun PermissionsScreen(
             modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenRationale),
         )
         Spacer(Modifier.height(6.dp))
-        // Referenced by name, not destructured by position — see PermissionCatalog.
-        val usage = PermissionCatalog.usage
-        val overlay = PermissionCatalog.overlay
-        val battery = PermissionCatalog.battery
-        PermissionToggleRow(
-            title = stringResource(usage.nameRes),
-            subtitle = stringResource(usage.descriptionRes),
-            granted = state.usageAccessGranted,
-            onOpenSettings = { context.startActivity(viewModel.usageAccessSettingsIntent()) },
-        )
-        PermissionToggleRow(
-            title = stringResource(overlay.nameRes),
-            subtitle = stringResource(overlay.descriptionRes),
-            granted = state.overlayGranted,
-            onOpenSettings = { context.startActivity(viewModel.overlaySettingsIntent()) },
-        )
-        PermissionToggleRow(
-            title = stringResource(battery.nameRes),
-            subtitle = stringResource(battery.descriptionRes),
-            granted = state.batteryExempted,
-            onOpenSettings = { context.startActivity(viewModel.batteryOptimizationRequestIntent()) },
-        )
+        PermissionCatalog.all.forEach { info ->
+            PermissionToggleRow(
+                title = stringResource(info.nameRes),
+                subtitle = stringResource(info.descriptionRes),
+                granted = state.isGranted(info.key),
+                onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
+            )
+        }
     }
 }

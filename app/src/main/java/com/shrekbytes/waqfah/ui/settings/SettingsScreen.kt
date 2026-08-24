@@ -1,6 +1,5 @@
 package com.shrekbytes.waqfah.ui.settings
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,9 +56,6 @@ fun SettingsScreen(
     onOpenAbout: () -> Unit,
     onOpenFaq: () -> Unit,
     onOpenDonate: () -> Unit,
-    // Called right before the activity is recreated for a language change so
-    // the relaunch can land back on the tab the user was on.
-    onBeforeLocaleRecreate: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
@@ -67,9 +64,7 @@ fun SettingsScreen(
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp)) {
         Text(
             stringResource(R.string.settings_title),
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = (-0.2).sp,
+            style = MaterialTheme.typography.titleLarge,
             color = colors.ink,
             modifier = Modifier.padding(top = 22.dp, bottom = 10.dp),
         )
@@ -124,8 +119,8 @@ fun SettingsScreen(
         }
 
         SectionTitle(stringResource(R.string.app_language_label))
-        // Resolved here: the ChipGroup's onSelect callback isn't composable.
-        val activity = LocalActivity.current
+        // AppCompatDelegate applies the choice, persists it and recreates the
+        // activities (see SettingsViewModel.setAppLanguage).
         ChipGroup(
             options = listOf(
                 AppLanguage.SYSTEM to stringResource(R.string.lang_system),
@@ -133,14 +128,7 @@ fun SettingsScreen(
                 AppLanguage.BENGALI to stringResource(R.string.aid_bengali),
             ),
             selected = state.appLanguage,
-            onSelect = { language ->
-                // Recreate only AFTER the write completes — see setAppLanguage —
-                // and tell MainActivity which tab to relaunch on.
-                viewModel.setAppLanguage(language) {
-                    onBeforeLocaleRecreate()
-                    activity?.recreate()
-                }
-            },
+            onSelect = viewModel::setAppLanguage,
         )
 
         SectionTitle(stringResource(R.string.progress_section))

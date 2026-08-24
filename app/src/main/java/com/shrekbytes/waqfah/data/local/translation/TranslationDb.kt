@@ -25,7 +25,7 @@ interface TranslationDao {
 
 // NOTE: keep version in sync with SCHEMA_VERSION below — KSP/Room requires a
 // literal here, so the constant can't be referenced directly.
-@Database(entities = [TranslationEntity::class], version = 1)
+@Database(entities = [TranslationEntity::class], version = 1, exportSchema = false)
 abstract class TranslationDatabase : RoomDatabase() {
     abstract fun translationDao(): TranslationDao
 

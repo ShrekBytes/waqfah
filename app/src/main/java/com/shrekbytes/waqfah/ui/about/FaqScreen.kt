@@ -1,12 +1,6 @@
 package com.shrekbytes.waqfah.ui.about
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,13 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
+import com.shrekbytes.waqfah.ui.components.rowHighlight
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
 private data class FaqItem(val questionRes: Int, val answerRes: Int)
@@ -74,20 +68,12 @@ fun FaqScreen(onBack: () -> Unit) {
 private fun ExpandableRow(item: FaqItem) {
     val colors = WaqfahTheme.colors
     var expanded by remember { mutableStateOf(false) }
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val rowHighlight by animateColorAsState(
-        targetValue = if (isPressed) colors.line.copy(alpha = 0.6f) else Color.Transparent,
-        animationSpec = tween(durationMillis = if (isPressed) 60 else 220),
-        label = "faq_row_highlight",
-    )
 
     Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .background(rowHighlight)
-                .clickable(interactionSource = interactionSource, indication = null) { expanded = !expanded }
+                .rowHighlight(onClick = { expanded = !expanded })
                 .padding(horizontal = 6.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

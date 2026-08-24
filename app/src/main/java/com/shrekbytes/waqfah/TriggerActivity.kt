@@ -4,9 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.PowerManager
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
@@ -27,18 +27,15 @@ import javax.inject.Inject
 // finishes the activity, revealing whatever screen of the target app is really
 // paused directly beneath (main UI, share sheet, file viewer), like a normal
 // back press. See ReadingScreen.
+// AppCompatActivity so AppCompatDelegate's per-app locales apply here.
 @AndroidEntryPoint
-class TriggerActivity : ComponentActivity() {
+class TriggerActivity : AppCompatActivity() {
 
     @Inject lateinit var settingsRepository: SettingsRepository
 
     // Set after the single re-assertion below, so a stubborn app can't trap
     // the user in a loop of interstitials.
     private var buriedRetryUsed = false
-
-    override fun attachBaseContext(newBase: android.content.Context) {
-        super.attachBaseContext(SettingsRepository.withAppLocale(newBase))
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

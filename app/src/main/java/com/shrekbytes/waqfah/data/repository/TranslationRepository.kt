@@ -50,6 +50,8 @@ class TranslationRepository @Inject constructor(
         if (meta.isBundled && !isDownloaded(meta)) {
             try {
                 download(meta)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to copy bundled translation '${meta.id}' from assets", e)
                 return null
@@ -77,12 +79,6 @@ class TranslationRepository @Inject constructor(
             null
         }
     }
-
-    private fun isCorruption(e: Throwable): Boolean =
-        generateSequence(e as Throwable?) { it.cause }.filterNotNull().any {
-            it is SQLiteDatabaseCorruptException ||
-                (it is SQLiteException && it.message.orEmpty().contains("malformed", ignoreCase = true))
-        }
 
     /**
      * Downloads [meta] into internal storage — an asset copy for bundled
@@ -116,9 +112,16 @@ class TranslationRepository @Inject constructor(
         }
     }
 
-    suspend fun delete(meta: TranslationMeta) = withContext(Dispatchers.IO) {
-        openDatabases.remove(meta.id)?.close()
-        fileFor(meta).delete()
+    // Holds the same per-id mutex as download() so a delete landing mid-download
+    // can't be followed by the download's final rename resurrecting the file.
+    suspend fun delete(meta: TranslationMeta) {
+        val lock = downloadLocks.getOrPut(meta.id) { Mutex() }
+        lock.withLock {
+            withContext(Dispatchers.IO) {
+                openDatabases.remove(meta.id)?.close()
+                fileFor(meta).delete()
+            }
+        }
     }
 
     private fun copyBundled(meta: TranslationMeta, target: File) {
@@ -256,11 +259,20 @@ class TranslationRepository @Inject constructor(
             openDatabases.getOrPut(meta.id) { TranslationDatabase.build(context, fileFor(meta)) }
         }
 
-    private companion object {
+    internal companion object {
         const val TAG = "TranslationRepository"
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 30_000
         const val DOWNLOAD_BUFFER_BYTES = 8 * 1024
         val SQLITE_MAGIC = "SQLite format 3\u0000".toByteArray(Charsets.US_ASCII)
+
+        // Decides whether a failed read should DELETE the translation file
+        // (forcing a re-copy/re-download) or just drop the cached handle.
+        // Misclassifying either way blanks ayahs or wastes downloads.
+        internal fun isCorruption(e: Throwable): Boolean =
+            generateSequence(e as Throwable?) { it.cause }.filterNotNull().any {
+                it is SQLiteDatabaseCorruptException ||
+                    (it is SQLiteException && it.message.orEmpty().contains("malformed", ignoreCase = true))
+            }
     }
 }

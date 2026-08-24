@@ -8,7 +8,6 @@ import com.shrekbytes.waqfah.data.model.UserPreferences
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +18,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class AppRowState(val app: InstalledApp, val isMonitored: Boolean)
@@ -44,12 +42,12 @@ class AppsViewModel @Inject constructor(
     private val searchQuery = MutableStateFlow("")
     private val isLoadingApps = MutableStateFlow(true)
 
-    // queryIntentActivities scans every installed package — run off the main thread.
-    // Lazily, not Eagerly: the scan (and per-app icon rendering) only happens
-    // when a screen actually collects uiState, but the result is then kept for
-    // the ViewModel's lifetime instead of rescanning on every revisit.
+    // queryIntentActivities + icon rendering run off the main thread inside the
+    // repository. Lazily, not Eagerly: the scan only happens when a screen
+    // actually collects uiState, but the result is then kept for the ViewModel's
+    // lifetime instead of rescanning on every revisit.
     private val installedApps: StateFlow<List<InstalledApp>> = flow {
-        emit(withContext(Dispatchers.Default) { monitoredAppsRepository.getInstalledLaunchableApps() })
+        emit(monitoredAppsRepository.getInstalledLaunchableApps())
         isLoadingApps.value = false
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 

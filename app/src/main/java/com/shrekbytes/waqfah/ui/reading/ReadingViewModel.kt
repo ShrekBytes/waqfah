@@ -292,9 +292,13 @@ class ReadingViewModel @Inject constructor(
         )
     }
 
+    // Falls back to the language's bundled translation when the stored id is no
+    // longer in the catalog (e.g. removed after an app update) instead of
+    // crashing every render.
     private fun activeTranslation(lang: TranslationLanguage, prefs: UserPreferences): TranslationMeta {
         val id = if (lang == TranslationLanguage.ENGLISH) prefs.activeTranslationEnglish else prefs.activeTranslationBengali
-        return TranslationCatalog.all.first { it.language == lang && it.id == id }
+        return TranslationCatalog.all.firstOrNull { it.language == lang && it.id == id }
+            ?: TranslationCatalog.all.first { it.language == lang && it.isBundled }
     }
 
 }

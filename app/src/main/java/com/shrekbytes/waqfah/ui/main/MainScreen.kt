@@ -32,12 +32,10 @@ fun MainScreen(
     onOpenAbout: () -> Unit,
     onOpenFaq: () -> Unit,
     onOpenDonate: () -> Unit,
-    // Invoked with the tab visible right now, just before the language switcher
-    // recreates the activity — lets MainActivity relaunch on the same tab.
-    onBeforeLocaleRecreate: (WaqfahTab) -> Unit = {},
 ) {
     // rememberSaveable survives Navigation3 disposing/recomposing this screen
-    // when a settings sub-screen is pushed over it; plain remember resets.
+    // when a settings sub-screen is pushed over it — and also restores the tab
+    // across activity recreation (e.g. a per-app locale switch).
     var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
 
     BackHandler(enabled = selectedTab != WaqfahTab.HOME) { selectedTab = WaqfahTab.HOME }
@@ -61,7 +59,6 @@ fun MainScreen(
                     onOpenAbout = onOpenAbout,
                     onOpenFaq = onOpenFaq,
                     onOpenDonate = onOpenDonate,
-                    onBeforeLocaleRecreate = { onBeforeLocaleRecreate(selectedTab) },
                 )
             }
         }

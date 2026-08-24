@@ -4,7 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- POST_NOTIFICATIONS is intentionally NOT declared: the foreground-service
+         notification is purely informational, so requesting a runtime permission
+         (and the Play-review surface that comes with it) isn't worth it. On
+         Android 13+ the FGS notification is simply not shown; on older versions
+         it stays MIN-importance, i.e. silent and drawer-only. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <uses-permission
@@ -41,7 +45,6 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.Waqfah.Starting"
             android:windowSoftInputMode="adjustResize">
 
@@ -69,6 +72,17 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Checks which app moved to the foreground so the reading pause can appear before selected apps open" />
 
+        </service>
+
+        <!-- Persists per-app locales below Android 13 so
+             AppCompatDelegate.setApplicationLocales survives restarts there. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
         </service>
 
     </application>

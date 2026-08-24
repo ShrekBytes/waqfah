@@ -5,7 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [SurahEntity::class, VerseEntity::class], version = 2)
+// Schema export is off on purpose: this DB is rebuilt from the bundled asset
+// on every version bump (destructive migration), so there are no migrations to
+// generate tests for.
+@Database(entities = [SurahEntity::class, VerseEntity::class], version = 2, exportSchema = false)
 abstract class QuranDatabase : RoomDatabase() {
     abstract fun surahDao(): SurahDao
     abstract fun verseDao(): VerseDao

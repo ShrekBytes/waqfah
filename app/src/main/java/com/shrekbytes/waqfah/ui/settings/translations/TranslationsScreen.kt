@@ -33,7 +33,11 @@ fun TranslationsScreen(
     viewModel: TranslationsViewModel = hiltViewModel(),
     onBack: () -> Unit,
 ) {
-    val language = remember(languageCode) { TranslationLanguage.entries.first { it.code == languageCode } }
+    // firstOrNull + fallback guards against a stale route argument ever
+    // crashing the screen.
+    val language = remember(languageCode) {
+        TranslationLanguage.entries.firstOrNull { it.code == languageCode } ?: TranslationLanguage.ENGLISH
+    }
     val rows by viewModel.rowsFor(language).collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
     val languageName = stringResource(if (language == TranslationLanguage.ENGLISH) R.string.aid_english else R.string.aid_bengali)

@@ -84,6 +84,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shrekbytes.waqfah.R
+import com.shrekbytes.waqfah.data.model.ArabicFont
 import com.shrekbytes.waqfah.data.model.ReadingMode
 import com.shrekbytes.waqfah.ui.components.ChevronDirection
 import com.shrekbytes.waqfah.ui.components.ChevronIcon
@@ -255,27 +256,8 @@ fun ReadingCard(
                             Spacer(Modifier.height(14.dp))
                             NumDivider(state.ayahLabel)
                             Spacer(Modifier.height(24.dp))
-                            Text(
-                                state.arabicText,
-                                color = colors.ink,
-                                textAlign = TextAlign.Center,
-                                fontFamily = state.arabicFont.toFontFamily(),
-                                fontSize = state.arabicFontSize.sp,
-                                // Extra room so Arabic diacritics aren't clipped.
-                                lineHeight = (state.arabicFontSize * 2f).sp,
-                            )
-                            state.translitText?.let {
-                                Spacer(Modifier.height(20.dp))
-                                Text(
-                                    it,
-                                    color = colors.inkMuted,
-                                    textAlign = TextAlign.Center,
-                                    fontSize = state.translitFontSize.sp,
-                                    fontStyle = FontStyle.Italic,
-                                    lineHeight = (state.translitFontSize * 1.7f).sp,
-                                    modifier = Modifier.widthIn(max = 280.dp),
-                                )
-                            }
+                            AyahArabicText(state.arabicText, state.arabicFont, state.arabicFontSize)
+                            state.translitText?.let { AyahTranslitText(it, state.translitFontSize) }
                             state.translationText?.let { translationText ->
                                 Spacer(Modifier.height(24.dp))
                                 HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
@@ -306,25 +288,20 @@ fun ReadingCard(
                                         ) {
                                             TranslationSwitchArrow(direction = ChevronDirection.LEFT) { onCycleTranslation(false) }
                                         }
-                                        Text(
+                                        AyahTranslationText(
                                             translationText,
-                                            color = colors.inkMuted,
-                                            textAlign = TextAlign.Center,
-                                            fontSize = state.translationFontSize.sp,
-                                            lineHeight = (state.translationFontSize * 1.7f).sp,
-                                            modifier = Modifier
-                                                .widthIn(max = 280.dp)
-                                                // Tapping toggles compare mode for this ayah only;
-                                                // closing reverts to the default. Claims single taps
-                                                // landing on the text, so double-tapping here won't
-                                                // also trigger mark-read.
-                                                .clickable(
-                                                    interactionSource = remember { MutableInteractionSource() },
-                                                    indication = null,
-                                                ) {
-                                                    translationSwitcherOpen = !translationSwitcherOpen
-                                                    if (!translationSwitcherOpen) onResetTranslation()
-                                                },
+                                            state.translationFontSize,
+                                            // Tapping toggles compare mode for this ayah only;
+                                            // closing reverts to the default. Claims single taps
+                                            // landing on the text, so double-tapping here won't
+                                            // also trigger mark-read.
+                                            modifier = Modifier.clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                            ) {
+                                                translationSwitcherOpen = !translationSwitcherOpen
+                                                if (!translationSwitcherOpen) onResetTranslation()
+                                            },
                                         )
                                         AnimatedVisibility(
                                             visible = translationSwitcherOpen,
@@ -335,14 +312,7 @@ fun ReadingCard(
                                         }
                                     }
                                 } else {
-                                    Text(
-                                        translationText,
-                                        color = colors.inkMuted,
-                                        textAlign = TextAlign.Center,
-                                        fontSize = state.translationFontSize.sp,
-                                        lineHeight = (state.translationFontSize * 1.7f).sp,
-                                        modifier = Modifier.widthIn(max = 280.dp),
-                                    )
+                                    AyahTranslationText(translationText, state.translationFontSize)
                                 }
                             }
                             Spacer(Modifier.height(14.dp))
@@ -470,41 +440,57 @@ private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Fl
         Spacer(Modifier.height(14.dp))
         NumDivider(preview.ayahLabel)
         Spacer(Modifier.height(24.dp))
-        Text(
-            preview.arabicText,
-            color = colors.ink,
-            textAlign = TextAlign.Center,
-            fontFamily = preview.arabicFont.toFontFamily(),
-            fontSize = preview.arabicFontSize.sp,
-            lineHeight = (preview.arabicFontSize * 2f).sp,
-        )
-        preview.translitText?.let {
-            Spacer(Modifier.height(20.dp))
-            Text(
-                it,
-                color = colors.inkMuted,
-                textAlign = TextAlign.Center,
-                fontSize = preview.translitFontSize.sp,
-                fontStyle = FontStyle.Italic,
-                lineHeight = (preview.translitFontSize * 1.7f).sp,
-                modifier = Modifier.widthIn(max = 280.dp),
-            )
-        }
+        AyahArabicText(preview.arabicText, preview.arabicFont, preview.arabicFontSize)
+        preview.translitText?.let { AyahTranslitText(it, preview.translitFontSize) }
         preview.translationText?.let { translationText ->
             Spacer(Modifier.height(24.dp))
             HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
             Spacer(Modifier.height(24.dp))
-            Text(
-                translationText,
-                color = colors.inkMuted,
-                textAlign = TextAlign.Center,
-                fontSize = preview.translationFontSize.sp,
-                lineHeight = (preview.translationFontSize * 1.7f).sp,
-                modifier = Modifier.widthIn(max = 280.dp),
-            )
+            AyahTranslationText(translationText, preview.translationFontSize)
         }
         Spacer(Modifier.height(14.dp))
     }
+}
+
+// Shared ayah text styles: one definition keeps the main page and the peek
+// pages visually identical by construction.
+@Composable
+private fun AyahArabicText(text: String, font: ArabicFont, fontSize: Int) {
+    Text(
+        text,
+        color = WaqfahTheme.colors.ink,
+        textAlign = TextAlign.Center,
+        fontFamily = font.toFontFamily(),
+        fontSize = fontSize.sp,
+        // Extra room so Arabic diacritics aren't clipped.
+        lineHeight = (fontSize * 2f).sp,
+    )
+}
+
+@Composable
+private fun AyahTranslitText(text: String, fontSize: Int) {
+    Spacer(Modifier.height(20.dp))
+    Text(
+        text,
+        color = WaqfahTheme.colors.inkMuted,
+        textAlign = TextAlign.Center,
+        fontSize = fontSize.sp,
+        fontStyle = FontStyle.Italic,
+        lineHeight = (fontSize * 1.7f).sp,
+        modifier = Modifier.widthIn(max = 280.dp),
+    )
+}
+
+@Composable
+private fun AyahTranslationText(text: String, fontSize: Int, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        color = WaqfahTheme.colors.inkMuted,
+        textAlign = TextAlign.Center,
+        fontSize = fontSize.sp,
+        lineHeight = (fontSize * 1.7f).sp,
+        modifier = modifier.widthIn(max = 280.dp),
+    )
 }
 
 // One shared skeleton with one shared pulse for the loading state.
@@ -624,8 +610,8 @@ private fun MarkReadPill(marked: Boolean, markReadTrigger: Int, verseKey: Any?, 
             .semantics { contentDescription = if (marked) markedReadLabel else markReadLabel },
     ) {
         Box(Modifier.padding(horizontal = 22.dp, vertical = 11.dp), contentAlignment = Alignment.Center) {
-            // Text reserves the pill's footprint at all times; its own semantics
-            // are cleared since the Surface carries the label for both states.
+            // Text keeps the pill's footprint; its semantics are cleared since
+            // the Surface announces both states.
             Text(
                 markReadLabel,
                 fontSize = 13.sp,

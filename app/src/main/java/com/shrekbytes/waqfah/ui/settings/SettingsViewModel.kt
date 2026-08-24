@@ -1,5 +1,7 @@
 package com.shrekbytes.waqfah.ui.settings
 
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
@@ -73,12 +75,17 @@ class SettingsViewModel @Inject constructor(
     fun setTheme(theme: AppTheme) = viewModelScope.launch { settingsRepository.setTheme(theme) }
     fun setAccentColor(color: AccentColor) = viewModelScope.launch { settingsRepository.setAccentColor(color) }
 
-    // Persists first, THEN invokes [onApplied] — recreating the activity before
-    // the DataStore write lands makes attachBaseContext read the stale locale,
-    // so a switch appeared to lag one selection behind until an app restart.
-    fun setAppLanguage(language: AppLanguage, onApplied: () -> Unit) = viewModelScope.launch {
+    // Persists the UI mirror, then hands the choice to AppCompatDelegate, which
+    // applies it to every activity, persists it itself (autoStoreLocales), and
+    // recreates the running activities — no manual recreate() needed.
+    fun setAppLanguage(language: AppLanguage) = viewModelScope.launch {
         settingsRepository.setAppLanguage(language)
-        onApplied()
+        val locales = when (language) {
+            AppLanguage.SYSTEM -> LocaleListCompat.getEmptyLocaleList()
+            AppLanguage.ENGLISH -> LocaleListCompat.forLanguageTags("en")
+            AppLanguage.BENGALI -> LocaleListCompat.forLanguageTags("bn")
+        }
+        AppCompatDelegate.setApplicationLocales(locales)
     }
 
     fun resetProgress() = viewModelScope.launch {
