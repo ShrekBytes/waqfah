@@ -368,6 +368,12 @@ fun ReadingCard(
     // by resetting progress.
     if (!state.isLoading && state.isCompleted) {
         AlertDialog(
+            // WaqfahTheme does not override MaterialTheme.colorScheme, so
+            // without these the dialog keeps M3 default white surface in
+            // every theme.
+            containerColor = colors.background,
+            titleContentColor = colors.ink,
+            textContentColor = colors.inkMuted,
             onDismissRequest = onCompletionDismiss,
             title = { Text("Alhamdulillah!", fontWeight = FontWeight.Bold) },
             text = {
@@ -403,6 +409,9 @@ fun ReadingCard(
     if (confirmStartOver || confirmSwitchMode) {
         val willSwitch = confirmSwitchMode
         AlertDialog(
+            containerColor = colors.background,
+            titleContentColor = colors.ink,
+            textContentColor = colors.inkMuted,
             onDismissRequest = { confirmStartOver = false; confirmSwitchMode = false },
             title = { Text("Reset progress?", fontWeight = FontWeight.SemiBold) },
             text = {
