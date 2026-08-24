@@ -29,8 +29,10 @@ class MonitoredAppsRepository @Inject constructor(
 
     suspend fun isInCooldown(packageName: String, cooldownMinutes: Int): Boolean {
         val lastShown = appDatabase.monitoredAppDao().getLastShown(packageName) ?: return false
-        val elapsedMinutes = (System.currentTimeMillis() - lastShown) / 60_000
-        return elapsedMinutes < cooldownMinutes
+        val elapsedMs = System.currentTimeMillis() - lastShown
+        // Negative elapsed (clock rolled back / NTP resync) counts as expired,
+        // never as permanently cooling down.
+        return elapsedMs >= 0 && elapsedMs < cooldownMinutes * 60_000L
     }
 
     suspend fun recordShown(packageName: String) =

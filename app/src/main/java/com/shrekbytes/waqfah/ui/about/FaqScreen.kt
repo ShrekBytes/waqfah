@@ -70,9 +70,11 @@ private val items = listOf(
     ),
     FaqItem(
         "How does the cooldown work?",
-        "Each monitored app has its own timer. After Waqfah appears for Instagram, Instagram won't " +
-            "trigger again until its cooldown passes — but TikTok, monitored at the same time, is " +
-            "unaffected. Set the wait time (or turn it off) at the top of Settings > Manage monitored apps.",
+        "Each monitored app has its own timer. After Waqfah appears for Instagram, it won't appear again " +
+            "for Instagram until that wait passes — reopening via a notification, bubble or the icon makes " +
+            "no difference while the app stays in front. TikTok and your other monitored apps are unaffected. " +
+            "Set the wait at the top of Settings > Manage monitored apps. With the wait off, Waqfah appears " +
+            "for every fresh open — only quick switch-backs to an app you just left stay quiet.",
     ),
 )
 

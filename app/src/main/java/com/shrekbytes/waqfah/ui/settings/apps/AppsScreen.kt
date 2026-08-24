@@ -85,7 +85,7 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit) {
             )
         }
         Text(
-            "Applies per app. Opening Instagram won't silence the screen for TikTok or your other selected apps during this time.",
+            "Applies per app — after appearing for Instagram it won't appear again until this wait passes. \"Off\" shows it for every fresh open, but switching straight back to an app you just left stays quiet.",
             color = colors.inkMuted,
             fontSize = 12.sp,
             lineHeight = 18.sp,
