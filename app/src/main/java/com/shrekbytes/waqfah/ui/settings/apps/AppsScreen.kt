@@ -1,11 +1,6 @@
 package com.shrekbytes.waqfah.ui.settings.apps
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -39,6 +34,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -170,20 +167,27 @@ internal fun AppRow(row: AppRowState, onClick: () -> Unit) {
             }
         }
         Text(row.app.label, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-        AppCheckbox(checked = row.isMonitored)
+        AppCheckbox(
+            checked = row.isMonitored,
+            // The row itself is the click target; the checkbox announces state.
+            contentDescription = stringResource(
+                if (row.isMonitored) R.string.cd_monitored else R.string.cd_not_monitored,
+            ),
+        )
     }
 }
 
 // Compact rounded-square checkbox instead of Material3's larger default shape.
 @Composable
-private fun AppCheckbox(checked: Boolean) {
+private fun AppCheckbox(checked: Boolean, contentDescription: String) {
     val colors = WaqfahTheme.colors
     Box(
         Modifier
             .size(21.dp)
             .clip(RoundedCornerShape(7.dp))
             .background(if (checked) colors.accent else colors.background)
-            .border(1.5.dp, if (checked) colors.accent else colors.inkSoft, RoundedCornerShape(7.dp)),
+            .border(1.5.dp, if (checked) colors.accent else colors.inkSoft, RoundedCornerShape(7.dp))
+            .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
     ) {
         if (checked) {

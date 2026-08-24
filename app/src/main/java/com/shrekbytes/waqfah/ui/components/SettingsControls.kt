@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -429,7 +430,11 @@ private fun StepperButton(
 fun ProgressRing(percent: Int, modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Canvas(Modifier.fillMaxSize()) {
+        Canvas(
+            // Decorative: the adjacent "NN%" text carries the information;
+            // announcing both would double-speak for TalkBack users.
+            Modifier.fillMaxSize().clearAndSetSemantics {},
+        ) {
             val strokeWidth = 5.dp.toPx()
             val diameter = size.minDimension - strokeWidth
             val topLeft = androidx.compose.ui.geometry.Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)

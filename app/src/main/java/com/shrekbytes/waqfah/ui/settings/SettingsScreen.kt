@@ -57,6 +57,9 @@ fun SettingsScreen(
     onOpenAbout: () -> Unit,
     onOpenFaq: () -> Unit,
     onOpenDonate: () -> Unit,
+    // Called right before the activity is recreated for a language change so
+    // the relaunch can land back on the tab the user was on.
+    onBeforeLocaleRecreate: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
@@ -132,8 +135,12 @@ fun SettingsScreen(
             ),
             selected = state.appLanguage,
             onSelect = { language ->
-                // Recreate only AFTER the write completes — see setAppLanguage.
-                viewModel.setAppLanguage(language) { activity?.recreate() }
+                // Recreate only AFTER the write completes — see setAppLanguage —
+                // and tell MainActivity which tab to relaunch on.
+                viewModel.setAppLanguage(language) {
+                    onBeforeLocaleRecreate()
+                    activity?.recreate()
+                }
             },
         )
 

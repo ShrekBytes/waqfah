@@ -9,6 +9,7 @@ import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.repository.TranslationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -78,8 +79,26 @@ class TranslationsViewModel @Inject constructor(
         downloadErrors.update { it - meta.id }
         downloadProgress.update { it - meta.id }
         try {
-            translationRepository.download(meta) { fraction ->
-                downloadProgress.update { it + (meta.id to fraction) }
+            // Bounded automatic retry: transient network blips are the common
+            // failure mode. Deterministic failures (bad URL, schema mismatch)
+            // fail fast server-side-agnostically too, so a short fixed backoff
+            // is safe across the board; the manual "Failed — Retry" row action
+            // still exists on top of this.
+            var attempt = 0
+            while (true) {
+                try {
+                    translationRepository.download(meta) { fraction ->
+                        downloadProgress.update { it + (meta.id to fraction) }
+                    }
+                    break
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    attempt++
+                    if (attempt >= DOWNLOAD_MAX_ATTEMPTS) throw e
+                    downloadProgress.update { it - meta.id } // restart the bar cleanly
+                    delay(DOWNLOAD_RETRY_DELAY_MS * attempt)
+                }
             }
         } catch (e: CancellationException) {
             throw e
@@ -98,5 +117,11 @@ class TranslationsViewModel @Inject constructor(
         if (meta.isBundled) return@launch
         translationRepository.delete(meta)
         refreshTrigger.update { it + 1 }
+    }
+
+    private companion object {
+        // 1st try + 2 automatic retries with 1s/2s backoff.
+        const val DOWNLOAD_MAX_ATTEMPTS = 3
+        const val DOWNLOAD_RETRY_DELAY_MS = 1_000L
     }
 }

@@ -15,6 +15,8 @@
     <string name="increase_cd">বাড়ান</string>
     <string name="step_x_of_3">ধাপ %1$d / ৩</string>
     <string name="no_apps_found">কোনো অ্যাপ পাওয়া যায়নি</string>
+    <string name="cd_monitored">নির্বাচিত</string>
+    <string name="cd_not_monitored">নির্বাচিত নয়</string>
 
     <!-- Monitor service -->
     <string name="monitor_notification_channel">ব্যাকগ্রাউন্ড মনিটরিং</string>

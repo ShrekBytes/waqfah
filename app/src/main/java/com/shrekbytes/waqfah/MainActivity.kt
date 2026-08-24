@@ -14,6 +14,7 @@ import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.detection.AppMonitorService
 import com.shrekbytes.waqfah.ui.navigation.Main
 import com.shrekbytes.waqfah.ui.navigation.WaqfahNavDisplay
+import com.shrekbytes.waqfah.ui.components.WaqfahTab
 import com.shrekbytes.waqfah.ui.navigation.Welcome
 import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
@@ -65,7 +66,9 @@ class MainActivity : ComponentActivity() {
                     // stack built here survives onboarding flipping the flag —
                     // branching live on it would tear down and remount the nav
                     // display mid-flow, discarding the post-onboarding push.
-                    val startDestination = remember { if (hasCompletedOnboarding) Main() else Welcome }
+                    val startDestination = remember {
+                        if (hasCompletedOnboarding) Main(initialTab = takePendingTab()) else Welcome
+                    }
                     WaqfahNavDisplay(startDestination = startDestination)
                 }
             }
@@ -78,6 +81,24 @@ class MainActivity : ComponentActivity() {
         // in system settings. Starting an already-running service is a no-op.
         if (permissionsRepository.hasRequiredPermissions()) {
             AppMonitorService.start(this)
+        }
+    }
+
+    companion object {
+        // Survives activity recreation (same process, plain static): lets the
+        // language switcher re-open the tab the user was on after recreate()
+        // rebuilds the nav stack. Consumed once at startDestination creation.
+        @Volatile
+        private var pendingInitialTabIndex: Int = -1
+
+        fun requestRecreateOnTab(tab: WaqfahTab) {
+            pendingInitialTabIndex = tab.ordinal
+        }
+
+        private fun takePendingTab(): WaqfahTab {
+            val index = pendingInitialTabIndex
+            pendingInitialTabIndex = -1
+            return WaqfahTab.entries.getOrNull(index) ?: WaqfahTab.HOME
         }
     }
 }
