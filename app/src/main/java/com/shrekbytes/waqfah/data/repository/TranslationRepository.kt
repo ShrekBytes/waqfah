@@ -11,6 +11,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.DataInputStream
 import java.io.EOFException
@@ -29,6 +31,13 @@ class TranslationRepository @Inject constructor(
     // ConcurrentHashMap: getText() runs on arbitrary dispatchers while
     // download()/delete() run on others.
     private val openDatabases = ConcurrentHashMap<String, TranslationDatabase>()
+
+    // Serializes downloads per translation id. Render fires up to THREE
+    // concurrent getText calls for the same meta (main ayah + next/prev
+    // previews), and parallel copyBundled/network runs share one `.tmp` path —
+    // racing threads rename each other's temp file away mid-write, then fail
+    // with NoSuchFileException ("Failed to copy bundled translation …").
+    private val downloadLocks = ConcurrentHashMap<String, Mutex>()
 
     // Suspend + IO: callers poll this per-row inside flow transforms (and
     // render paths) that run on the main dispatcher; File.exists() is disk I/O.
@@ -85,16 +94,24 @@ class TranslationRepository @Inject constructor(
      * as a sqlite db matching the expected schema.
      */
     suspend fun download(meta: TranslationMeta, onProgress: (Float) -> Unit = {}) {
-        val target = fileFor(meta)
-        target.parentFile?.mkdirs()
-        if (meta.isBundled) {
-            withContext(Dispatchers.IO) { copyBundled(meta, target) }
-        } else {
-            val url = meta.downloadUrl
-                ?: error("No download URL configured for '${meta.id}'")
-            withContext(Dispatchers.IO) {
-                // Lets coroutine cancellation interrupt the blocking socket read.
-                runInterruptible { downloadOverNetwork(meta, url, target, onProgress) }
+        // One worker per id; latecomers wait, then re-check instead of redoing.
+        val lock = downloadLocks.getOrPut(meta.id) { Mutex() }
+        lock.withLock {
+            val target = fileFor(meta)
+            target.parentFile?.mkdirs()
+            if (meta.isBundled) {
+                // A concurrent caller may have finished the asset copy while we
+                // waited on the lock — the file is already complete then.
+                if (!target.exists()) {
+                    withContext(Dispatchers.IO) { copyBundled(meta, target) }
+                }
+            } else {
+                val url = meta.downloadUrl
+                    ?: error("No download URL configured for '${meta.id}'")
+                withContext(Dispatchers.IO) {
+                    // Lets coroutine cancellation interrupt the blocking socket read.
+                    runInterruptible { downloadOverNetwork(meta, url, target, onProgress) }
+                }
             }
         }
     }
