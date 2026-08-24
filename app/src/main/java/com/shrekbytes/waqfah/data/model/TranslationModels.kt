@@ -2,6 +2,14 @@ package com.shrekbytes.waqfah.data.model
 
 enum class TranslationLanguage(val code: String) { ENGLISH("en"), BENGALI("bn") }
 
+// Which catalog language corresponds to an aid display language; null when no
+// aid text should be shown at all.
+fun AidLanguage.toTranslationLanguage(): TranslationLanguage? = when (this) {
+    AidLanguage.NONE -> null
+    AidLanguage.ENGLISH -> TranslationLanguage.ENGLISH
+    AidLanguage.BENGALI -> TranslationLanguage.BENGALI
+}
+
 data class TranslationMeta(
     val id: String,
     val name: String,

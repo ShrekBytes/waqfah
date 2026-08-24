@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -36,14 +37,14 @@ fun AboutScreen(
     val colors = WaqfahTheme.colors
     val context = LocalContext.current
 
-    SettingsScaffold(title = "About", onBack = onBack) {
+    SettingsScaffold(title = stringResource(R.string.about_title), onBack = onBack) {
         Column(
             Modifier.fillMaxWidth().padding(vertical = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Image(
                 painter = painterResource(R.drawable.ic_logo_mark),
-                contentDescription = "Waqfah logo",
+                contentDescription = stringResource(R.string.waqfah_logo_cd),
                 modifier = Modifier.size(72.dp),
                 colorFilter = ColorFilter.tint(colors.ink),
             )
@@ -57,7 +58,7 @@ fun AboutScreen(
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                "A quiet pause,\nbefore you continue.",
+                stringResource(R.string.welcome_tagline),
                 color = colors.ink,
                 textAlign = TextAlign.Center,
                 fontSize = 15.sp,
@@ -65,22 +66,22 @@ fun AboutScreen(
                 lineHeight = 21.sp,
             )
             Spacer(Modifier.height(10.dp))
-            Text("Version ${BuildConfig.VERSION_NAME}", color = colors.inkMuted, fontSize = 12.sp)
+            Text(stringResource(R.string.version_fmt, BuildConfig.VERSION_NAME), color = colors.inkMuted, fontSize = 12.sp)
         }
 
-        SettingsNavRow("Donate", "Support development", onOpenDonate)
-        SettingsNavRow("Gratitude", "People who helped build Waqfah", onOpenGratitude)
-        SettingsNavRow("Privacy policy", "What data stays on your device", onOpenPrivacyPolicy)
+        SettingsNavRow(stringResource(R.string.donate_row), stringResource(R.string.donate_row_desc), onOpenDonate)
+        SettingsNavRow(stringResource(R.string.gratitude_title), stringResource(R.string.gratitude_row_desc), onOpenGratitude)
+        SettingsNavRow(stringResource(R.string.privacy_row), stringResource(R.string.privacy_row_desc), onOpenPrivacyPolicy)
 
         Spacer(Modifier.height(22.dp))
         SettingsNavRow(
-            "GitHub repository",
+            stringResource(R.string.github_row),
             SupportInfo.REPO_URL.removePrefix("https://"),
             external = true,
             onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SupportInfo.REPO_URL))) },
         )
         SettingsNavRow(
-            "Contact",
+            stringResource(R.string.contact_row),
             SupportInfo.CONTACT_EMAIL,
             external = true,
             onClick = { context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${SupportInfo.CONTACT_EMAIL}"))) },

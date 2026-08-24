@@ -17,10 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.ChevronDirection
 import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.components.SectionTitle
@@ -32,10 +34,9 @@ fun GratitudeScreen(onBack: () -> Unit) {
     val colors = WaqfahTheme.colors
     val context = LocalContext.current
 
-    SettingsScaffold(title = "Gratitude", onBack = onBack) {
+    SettingsScaffold(title = stringResource(R.string.gratitude_title), onBack = onBack) {
         Text(
-            "Waqfah is made by people, for people. JazakumAllahu khairan to everyone who gave " +
-                "their time to test, critique, and carry it along.",
+            stringResource(R.string.gratitude_intro),
             color = colors.inkMuted,
             fontSize = 14.sp,
             lineHeight = 21.sp,
@@ -73,19 +74,16 @@ fun GratitudeScreen(onBack: () -> Unit) {
             }
         }
         Spacer(Modifier.height(22.dp))
-        SectionTitle("Credits")
+        SectionTitle(stringResource(R.string.credits_section))
         Text(
-            "Quran text, translations (including Sahih International and Taisirul), and Arabic fonts " +
-                "(Digital Khatt, Me Quran, Amiri, KFGQPC Nastaleeq) belong to their respective publishers " +
-                "and authors. Waqfah is grateful to make use of their work.",
+            stringResource(R.string.credits_body),
             color = colors.inkMuted,
             fontSize = 13.sp,
             lineHeight = 19.sp,
         )
         Spacer(Modifier.height(22.dp))
         Text(
-            "And to every user who pauses for an ayah before continuing — that pause is the whole " +
-                "point. May it weigh heavy on the scale.",
+            stringResource(R.string.gratitude_users_note),
             color = colors.inkMuted,
             fontSize = 13.sp,
             fontStyle = FontStyle.Italic,

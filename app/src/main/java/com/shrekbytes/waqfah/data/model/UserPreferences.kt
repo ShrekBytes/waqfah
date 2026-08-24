@@ -3,6 +3,18 @@ package com.shrekbytes.waqfah.data.model
 import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 
+// Single source of truth for every user-adjustable range — steppers render it
+// and ViewModels coerce against it, so UI and persistence can't drift apart.
+object PreferenceLimits {
+    const val FONT_SIZE_MIN = 11
+    const val FONT_SIZE_MAX = 33
+    const val COOLDOWN_MIN_MINUTES = 0
+    const val COOLDOWN_MAX_MINUTES = 60
+}
+
+// The app's own display language (independent of the aid-content languages).
+enum class AppLanguage { SYSTEM, ENGLISH, BENGALI }
+
 enum class ReadingMode { SEQUENTIAL, RANDOM }
 enum class NameDisplayLanguage { ENGLISH, BENGALI, ARABIC }
 enum class AidLanguage { NONE, ENGLISH, BENGALI }
@@ -22,6 +34,7 @@ enum class ArabicFont(val script: ArabicScript) {
 data class UserPreferences(
     val theme: AppTheme = AppTheme.SYSTEM,
     val accentColor: AccentColor = AccentColor.SAGE,
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val readingMode: ReadingMode = ReadingMode.SEQUENTIAL,
     val surahNameLanguage: NameDisplayLanguage = NameDisplayLanguage.ENGLISH,
     val arabicScript: ArabicScript = ArabicScript.INDOPAK,

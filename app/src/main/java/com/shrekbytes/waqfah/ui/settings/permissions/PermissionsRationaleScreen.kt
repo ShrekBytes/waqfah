@@ -6,35 +6,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
-private data class RationaleBlock(val title: String, val allows: String, val never: String)
+private data class RationaleBlock(val titleRes: Int, val allowsRes: Int, val neverRes: Int)
 
 private val blocks = listOf(
     RationaleBlock(
-        "Usage access",
-        "Lets Waqfah ask Android which app just moved to the foreground, so it knows when one of " +
-            "your selected apps opens and the reading screen should appear first.",
-        "It never reads what's inside those apps — no screen content, no messages, no browsing " +
-            "history. The foreground app's name stays on your device and goes nowhere.",
+        R.string.perm_usage_name,
+        R.string.rationale_usage_allows,
+        R.string.rationale_usage_never,
     ),
     RationaleBlock(
-        "Display over other apps",
-        "Lets the reading screen appear while another app is opening. Without it, Android would " +
-            "block Waqfah from showing anything outside its own window.",
-        "It draws only Waqfah's own reading screen, only at the moment a monitored app opens — " +
-            "never ads, overlays, or anything on top of other apps at any other time.",
+        R.string.perm_overlay_name,
+        R.string.rationale_overlay_allows,
+        R.string.rationale_overlay_never,
     ),
     RationaleBlock(
-        "Unrestricted battery",
-        "Stops Android from shutting down Waqfah's background monitor to save power, so triggers " +
-            "keep working hours after you last opened the app.",
-        "It doesn't change how much battery Waqfah uses — the monitor checks about once per second " +
-            "and otherwise sleeps. This only removes the system's permission to kill it early.",
+        R.string.perm_battery_name,
+        R.string.rationale_battery_allows,
+        R.string.rationale_battery_never,
     ),
 )
 
@@ -42,10 +38,9 @@ private val blocks = listOf(
 fun PermissionsRationaleScreen(onBack: () -> Unit) {
     val colors = WaqfahTheme.colors
 
-    SettingsScaffold(title = "Why Waqfah needs these", onBack = onBack) {
+    SettingsScaffold(title = stringResource(R.string.rationale_title), onBack = onBack) {
         Text(
-            "Each permission maps to one thing Waqfah does. None of them let it read screen content " +
-                "or send anything off your device.",
+            stringResource(R.string.rationale_intro),
             color = colors.inkMuted,
             fontSize = 14.sp,
             lineHeight = 21.sp,
@@ -53,20 +48,20 @@ fun PermissionsRationaleScreen(onBack: () -> Unit) {
         Spacer(Modifier.height(14.dp))
         blocks.forEach { block ->
             Text(
-                block.title,
+                stringResource(block.titleRes),
                 color = colors.ink,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 6.dp),
             )
             Text(
-                "What it lets Waqfah do: " + block.allows,
+                stringResource(R.string.rationale_allows_fmt, stringResource(block.allowsRes)),
                 color = colors.inkMuted,
                 fontSize = 13.sp,
                 lineHeight = 19.sp,
             )
             Text(
-                "What it never does: " + block.never,
+                stringResource(R.string.rationale_never_fmt, stringResource(block.neverRes)),
                 color = colors.inkMuted,
                 fontSize = 13.sp,
                 lineHeight = 19.sp,

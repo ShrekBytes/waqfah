@@ -3,6 +3,7 @@ package com.shrekbytes.waqfah.ui.reading
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -11,6 +12,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
@@ -71,6 +73,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -81,10 +84,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.data.model.ReadingMode
 import com.shrekbytes.waqfah.ui.components.ChevronDirection
 import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
+import com.shrekbytes.waqfah.ui.components.skeletonPulseAlpha
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import com.shrekbytes.waqfah.ui.theme.toFontFamily
 import kotlinx.coroutines.launch
@@ -161,9 +166,9 @@ fun ReadingCard(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text("Waqfah is off right now.", color = colors.inkMuted, fontSize = 14.sp)
+                    Text(stringResource(R.string.paused_message), color = colors.inkMuted, fontSize = 14.sp)
                     TextButton(onClick = onResume) {
-                        Text("Turn back on", color = colors.accent, fontSize = 13.5.sp, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.turn_back_on), color = colors.accent, fontSize = 13.5.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             } else {
@@ -350,11 +355,16 @@ fun ReadingCard(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = "Previous ayah")
+                    RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = stringResource(R.string.cd_prev_ayah))
                     Spacer(Modifier.width(10.dp))
-                    MarkReadPill(marked = state.isMarkedRead, markReadTrigger = markReadTrigger, onClick = handleMarkRead)
+                    MarkReadPill(
+                        marked = state.isMarkedRead,
+                        markReadTrigger = markReadTrigger,
+                        verseKey = state.ayahLabel,
+                        onClick = handleMarkRead,
+                    )
                     Spacer(Modifier.width(10.dp))
-                    RemArrow(direction = ChevronDirection.RIGHT, onClick = onNext, contentDescription = "Next ayah")
+                    RemArrow(direction = ChevronDirection.RIGHT, onClick = onNext, contentDescription = stringResource(R.string.cd_next_ayah))
                 }
             }
         }
@@ -375,24 +385,24 @@ fun ReadingCard(
             titleContentColor = colors.ink,
             textContentColor = colors.inkMuted,
             onDismissRequest = onCompletionDismiss,
-            title = { Text("Alhamdulillah!", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.completion_title), fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     Text(
-                        "You have completed the Holy Quran. May Allah (SWT) accept it from you, multiply your reward, and make it a light for you.",
+                        stringResource(R.string.completion_body),
                         color = colors.inkMuted,
                         fontSize = 14.sp,
                         lineHeight = 22.sp,
                     )
                     Spacer(Modifier.height(18.dp))
-                    WaqfahPrimaryButton(text = "Start Again", onClick = { confirmStartOver = true })
+                    WaqfahPrimaryButton(text = stringResource(R.string.start_again), onClick = { confirmStartOver = true })
                     Spacer(Modifier.height(4.dp))
                     TextButton(
                         onClick = { confirmSwitchMode = true },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            if (state.readingMode == ReadingMode.SEQUENTIAL) "Switch to Random Mode" else "Switch to Sequential Mode",
+                            if (state.readingMode == ReadingMode.SEQUENTIAL) stringResource(R.string.switch_to_random_mode) else stringResource(R.string.switch_to_sequential_mode),
                             fontSize = 13.5.sp,
                             color = colors.accent,
                         )
@@ -401,7 +411,7 @@ fun ReadingCard(
             },
             confirmButton = {},
             dismissButton = {
-                TextButton(onClick = onCompletionDismiss) { Text("Close", color = colors.inkMuted) }
+                TextButton(onClick = onCompletionDismiss) { Text(stringResource(R.string.close), color = colors.inkMuted) }
             },
         )
     }
@@ -413,11 +423,11 @@ fun ReadingCard(
             titleContentColor = colors.ink,
             textContentColor = colors.inkMuted,
             onDismissRequest = { confirmStartOver = false; confirmSwitchMode = false },
-            title = { Text("Reset progress?", fontWeight = FontWeight.SemiBold) },
+            title = { Text(stringResource(R.string.reset_dialog_title), fontWeight = FontWeight.SemiBold) },
             text = {
                 Text(
-                    "This will clear every ayah you have marked as read and start from the beginning." +
-                        if (willSwitch) " Reading mode will also switch." else "",
+                    stringResource(R.string.reset_dialog_body) +
+                        if (willSwitch) stringResource(R.string.reset_mode_note) else "",
                     color = colors.inkMuted,
                     fontSize = 14.sp,
                     lineHeight = 22.sp,
@@ -428,11 +438,11 @@ fun ReadingCard(
                     confirmStartOver = false
                     confirmSwitchMode = false
                     if (willSwitch) onSwitchModeAndRestart() else onStartOver()
-                }) { Text("Yes, reset", color = colors.accent) }
+                }) { Text(stringResource(R.string.yes_reset), color = colors.accent) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmStartOver = false; confirmSwitchMode = false }) {
-                    Text("Cancel", color = colors.inkMuted)
+                    Text(stringResource(R.string.cancel), color = colors.inkMuted)
                 }
             },
         )
@@ -502,13 +512,7 @@ private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Fl
 @Composable
 private fun ReadingSkeleton(modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors
-    val transition = rememberInfiniteTransition(label = "skeleton_pulse")
-    val pulseAlpha by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.85f,
-        animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "skeleton_pulse_alpha",
-    )
+    val pulseAlpha = skeletonPulseAlpha()
     val barColor = colors.line.copy(alpha = pulseAlpha)
 
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -562,7 +566,7 @@ private fun RemArrow(direction: ChevronDirection, onClick: suspend () -> Unit, c
 // Smaller, accent-tinted secondary affordance next to the translation text.
 @Composable
 private fun TranslationSwitchArrow(direction: ChevronDirection, onClick: () -> Unit) {
-    val contentDescription = if (direction == ChevronDirection.LEFT) "Previous translation" else "Next translation"
+    val contentDescription = if (direction == ChevronDirection.LEFT) stringResource(R.string.cd_prev_translation) else stringResource(R.string.cd_next_translation)
     IconButton(onClick = onClick, modifier = Modifier.size(28.dp)) {
         ChevronIcon(
             direction = direction,
@@ -573,16 +577,34 @@ private fun TranslationSwitchArrow(direction: ChevronDirection, onClick: () -> U
 }
 
 @Composable
-private fun MarkReadPill(marked: Boolean, markReadTrigger: Int, onClick: () -> Unit) {
+private fun MarkReadPill(marked: Boolean, markReadTrigger: Int, verseKey: Any?, onClick: () -> Unit) {
     val colors = WaqfahTheme.colors
+    val markedReadLabel = stringResource(R.string.cd_marked_read)
+    val markReadLabel = stringResource(R.string.mark_read)
+
+    // Swiping to another ayah swaps the marked state too — that swap must SNAP,
+    // otherwise the new ayah's pill visibly cross-fades away from the previous
+    // ayah's state and reads as lag. Only direct taps get the smooth transition.
+    var lastVerseKey by remember { mutableStateOf<Any?>(null) }
+    var verseJustChanged by remember { mutableStateOf(false) }
+    if (verseKey != lastVerseKey) {
+        lastVerseKey = verseKey
+        verseJustChanged = true
+    } else {
+        verseJustChanged = false
+    }
+
+    val colorSpec: AnimationSpec<Color> = if (verseJustChanged) snap() else tween(160)
+    val alphaSpec: AnimationSpec<Float> = if (verseJustChanged) snap() else tween(160)
+
     // Pending is the call-to-action (solid accent); marked recedes to soft accent.
-    val backgroundColor by animateColorAsState(if (marked) colors.accentSoft else colors.accent, label = "mark_read_bg")
-    val contentColor by animateColorAsState(if (marked) colors.accent else colors.accentInk, label = "mark_read_content")
+    val backgroundColor by animateColorAsState(if (marked) colors.accentSoft else colors.accent, colorSpec, label = "mark_read_bg")
+    val contentColor by animateColorAsState(if (marked) colors.accent else colors.accentInk, colorSpec, label = "mark_read_content")
 
     // Text and icon stay permanently composed in one centered Box; animating
     // only their alpha means nothing moves and each frame is a pure redraw.
-    val checkAlpha by animateFloatAsState(if (marked) 1f else 0f, label = "mark_read_check_alpha")
-    val textAlpha by animateFloatAsState(if (marked) 0f else 1f, label = "mark_read_text_alpha")
+    val checkAlpha by animateFloatAsState(if (marked) 1f else 0f, alphaSpec, label = "mark_read_check_alpha")
+    val textAlpha by animateFloatAsState(if (marked) 0f else 1f, alphaSpec, label = "mark_read_text_alpha")
 
     // Bounce on every tap, including repeat taps on an already-marked ayah.
     val bounce = remember { Animatable(1f) }
@@ -600,13 +622,13 @@ private fun MarkReadPill(marked: Boolean, markReadTrigger: Int, onClick: () -> U
         modifier = Modifier
             .scale(bounce.value)
             .defaultMinSize(minWidth = 124.dp)
-            .semantics { contentDescription = if (marked) "Marked read" else "Mark read" },
+            .semantics { contentDescription = if (marked) markedReadLabel else markReadLabel },
     ) {
         Box(Modifier.padding(horizontal = 22.dp, vertical = 11.dp), contentAlignment = Alignment.Center) {
             // Text reserves the pill's footprint at all times; its own semantics
             // are cleared since the Surface carries the label for both states.
             Text(
-                "Mark Read",
+                markReadLabel,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.alpha(textAlpha).clearAndSetSemantics {},

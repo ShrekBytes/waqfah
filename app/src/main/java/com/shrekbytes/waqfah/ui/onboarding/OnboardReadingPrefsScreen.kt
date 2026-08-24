@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.data.model.AidLanguage
 import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
 import com.shrekbytes.waqfah.data.model.UserPreferences
@@ -42,14 +44,14 @@ fun OnboardReadingPrefsScreen(
 
     OnboardingScaffold(
         step = 1,
-        title = "Set your reading\npreferences",
+        title = stringResource(R.string.onboard_prefs_title),
         onBack = onBack,
         bottomContent = {
-            WaqfahPrimaryButton(text = "Continue", onClick = onContinue)
+            WaqfahPrimaryButton(text = stringResource(R.string.continue_btn), onClick = onContinue)
         },
     ) {
         Text(
-            "PREVIEW",
+            stringResource(R.string.preview_label),
             color = colors.inkMuted,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
@@ -59,9 +61,13 @@ fun OnboardReadingPrefsScreen(
         OnboardingPreviewCard(prefs)
         Spacer(Modifier.height(20.dp))
 
-        FieldLabel("Pronunciation")
+        FieldLabel(stringResource(R.string.pronunciation_label))
         ChipGroup(
-            options = listOf(AidLanguage.NONE to "None", AidLanguage.ENGLISH to "English", AidLanguage.BENGALI to "Bengali"),
+            options = listOf(
+                AidLanguage.NONE to stringResource(R.string.aid_none),
+                AidLanguage.ENGLISH to stringResource(R.string.aid_english),
+                AidLanguage.BENGALI to stringResource(R.string.aid_bengali),
+            ),
             selected = prefs.pronunciation,
             onSelect = { lang ->
                 viewModel.setPronunciation(lang)
@@ -77,9 +83,13 @@ fun OnboardReadingPrefsScreen(
             },
         )
         Spacer(Modifier.height(16.dp))
-        FieldLabel("Translation")
+        FieldLabel(stringResource(R.string.translation_label))
         ChipGroup(
-            options = listOf(AidLanguage.NONE to "None", AidLanguage.ENGLISH to "English", AidLanguage.BENGALI to "Bengali"),
+            options = listOf(
+                AidLanguage.NONE to stringResource(R.string.aid_none),
+                AidLanguage.ENGLISH to stringResource(R.string.aid_english),
+                AidLanguage.BENGALI to stringResource(R.string.aid_bengali),
+            ),
             selected = prefs.translationDisplay,
             onSelect = viewModel::setTranslationDisplay,
         )
@@ -101,7 +111,7 @@ private fun OnboardingPreviewCard(prefs: UserPreferences) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Surah Al-Ikhlas", color = colors.inkMuted, fontSize = 11.5.sp)
+        Text(stringResource(R.string.preview_surah_name), color = colors.inkMuted, fontSize = 11.5.sp)
         Spacer(Modifier.height(10.dp))
         Text("112:1", color = colors.ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(10.dp))

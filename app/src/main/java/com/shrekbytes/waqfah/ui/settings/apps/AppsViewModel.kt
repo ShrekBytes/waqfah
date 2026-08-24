@@ -3,6 +3,8 @@ package com.shrekbytes.waqfah.ui.settings.apps
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.model.InstalledApp
+import com.shrekbytes.waqfah.data.model.PreferenceLimits
+import com.shrekbytes.waqfah.data.model.UserPreferences
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +25,9 @@ import javax.inject.Inject
 data class AppRowState(val app: InstalledApp, val isMonitored: Boolean)
 
 data class AppsUiState(
-    val cooldownMinutes: Int = 5,
+    // Mirrors UserPreferences' persisted default so the pre-DataStore frame
+    // doesn't flash a different number.
+    val cooldownMinutes: Int = UserPreferences().cooldownMinutes,
     val searchQuery: String = "",
     val apps: List<AppRowState> = emptyList(),
     // True until getInstalledLaunchableApps() completes — apps.isEmpty() alone
@@ -41,10 +45,13 @@ class AppsViewModel @Inject constructor(
     private val isLoadingApps = MutableStateFlow(true)
 
     // queryIntentActivities scans every installed package — run off the main thread.
+    // Lazily, not Eagerly: the scan (and per-app icon rendering) only happens
+    // when a screen actually collects uiState, but the result is then kept for
+    // the ViewModel's lifetime instead of rescanning on every revisit.
     private val installedApps: StateFlow<List<InstalledApp>> = flow {
         emit(withContext(Dispatchers.Default) { monitoredAppsRepository.getInstalledLaunchableApps() })
         isLoadingApps.value = false
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // Narrowed to cooldownMinutes only so unrelated preference changes don't
     // rebuild the whole filtered list.
@@ -80,6 +87,8 @@ class AppsViewModel @Inject constructor(
     }
 
     fun setCooldown(minutes: Int) = viewModelScope.launch {
-        settingsRepository.setCooldownMinutes(minutes.coerceIn(0, 60))
+        settingsRepository.setCooldownMinutes(
+            minutes.coerceIn(PreferenceLimits.COOLDOWN_MIN_MINUTES, PreferenceLimits.COOLDOWN_MAX_MINUTES),
+        )
     }
 }

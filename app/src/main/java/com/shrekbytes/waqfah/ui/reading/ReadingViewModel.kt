@@ -5,24 +5,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.local.core.VerseEntity
 import com.shrekbytes.waqfah.data.model.AidLanguage
-import com.shrekbytes.waqfah.data.model.ArabicScript
 import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
 import com.shrekbytes.waqfah.data.model.ReadingMode
 import com.shrekbytes.waqfah.data.model.TranslationCatalog
 import com.shrekbytes.waqfah.data.model.TranslationLanguage
 import com.shrekbytes.waqfah.data.model.TranslationMeta
 import com.shrekbytes.waqfah.data.model.UserPreferences
+import com.shrekbytes.waqfah.data.model.toTranslationLanguage
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
 import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.repository.TranslationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 // HomeScreen and ReadingScreen live in separate Activities (MainActivity and
@@ -36,6 +40,13 @@ class ReadingViewModel @Inject constructor(
     private val monitoredAppsRepository: MonitoredAppsRepository,
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
+
+    // Serializes every mutation of currentVerse / translationOverrideId and the
+    // renders that read them. next()/previous() are awaited mid-gesture from the
+    // UI's own coroutine scope, so rapid swipes — or a preferences emission
+    // landing mid-step — would otherwise interleave step()/render() calls and
+    // let a stale render overwrite the newer verse.
+    private val mutationMutex = Mutex()
 
     private var currentVerse: VerseEntity? = null
     private var latestPrefs = UserPreferences()
@@ -55,29 +66,39 @@ class ReadingViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             settingsRepository.preferences.collect { prefs ->
+                // Changing the persisted default must win over any session-local
+                // compare-mode peek — otherwise switching translations looks
+                // like it "didn't update" while the old override still renders.
+                val defaultChanged = prefs.activeTranslationEnglish != latestPrefs.activeTranslationEnglish ||
+                    prefs.activeTranslationBengali != latestPrefs.activeTranslationBengali
                 latestPrefs = prefs
-                if (currentVerse == null) currentVerse = loadStartingVerse(prefs)
-                render(prefs)
+                mutationMutex.withLock {
+                    if (defaultChanged) translationOverrideId = null
+                    if (currentVerse == null) currentVerse = loadStartingVerse(prefs)
+                    render(prefs)
+                }
             }
         }
     }
 
     // Suspend so ReadingCard can await these mid-gesture to sequence the swipe
     // animation, verse swap, and offset reset strictly.
-    suspend fun next() = step { quranRepository.getNextVerse(it) }
-    suspend fun previous() = step { quranRepository.getPreviousVerse(it) }
+    suspend fun next() = mutationMutex.withLock { step { quranRepository.getNextVerse(it) } }
+    suspend fun previous() = mutationMutex.withLock { step { quranRepository.getPreviousVerse(it) } }
 
     fun markCurrentRead() = viewModelScope.launch {
-        val verse = currentVerse ?: return@launch
         val newIsRead = !_uiState.value.isMarkedRead
         // Optimistic UI update first — awaiting the DB write delays feedback.
         _uiState.update { it.copy(isMarkedRead = newIsRead) }
-        if (newIsRead) {
-            readingProgressRepository.markRead(verse.id)
-        } else {
-            readingProgressRepository.unmarkRead(verse.id)
+        mutationMutex.withLock {
+            val verse = currentVerse ?: return@withLock
+            if (newIsRead) {
+                readingProgressRepository.markRead(verse.id)
+            } else {
+                readingProgressRepository.unmarkRead(verse.id)
+            }
+            refreshCompletionState()
         }
-        refreshCompletionState()
     }
 
     fun dismissCompletion() {
@@ -103,12 +124,21 @@ class ReadingViewModel @Inject constructor(
 
     private suspend fun beginFreshSession() {
         completionDismissed = false
-        currentVerse = loadStartingVerse(latestPrefs)
-        render(latestPrefs)
+        mutationMutex.withLock {
+            currentVerse = loadStartingVerse(latestPrefs)
+            render(latestPrefs)
+        }
     }
 
     private suspend fun isEverythingRead(): Boolean =
-        readingProgressRepository.countRead() >= quranRepository.totalVerseCount()
+        readingProgressRepository.countRead() >= totalVerseCount()
+
+    // The bundled Quran database ships whole with every app update, so its size
+    // never changes at runtime — fetch it once instead of on every render.
+    private var cachedTotalVerseCount: Int? = null
+
+    private suspend fun totalVerseCount(): Int =
+        cachedTotalVerseCount ?: quranRepository.totalVerseCount().also { cachedTotalVerseCount = it }
 
     // Marking the last unread ayah completes the Quran mid-session too.
     private suspend fun refreshCompletionState() {
@@ -122,25 +152,25 @@ class ReadingViewModel @Inject constructor(
     // active display language, wrapping around. Never touches the persisted
     // default — pure "peek at another wording" for this ayah only.
     fun cycleTranslationSource(forward: Boolean) = viewModelScope.launch {
-        val lang = when (latestPrefs.translationDisplay) {
-            AidLanguage.NONE -> return@launch
-            AidLanguage.ENGLISH -> TranslationLanguage.ENGLISH
-            AidLanguage.BENGALI -> TranslationLanguage.BENGALI
+        val lang = latestPrefs.translationDisplay.toTranslationLanguage() ?: return@launch
+        mutationMutex.withLock {
+            val downloaded = TranslationCatalog.all.filter { it.language == lang && translationRepository.isDownloaded(it) }
+            if (downloaded.size < 2) return@withLock
+            val currentId = translationOverrideId ?: activeTranslation(lang, latestPrefs).id
+            val currentIndex = downloaded.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
+            val stepDir = if (forward) 1 else -1
+            translationOverrideId = downloaded[(currentIndex + stepDir + downloaded.size) % downloaded.size].id
+            render(latestPrefs)
         }
-        val downloaded = TranslationCatalog.all.filter { it.language == lang && translationRepository.isDownloaded(it) }
-        if (downloaded.size < 2) return@launch
-        val currentId = translationOverrideId ?: activeTranslation(lang, latestPrefs).id
-        val currentIndex = downloaded.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
-        val stepDir = if (forward) 1 else -1
-        translationOverrideId = downloaded[(currentIndex + stepDir + downloaded.size) % downloaded.size].id
-        render(latestPrefs)
     }
 
     // Drops the preview back to the real default when the switcher closes.
     fun resetTranslationSource() = viewModelScope.launch {
-        if (translationOverrideId == null) return@launch
-        translationOverrideId = null
-        render(latestPrefs)
+        mutationMutex.withLock {
+            if (translationOverrideId == null) return@withLock
+            translationOverrideId = null
+            render(latestPrefs)
+        }
     }
 
     fun setTriggeredPackage(packageName: String?) = viewModelScope.launch {
@@ -153,6 +183,7 @@ class ReadingViewModel @Inject constructor(
         launch()
     }
 
+    // Caller must hold mutationMutex.
     private suspend fun step(load: suspend (Int) -> VerseEntity?) {
         val fromId = currentVerse?.id ?: return
         currentVerse = load(fromId)
@@ -175,63 +206,61 @@ class ReadingViewModel @Inject constructor(
         }
     }
 
+    // Caller must hold mutationMutex.
     private suspend fun render(prefs: UserPreferences) {
         val verse = currentVerse ?: return
-        val surah = quranRepository.getSurah(verse.surahNo)
-        val isRead = readingProgressRepository.isRead(verse.id)
-        val allRead = isEverythingRead()
 
-        val translationLanguage = when (prefs.translationDisplay) {
-            AidLanguage.NONE -> null
-            AidLanguage.ENGLISH -> TranslationLanguage.ENGLISH
-            AidLanguage.BENGALI -> TranslationLanguage.BENGALI
-        }
-        // Downloaded alternatives decide whether the switcher shows at all;
-        // catalog entries without a local file have nothing to preview.
-        val downloadedTranslations = translationLanguage
-            ?.let { lang -> TranslationCatalog.all.filter { it.language == lang && translationRepository.isDownloaded(it) } }
-            .orEmpty()
-        val defaultMeta = translationLanguage?.let { activeTranslation(it, prefs) }
-        val shownMeta = downloadedTranslations.find { it.id == translationOverrideId } ?: defaultMeta
-        val translationText = shownMeta?.let { translationRepository.getText(it, verse.id) }
-        val translitText = when (prefs.pronunciation) {
-            AidLanguage.NONE -> null
-            AidLanguage.ENGLISH -> verse.enTransliteration
-            AidLanguage.BENGALI -> verse.bnTransliteration
-        }
+        // The independent lookups run concurrently — sequentially a render
+        // costs ~6 DB round-trips (per swipe, and per settings tick).
+        coroutineScope {
+            val surahDeferred = async { quranRepository.getSurah(verse.surahNo) }
+            val isReadDeferred = async { readingProgressRepository.isRead(verse.id) }
+            val allReadDeferred = async { isEverythingRead() }
+            val nextPreviewDeferred =
+                async { quranRepository.getNextVerse(verse.id)?.let { buildPreview(it, prefs) } }
+            val previousPreviewDeferred =
+                async { quranRepository.getPreviousVerse(verse.id)?.let { buildPreview(it, prefs) } }
 
-        // Refreshed every render so display-setting changes update peek content
-        // too, ready before a swipe even starts.
-        val nextPreview = quranRepository.getNextVerse(verse.id)?.let { buildPreview(it, prefs) }
-        val previousPreview = quranRepository.getPreviousVerse(verse.id)?.let { buildPreview(it, prefs) }
+            val translationLanguage = prefs.translationDisplay.toTranslationLanguage()
+            // Downloaded alternatives decide whether the switcher shows at all;
+            // catalog entries without a local file have nothing to preview.
+            val downloadedTranslations = translationLanguage
+                ?.let { lang -> TranslationCatalog.all.filter { it.language == lang && translationRepository.isDownloaded(it) } }
+                .orEmpty()
+            val defaultMeta = translationLanguage?.let { activeTranslation(it, prefs) }
+            val shownMeta = downloadedTranslations.find { it.id == translationOverrideId } ?: defaultMeta
+            val translationText = shownMeta?.let { translationRepository.getText(it, verse.id) }
+            val translitText = when (prefs.pronunciation) {
+                AidLanguage.NONE -> null
+                AidLanguage.ENGLISH -> verse.enTransliteration
+                AidLanguage.BENGALI -> verse.bnTransliteration
+            }
 
-        _uiState.update { current ->
-            current.copy(
-                isLoading = false,
-                isPaused = !prefs.appActive,
-                surahName = surah?.let { surahDisplayName(it, prefs.surahNameLanguage) } ?: "",
-                surahNameDirection = if (prefs.surahNameLanguage == NameDisplayLanguage.ARABIC) LayoutDirection.Rtl else LayoutDirection.Ltr,
-                ayahLabel = "${localizeDigits(verse.surahNo, prefs.surahNameLanguage)}:${localizeDigits(verse.ayahNo, prefs.surahNameLanguage)}",
-                totalLabel = surah?.let { "${localizeDigits(it.ayahCount, prefs.surahNameLanguage)} ${ayahWord(prefs.surahNameLanguage)}" } ?: "",
-                arabicText = when (prefs.arabicScript) {
-                    ArabicScript.INDOPAK -> verse.arabicIndopak
-                    ArabicScript.UTHMANI -> verse.arabicUthmani
-                },
-                arabicFont = prefs.arabicFont,
-                arabicFontSize = prefs.arabicFontSize,
-                translitText = translitText,
-                translitFontSize = prefs.translitFontSize,
-                translationText = translationText,
-                translationFontSize = prefs.translationFontSize,
-                translationSourceName = shownMeta?.name,
-                translationHasAlternates = downloadedTranslations.size > 1,
-                isMarkedRead = isRead,
-                readingMode = prefs.readingMode,
-                isCompleted = allRead && !completionDismissed,
-                // triggeredAppLabel untouched — owned by setTriggeredPackage()
-                nextPreview = nextPreview,
-                previousPreview = previousPreview,
-            )
+            _uiState.update { current ->
+                current.copy(
+                    isLoading = false,
+                    isPaused = !prefs.appActive,
+                    surahName = surahDeferred.await()?.let { surahDisplayName(it, prefs.surahNameLanguage) } ?: "",
+                    surahNameDirection = if (prefs.surahNameLanguage == NameDisplayLanguage.ARABIC) LayoutDirection.Rtl else LayoutDirection.Ltr,
+                    ayahLabel = ayahLabel(verse, prefs.surahNameLanguage),
+                    totalLabel = surahDeferred.await()?.let { "${localizeDigits(it.ayahCount, prefs.surahNameLanguage)} ${ayahWord(prefs.surahNameLanguage)}" } ?: "",
+                    arabicText = verse.arabicTextFor(prefs.arabicScript),
+                    arabicFont = prefs.arabicFont,
+                    arabicFontSize = prefs.arabicFontSize,
+                    translitText = translitText,
+                    translitFontSize = prefs.translitFontSize,
+                    translationText = translationText,
+                    translationFontSize = prefs.translationFontSize,
+                    translationSourceName = shownMeta?.name,
+                    translationHasAlternates = downloadedTranslations.size > 1,
+                    isMarkedRead = isReadDeferred.await(),
+                    readingMode = prefs.readingMode,
+                    isCompleted = allReadDeferred.await() && !completionDismissed,
+                    // triggeredAppLabel untouched — owned by setTriggeredPackage()
+                    nextPreview = nextPreviewDeferred.await(),
+                    previousPreview = previousPreviewDeferred.await(),
+                )
+            }
         }
     }
 
@@ -239,11 +268,7 @@ class ReadingViewModel @Inject constructor(
     // (override mode, read status, header) and always with the real default
     // translation — a peeked neighbour isn't in compare mode.
     private suspend fun buildPreview(verse: VerseEntity, prefs: UserPreferences): AyahPreview {
-        val translationLanguage = when (prefs.translationDisplay) {
-            AidLanguage.NONE -> null
-            AidLanguage.ENGLISH -> TranslationLanguage.ENGLISH
-            AidLanguage.BENGALI -> TranslationLanguage.BENGALI
-        }
+        val translationLanguage = prefs.translationDisplay.toTranslationLanguage()
         val meta = translationLanguage?.let { activeTranslation(it, prefs) }
         val translationText = meta?.let { translationRepository.getText(it, verse.id) }
         val translitText = when (prefs.pronunciation) {
@@ -252,11 +277,8 @@ class ReadingViewModel @Inject constructor(
             AidLanguage.BENGALI -> verse.bnTransliteration
         }
         return AyahPreview(
-            ayahLabel = "${localizeDigits(verse.surahNo, prefs.surahNameLanguage)}:${localizeDigits(verse.ayahNo, prefs.surahNameLanguage)}",
-            arabicText = when (prefs.arabicScript) {
-                ArabicScript.INDOPAK -> verse.arabicIndopak
-                ArabicScript.UTHMANI -> verse.arabicUthmani
-            },
+            ayahLabel = ayahLabel(verse, prefs.surahNameLanguage),
+            arabicText = verse.arabicTextFor(prefs.arabicScript),
             arabicFont = prefs.arabicFont,
             arabicFontSize = prefs.arabicFontSize,
             translitText = translitText,

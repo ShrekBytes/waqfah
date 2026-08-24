@@ -15,10 +15,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.ChevronDirection
 import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
@@ -43,7 +45,7 @@ fun OnboardWelcomeScreen(onGetStarted: () -> Unit) {
             )
             Spacer(Modifier.height(28.dp))
             Text(
-                "A quiet pause,\nbefore you continue.",
+                stringResource(R.string.welcome_tagline),
                 textAlign = TextAlign.Center,
                 color = colors.ink,
                 fontSize = 22.sp,
@@ -53,7 +55,7 @@ fun OnboardWelcomeScreen(onGetStarted: () -> Unit) {
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                "Read an ayah, every time you open an app.",
+                stringResource(R.string.welcome_subtitle),
                 textAlign = TextAlign.Center,
                 color = colors.ink,
                 fontSize = 15.sp,
@@ -62,7 +64,7 @@ fun OnboardWelcomeScreen(onGetStarted: () -> Unit) {
             )
             Spacer(Modifier.height(14.dp))
             Text(
-                "Waqfah shows an ayah before the apps you choose. No streaks, no pressure, no restrictions — just a moment, then you continue.",
+                stringResource(R.string.welcome_body),
                 textAlign = TextAlign.Center,
                 color = colors.inkMuted,
                 fontSize = 14.sp,

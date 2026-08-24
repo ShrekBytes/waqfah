@@ -8,6 +8,7 @@ import com.shrekbytes.waqfah.data.model.ArabicScript
 import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
 import com.shrekbytes.waqfah.data.model.ReadingMode
 import com.shrekbytes.waqfah.data.model.UserPreferences
+import com.shrekbytes.waqfah.data.model.PreferenceLimits
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,9 +40,9 @@ class ReadingDisplayViewModel @Inject constructor(
     }
 
     fun setArabicFont(font: ArabicFont) = viewModelScope.launch { settingsRepository.setArabicFont(font) }
-    fun setArabicFontSize(size: Int) = viewModelScope.launch { settingsRepository.setArabicFontSize(size.coerceIn(11, 33)) }
+    fun setArabicFontSize(size: Int) = viewModelScope.launch { settingsRepository.setArabicFontSize(size.coerceIn(PreferenceLimits.FONT_SIZE_MIN, PreferenceLimits.FONT_SIZE_MAX)) }
     fun setPronunciation(lang: AidLanguage) = viewModelScope.launch { settingsRepository.setPronunciation(lang) }
-    fun setTranslitFontSize(size: Int) = viewModelScope.launch { settingsRepository.setTranslitFontSize(size.coerceIn(11, 33)) }
+    fun setTranslitFontSize(size: Int) = viewModelScope.launch { settingsRepository.setTranslitFontSize(size.coerceIn(PreferenceLimits.FONT_SIZE_MIN, PreferenceLimits.FONT_SIZE_MAX)) }
     fun setTranslationDisplay(lang: AidLanguage) = viewModelScope.launch { settingsRepository.setTranslationDisplay(lang) }
-    fun setTranslationFontSize(size: Int) = viewModelScope.launch { settingsRepository.setTranslationFontSize(size.coerceIn(11, 33)) }
+    fun setTranslationFontSize(size: Int) = viewModelScope.launch { settingsRepository.setTranslationFontSize(size.coerceIn(PreferenceLimits.FONT_SIZE_MIN, PreferenceLimits.FONT_SIZE_MAX)) }
 }

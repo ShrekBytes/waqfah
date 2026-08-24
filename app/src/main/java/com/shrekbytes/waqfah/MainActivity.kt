@@ -29,6 +29,10 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var settingsRepository: SettingsRepository
     @Inject lateinit var permissionsRepository: PermissionsRepository
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(SettingsRepository.withAppLocale(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Must run before super.onCreate(): on Android 12+ it hands control to
         // the system SplashScreen (started from Theme.Waqfah.Starting), and on

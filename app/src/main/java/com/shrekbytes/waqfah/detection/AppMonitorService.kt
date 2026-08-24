@@ -6,13 +6,17 @@ import android.app.NotificationManager
 import android.app.Service
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.TriggerActivity
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
@@ -25,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -66,10 +71,33 @@ class AppMonitorService : Service() {
     private var currentForeground: String? = null
     private val lastLeftForegroundAt = mutableMapOf<String, Long>()
 
+    // Polling pauses while the screen is off: no app switches can happen, so
+    // every poll would be pure battery drain. The loop suspends on this flow
+    // instead of waking up each interval.
+    private val screenOn = MutableStateFlow(true)
+
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_SCREEN_ON -> screenOn.value = true
+                Intent.ACTION_SCREEN_OFF -> screenOn.value = false
+            }
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+        ContextCompat.registerReceiver(
+            this,
+            screenReceiver,
+            IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_SCREEN_OFF)
+            },
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         startInForeground()
         serviceScope.launch { monitorLoop() }
     }
@@ -77,6 +105,7 @@ class AppMonitorService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
 
     override fun onDestroy() {
+        unregisterReceiver(screenReceiver)
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -84,10 +113,12 @@ class AppMonitorService : Service() {
     private fun startInForeground() {
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Background monitoring", NotificationManager.IMPORTANCE_MIN),
+            NotificationChannel(CHANNEL_ID, getString(R.string.monitor_notification_channel), NotificationManager.IMPORTANCE_MIN),
         )
         val notification = Notification.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            // Flat white glyph — the adaptive mipmap renders as a grey blob in
+            // the status bar.
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.monitor_notification_title))
             .setOngoing(true)
             .build()
@@ -102,15 +133,29 @@ class AppMonitorService : Service() {
 
     private suspend fun monitorLoop() {
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        // The receiver keeps this fresh from here on; read the real state once
+        // so a service restart mid-screen-off doesn't poll for nothing.
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        screenOn.value = powerManager.isInteractive
+
         var windowStart = System.currentTimeMillis()
+        var lastPermissionCheckAt = SystemClock.elapsedRealtime()
 
         while (serviceScope.isActive) {
+            screenOn.first { it }
             delay(POLL_INTERVAL_MS)
 
-            if (!permissionsRepository.hasRequiredPermissions()) {
-                Log.d(TAG, "Usage access or overlay permission revoked — stopping")
-                stopSelf()
-                break
+            // AppOps is a binder IPC — throttled instead of paid every second.
+            // Revocation is still caught promptly enough: the next check, the
+            // next foreground change, or MainActivity's resume all re-verify.
+            val nowElapsed = SystemClock.elapsedRealtime()
+            if (nowElapsed - lastPermissionCheckAt >= PERMISSION_CHECK_INTERVAL_MS) {
+                lastPermissionCheckAt = nowElapsed
+                if (!permissionsRepository.hasRequiredPermissions()) {
+                    Log.d(TAG, "Usage access or overlay permission revoked — stopping")
+                    stopSelf()
+                    break
+                }
             }
 
             val windowEnd = System.currentTimeMillis()
@@ -122,7 +167,14 @@ class AppMonitorService : Service() {
             // Note when the outgoing package left the foreground — used by the
             // interval-Off rule below to tell a fresh open apart from a quick
             // switch-back.
-            currentForeground?.let { lastLeftForegroundAt[it] = SystemClock.elapsedRealtime() }
+            currentForeground?.let { left ->
+                lastLeftForegroundAt[left] = SystemClock.elapsedRealtime()
+                // Bound memory: only exits within OFF_SESSION_GAP_MS matter, so
+                // stale entries are dropped instead of accumulating forever.
+                while (lastLeftForegroundAt.size > MAX_TRACKED_EXITS) {
+                    lastLeftForegroundAt.remove(lastLeftForegroundAt.keys.first())
+                }
+            }
             currentForeground = candidate
 
             val monitored = monitoredAppsRepository.monitoredApps.first()
@@ -173,11 +225,17 @@ class AppMonitorService : Service() {
         private const val NOTIFICATION_ID = 1
         private const val POLL_INTERVAL_MS = 1_000L
 
+        // How often the loop re-verifies usage access + overlay permission.
+        private const val PERMISSION_CHECK_INTERVAL_MS = 30_000L
+
         // Interval-Off session gap: returning to an app within this window of
         // it leaving the foreground is treated as the same session (no
         // re-trigger). Public usage APIs can't tell a launcher tap from a
         // recents-resume, so this timing rule approximates "fresh open".
         private const val OFF_SESSION_GAP_MS = 45_000L
+
+        // Cap for lastLeftForegroundAt — only recent exits matter.
+        private const val MAX_TRACKED_EXITS = 32
 
         // Lookback for isLatestForeground().
         private const val RECENT_EVENT_WINDOW_MS = 3_000L

@@ -8,13 +8,36 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
+
+// Shared wiring for ReadingCard's callbacks: both hosts (the Home tab and the
+// TriggerActivity interstitial) render the same card and differ only in their
+// bottom bar.
+@Composable
+fun WaqfahReadingContent(viewModel: ReadingViewModel, bottomBar: @Composable () -> Unit) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    ReadingCard(
+        state = state,
+        onMarkRead = viewModel::markCurrentRead,
+        onNext = viewModel::next,
+        onPrevious = viewModel::previous,
+        onResume = viewModel::resume,
+        onCycleTranslation = viewModel::cycleTranslationSource,
+        onResetTranslation = viewModel::resetTranslationSource,
+        onCompletionDismiss = viewModel::dismissCompletion,
+        onStartOver = viewModel::startOver,
+        onSwitchModeAndRestart = viewModel::switchModeAndRestart,
+        bottomBar = bottomBar,
+    )
+}
 
 // Only ever reached via TriggerActivity — see its doc comment.
 @Composable
@@ -36,29 +59,17 @@ fun ReadingScreen(triggeredPackage: String, viewModel: ReadingViewModel = hiltVi
         (context as? Activity)?.finish()
     }
 
-    ReadingCard(
-        state = state,
-        onMarkRead = viewModel::markCurrentRead,
-        onNext = viewModel::next,
-        onPrevious = viewModel::previous,
-        onResume = viewModel::resume,
-        onCycleTranslation = viewModel::cycleTranslationSource,
-        onResetTranslation = viewModel::resetTranslationSource,
-        onCompletionDismiss = viewModel::dismissCompletion,
-        onStartOver = viewModel::startOver,
-        onSwitchModeAndRestart = viewModel::switchModeAndRestart,
-        bottomBar = {
-            Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
-                WaqfahPrimaryButton(
-                    text = "Open ${state.triggeredAppLabel ?: "app"} →",
-                    onClick = {
-                        viewModel.openTriggeredApp(triggeredPackage) {
-                            context.packageManager.getLaunchIntentForPackage(triggeredPackage)?.let(context::startActivity)
-                            (context as? Activity)?.finish()
-                        }
-                    },
-                )
-            }
-        },
-    )
+    WaqfahReadingContent(viewModel = viewModel) {
+        Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
+            WaqfahPrimaryButton(
+                text = stringResource(R.string.open_app_button, state.triggeredAppLabel ?: stringResource(R.string.app_name)),
+                onClick = {
+                    viewModel.openTriggeredApp(triggeredPackage) {
+                        context.packageManager.getLaunchIntentForPackage(triggeredPackage)?.let(context::startActivity)
+                        (context as? Activity)?.finish()
+                    }
+                },
+            )
+        }
+    }
 }

@@ -20,9 +20,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.data.model.TranslationLanguage
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
+import androidx.compose.ui.res.stringResource
 import kotlin.math.roundToInt
 
 @Composable
@@ -34,11 +36,12 @@ fun TranslationsScreen(
     val language = remember(languageCode) { TranslationLanguage.entries.first { it.code == languageCode } }
     val rows by viewModel.rowsFor(language).collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
-    val title = if (language == TranslationLanguage.ENGLISH) "English translations" else "Bengali translations"
+    val languageName = stringResource(if (language == TranslationLanguage.ENGLISH) R.string.aid_english else R.string.aid_bengali)
+    val title = stringResource(R.string.translations_title, languageName)
 
     SettingsScaffold(title = title, onBack = onBack) {
         Text(
-            "One is active at a time. Download others to switch, or remove ones you don't need.",
+            stringResource(R.string.translations_body),
             color = colors.inkMuted,
             fontSize = 14.sp,
             lineHeight = 21.sp,
@@ -75,22 +78,24 @@ private fun TranslationRow(
                 when {
                     row.isDownloading -> Text(
                         // Percentage only once a Content-Length is known.
-                        row.downloadProgress?.let { "Downloading… ${(it * 100).roundToInt()}%" } ?: "Downloading…",
+                        row.downloadProgress
+                            ?.let { stringResource(R.string.downloading_percent, (it * 100).roundToInt()) }
+                            ?: stringResource(R.string.downloading),
                         color = colors.inkMuted.copy(alpha = 0.5f),
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
                     row.errorMessage != null -> Text(
-                        "Failed — Retry",
+                        stringResource(R.string.failed_retry),
                         color = colors.danger,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clickable(onClick = onDownload),
                     )
-                    row.isActive -> Text("✓ Active", color = colors.accent, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                    row.isActive -> Text(stringResource(R.string.active_label), color = colors.accent, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
                     // Bundled translations can't meaningfully be downloaded or deleted.
                     row.meta.isBundled -> Text(
-                        "Select",
+                        stringResource(R.string.select_label),
                         color = colors.accent,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -98,14 +103,14 @@ private fun TranslationRow(
                     )
                     row.isDownloaded -> {
                         Text(
-                            "Select",
+                            stringResource(R.string.select_label),
                             color = colors.accent,
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.clickable(onClick = onSelect),
                         )
                         Text(
-                            "Delete",
+                            stringResource(R.string.delete_label),
                             color = colors.danger,
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -113,7 +118,7 @@ private fun TranslationRow(
                         )
                     }
                     else -> Text(
-                        "Download",
+                        stringResource(R.string.download_label),
                         color = colors.inkMuted,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,

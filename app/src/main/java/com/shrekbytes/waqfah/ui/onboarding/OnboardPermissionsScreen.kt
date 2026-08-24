@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -16,14 +17,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.data.model.PermissionCatalog
 import com.shrekbytes.waqfah.ui.components.OnboardPermissionRow
 import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
+import com.shrekbytes.waqfah.ui.settings.permissions.PermissionsViewModel
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
 @Composable
 fun OnboardPermissionsScreen(
-    viewModel: OnboardPermissionsViewModel = hiltViewModel(),
+    viewModel: PermissionsViewModel = hiltViewModel(),
     onOpenRationale: () -> Unit = {},
     onBack: () -> Unit,
     onComplete: () -> Unit,
@@ -37,11 +40,11 @@ fun OnboardPermissionsScreen(
 
     OnboardingScaffold(
         step = 3,
-        title = "A few permissions to\nmake this work",
+        title = stringResource(R.string.onboard_perms_title),
         onBack = onBack,
         bottomContent = {
             WaqfahPrimaryButton(
-                text = "Continue",
+                text = stringResource(R.string.continue_btn),
                 enabled = allGranted,
                 onClick = {
                     viewModel.completeOnboarding()
@@ -51,35 +54,38 @@ fun OnboardPermissionsScreen(
         },
     ) {
         Text(
-            "Android needs these so Waqfah can show the reading screen at the right moment and keep working reliably. None of them let it read screen content or send anything off your device. Grant all three to continue.",
+            stringResource(R.string.onboard_perms_body),
             color = colors.inkMuted,
             fontSize = 14.sp,
             lineHeight = 21.sp,
         )
         Text(
-            "Why Waqfah needs these?",
+            stringResource(R.string.why_permissions_link),
             color = colors.accent,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenRationale),
         )
         Spacer(Modifier.height(6.dp))
-        val (usage, overlay, battery) = PermissionCatalog.all
+        // Referenced by name, not destructured by position — see PermissionCatalog.
+        val usage = PermissionCatalog.usage
+        val overlay = PermissionCatalog.overlay
+        val battery = PermissionCatalog.battery
         OnboardPermissionRow(
-            title = usage.name,
-            subtitle = usage.description,
+            title = stringResource(usage.nameRes),
+            subtitle = stringResource(usage.descriptionRes),
             granted = state.usageAccessGranted,
             onOpenSettings = { context.startActivity(viewModel.usageAccessSettingsIntent()) },
         )
         OnboardPermissionRow(
-            title = overlay.name,
-            subtitle = overlay.description,
+            title = stringResource(overlay.nameRes),
+            subtitle = stringResource(overlay.descriptionRes),
             granted = state.overlayGranted,
             onOpenSettings = { context.startActivity(viewModel.overlaySettingsIntent()) },
         )
         OnboardPermissionRow(
-            title = battery.name,
-            subtitle = battery.description,
+            title = stringResource(battery.nameRes),
+            subtitle = stringResource(battery.descriptionRes),
             granted = state.batteryExempted,
             onOpenSettings = { context.startActivity(viewModel.batteryOptimizationRequestIntent()) },
         )

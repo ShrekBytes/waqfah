@@ -23,11 +23,17 @@ interface TranslationDao {
     suspend fun getText(verseId: Int): String?
 }
 
+// NOTE: keep version in sync with SCHEMA_VERSION below — KSP/Room requires a
+// literal here, so the constant can't be referenced directly.
 @Database(entities = [TranslationEntity::class], version = 1)
 abstract class TranslationDatabase : RoomDatabase() {
     abstract fun translationDao(): TranslationDao
 
     companion object {
+        // Must equal @Database's version above; download validation checks a
+        // file's user_version against this before accepting it.
+        const val SCHEMA_VERSION = 1
+
         fun build(context: Context, dbFile: File): TranslationDatabase =
             Room.databaseBuilder(context, TranslationDatabase::class.java, dbFile.absolutePath)
                 .fallbackToDestructiveMigration(dropAllTables = true)

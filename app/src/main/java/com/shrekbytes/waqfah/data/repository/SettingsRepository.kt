@@ -1,15 +1,18 @@
 package com.shrekbytes.waqfah.data.repository
 
 import android.content.Context
+import android.content.res.Configuration
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import com.shrekbytes.waqfah.data.local.prefs.SettingsKeys
 import com.shrekbytes.waqfah.data.model.AidLanguage
+import com.shrekbytes.waqfah.data.model.AppLanguage
 import com.shrekbytes.waqfah.data.model.ArabicFont
 import com.shrekbytes.waqfah.data.model.ArabicScript
 import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
+import com.shrekbytes.waqfah.data.model.PreferenceLimits
 import com.shrekbytes.waqfah.data.model.ReadingMode
 import com.shrekbytes.waqfah.data.model.TranslationLanguage
 import com.shrekbytes.waqfah.data.model.UserPreferences
@@ -17,7 +20,10 @@ import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,6 +37,7 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setTheme(theme: AppTheme) = edit { it[SettingsKeys.THEME] = theme.name }
     suspend fun setAccentColor(accent: AccentColor) = edit { it[SettingsKeys.ACCENT_COLOR] = accent.name }
+    suspend fun setAppLanguage(language: AppLanguage) = edit { it[SettingsKeys.APP_LANGUAGE] = language.name }
     suspend fun setReadingMode(mode: ReadingMode) = edit { it[SettingsKeys.READING_MODE] = mode.name }
     suspend fun setSurahNameLanguage(lang: NameDisplayLanguage) = edit { it[SettingsKeys.SURAH_NAME_LANG] = lang.name }
     suspend fun setArabicScript(script: ArabicScript) = edit { it[SettingsKeys.ARABIC_SCRIPT] = script.name }
@@ -40,13 +47,37 @@ class SettingsRepository @Inject constructor(
     suspend fun setTranslitFontSize(size: Int) = edit { it[SettingsKeys.TRANSLIT_FONT_SIZE] = size }
     suspend fun setTranslationDisplay(lang: AidLanguage) = edit { it[SettingsKeys.TRANSLATION_DISPLAY] = lang.name }
     suspend fun setTranslationFontSize(size: Int) = edit { it[SettingsKeys.TRANSLATION_FONT_SIZE] = size }
-    suspend fun setCooldownMinutes(minutes: Int) = edit { it[SettingsKeys.COOLDOWN_MINUTES] = minutes.coerceIn(0, 60) }
+    suspend fun setCooldownMinutes(minutes: Int) = edit { it[SettingsKeys.COOLDOWN_MINUTES] = minutes.coerceIn(PreferenceLimits.COOLDOWN_MIN_MINUTES, PreferenceLimits.COOLDOWN_MAX_MINUTES) }
     suspend fun setAppActive(active: Boolean) = edit { it[SettingsKeys.APP_ACTIVE] = active }
     suspend fun setOnboardingComplete(complete: Boolean) = edit { it[SettingsKeys.ONBOARDING_COMPLETE] = complete }
 
     suspend fun setActiveTranslation(language: TranslationLanguage, id: String) = edit {
         val key = if (language == TranslationLanguage.ENGLISH) SettingsKeys.ACTIVE_TRANSLATION_EN else SettingsKeys.ACTIVE_TRANSLATION_BN
         it[key] = id
+    }
+
+    companion object {
+        // Called from each Activity's attachBaseContext — i.e. BEFORE Hilt
+        // injection — so it reads the persisted language synchronously (one tiny
+        // DataStore read) and wraps the base context in that locale. The Activity
+        // itself remains LocalContext (hiltViewModel requires an Activity
+        // context), but every resource/string resolves in the chosen language.
+        // SYSTEM returns the base context untouched.
+        fun withAppLocale(context: Context): Context {
+            val stored = runBlocking {
+                context.settingsDataStore.data.first()[SettingsKeys.APP_LANGUAGE]
+            }
+            val language = stored
+                ?.let { name -> AppLanguage.entries.firstOrNull { it.name == name } }
+                ?: AppLanguage.SYSTEM
+            if (language == AppLanguage.SYSTEM) return context
+
+            val locale = Locale.forLanguageTag(if (language == AppLanguage.BENGALI) "bn" else "en")
+            Locale.setDefault(locale)
+            val config = Configuration(context.resources.configuration)
+            config.setLocale(locale)
+            return context.createConfigurationContext(config)
+        }
     }
 
     private suspend fun edit(transform: (MutablePreferences) -> Unit) {
@@ -57,6 +88,7 @@ class SettingsRepository @Inject constructor(
 private fun Preferences.toUserPreferences() = UserPreferences(
     theme = enumOrDefault(SettingsKeys.THEME, AppTheme.SYSTEM),
     accentColor = enumOrDefault(SettingsKeys.ACCENT_COLOR, AccentColor.SAGE),
+    appLanguage = enumOrDefault(SettingsKeys.APP_LANGUAGE, AppLanguage.SYSTEM),
     readingMode = enumOrDefault(SettingsKeys.READING_MODE, ReadingMode.SEQUENTIAL),
     surahNameLanguage = enumOrDefault(SettingsKeys.SURAH_NAME_LANG, NameDisplayLanguage.ENGLISH),
     arabicScript = enumOrDefault(SettingsKeys.ARABIC_SCRIPT, ArabicScript.INDOPAK),

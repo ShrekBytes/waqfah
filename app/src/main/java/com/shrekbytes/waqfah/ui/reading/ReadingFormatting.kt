@@ -1,6 +1,8 @@
 package com.shrekbytes.waqfah.ui.reading
 
 import com.shrekbytes.waqfah.data.local.core.SurahEntity
+import com.shrekbytes.waqfah.data.local.core.VerseEntity
+import com.shrekbytes.waqfah.data.model.ArabicScript
 import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
 
 private val DIGIT_MAPS = mapOf(
@@ -17,6 +19,15 @@ internal fun ayahWord(lang: NameDisplayLanguage): String = when (lang) {
     NameDisplayLanguage.ENGLISH -> "ayat"
     NameDisplayLanguage.BENGALI -> "আয়াত"
     NameDisplayLanguage.ARABIC -> "آية"
+}
+
+internal fun ayahLabel(verse: VerseEntity, lang: NameDisplayLanguage): String =
+    "${localizeDigits(verse.surahNo, lang)}:${localizeDigits(verse.ayahNo, lang)}"
+
+// Which verse column holds the currently selected script's glyphs.
+internal fun VerseEntity.arabicTextFor(script: ArabicScript): String = when (script) {
+    ArabicScript.INDOPAK -> arabicIndopak
+    ArabicScript.UTHMANI -> arabicUthmani
 }
 
 internal fun surahDisplayName(surah: SurahEntity, lang: NameDisplayLanguage): String = when (lang) {

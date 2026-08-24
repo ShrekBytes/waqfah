@@ -6,6 +6,7 @@ import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
 import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
+import com.shrekbytes.waqfah.data.model.AppLanguage
 import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,6 +23,7 @@ data class SettingsUiState(
     val isActive: Boolean = true,
     val theme: AppTheme = AppTheme.SYSTEM,
     val accentColor: AccentColor = AccentColor.SAGE,
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val showAccentPicker: Boolean = true,
     val readCount: Int = 0,
     val totalCount: Int = 0,
@@ -48,6 +51,7 @@ class SettingsViewModel @Inject constructor(
             isActive = prefs.appActive,
             theme = prefs.theme,
             accentColor = prefs.accentColor,
+            appLanguage = prefs.appLanguage,
             showAccentPicker = prefs.theme == AppTheme.SYSTEM || prefs.theme == AppTheme.LIGHT || prefs.theme == AppTheme.DARK,
             readCount = readCount,
             totalCount = total,
@@ -60,12 +64,22 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { totalCount.value = quranRepository.totalVerseCount() }
     }
 
+    // Reads the persisted value rather than uiState, whose default (active =
+    // true) is wrong until DataStore's first emission arrives.
     fun toggleActive() = viewModelScope.launch {
-        settingsRepository.setAppActive(!uiState.value.isActive)
+        settingsRepository.setAppActive(!settingsRepository.preferences.first().appActive)
     }
 
     fun setTheme(theme: AppTheme) = viewModelScope.launch { settingsRepository.setTheme(theme) }
     fun setAccentColor(color: AccentColor) = viewModelScope.launch { settingsRepository.setAccentColor(color) }
+
+    // Persists first, THEN invokes [onApplied] — recreating the activity before
+    // the DataStore write lands makes attachBaseContext read the stale locale,
+    // so a switch appeared to lag one selection behind until an app restart.
+    fun setAppLanguage(language: AppLanguage, onApplied: () -> Unit) = viewModelScope.launch {
+        settingsRepository.setAppLanguage(language)
+        onApplied()
+    }
 
     fun resetProgress() = viewModelScope.launch {
         readingProgressRepository.resetAll()

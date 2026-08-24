@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -52,11 +53,16 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
 // The app's one shared primary CTA style.
@@ -124,7 +130,7 @@ fun WaqfahSearchField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Search apps",
+    placeholder: String,
 ) {
     val colors = WaqfahTheme.colors
     Row(
@@ -271,9 +277,15 @@ fun SettingsToggleRow(title: String, subtitle: String, checked: Boolean, onToggl
 }
 
 // Permissions row: tapping always opens system settings (these permissions
-// can't be flipped in place); the switch only reflects current status.
+// can't be flipped in place); [action] renders the current affordance — a
+// status toggle on settings screens or the onboarding Grant pill.
 @Composable
-fun PermissionRow(title: String, subtitle: String, granted: Boolean, onOpenSettings: () -> Unit) {
+fun PermissionRow(
+    title: String,
+    subtitle: String,
+    granted: Boolean,
+    action: @Composable () -> Unit,
+) {
     val colors = WaqfahTheme.colors
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 14.dp),
@@ -285,35 +297,31 @@ fun PermissionRow(title: String, subtitle: String, granted: Boolean, onOpenSetti
             Text(subtitle, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
         }
         Spacer(Modifier.width(12.dp))
-        WaqfahSwitch(checked = granted, onCheckedChange = { onOpenSettings() })
+        action()
     }
 }
 
+@Composable
+fun PermissionToggleRow(title: String, subtitle: String, granted: Boolean, onOpenSettings: () -> Unit) =
+    PermissionRow(title, subtitle, granted) {
+        WaqfahSwitch(checked = granted, onCheckedChange = { onOpenSettings() })
+    }
+
 // Onboarding variant with a Grant button instead of a toggle.
 @Composable
-fun OnboardPermissionRow(title: String, subtitle: String, granted: Boolean, onOpenSettings: () -> Unit) {
-    val colors = WaqfahTheme.colors
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
-        }
-        Spacer(Modifier.width(12.dp))
+fun OnboardPermissionRow(title: String, subtitle: String, granted: Boolean, onOpenSettings: () -> Unit) =
+    PermissionRow(title, subtitle, granted) {
         if (granted) {
-            Icon(Icons.Default.Check, contentDescription = "Granted", tint = colors.accent, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.granted_cd), tint = WaqfahTheme.colors.accent, modifier = Modifier.size(16.dp))
         } else {
             Surface(
                 onClick = onOpenSettings,
                 shape = RoundedCornerShape(50),
-                color = colors.accentSoft,
-                contentColor = colors.accent,
+                color = WaqfahTheme.colors.accentSoft,
+                contentColor = WaqfahTheme.colors.accent,
             ) {
                 Text(
-                    "Grant",
+                    stringResource(R.string.grant_label),
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                     fontSize = 12.5.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -321,7 +329,6 @@ fun OnboardPermissionRow(title: String, subtitle: String, granted: Boolean, onOp
             }
         }
     }
-}
 
 // Slim custom pill toggle rather than Material3's Switch.
 @Composable
@@ -333,7 +340,13 @@ fun WaqfahSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier:
             .size(width = 44.dp, height = 26.dp)
             .clip(RoundedCornerShape(50))
             .background(if (checked) colors.accent else colors.line)
-            .clickable { onCheckedChange(!checked) },
+            // Real switch semantics (role + checked state) for TalkBack, not a
+            // bare clickable Box.
+            .toggleable(
+                value = checked,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            ),
     ) {
         Box(
             Modifier
@@ -382,14 +395,19 @@ fun Stepper(
 ) {
     val colors = WaqfahTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        StepperButton("−", enabled = value - step >= min) { onChange(value - step) }
+        StepperButton("−", enabled = value - step >= min, contentDescription = stringResource(R.string.decrease_cd)) { onChange(value - step) }
         Text(valueLabel(value), color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
-        StepperButton("+", enabled = value + step <= max) { onChange(value + step) }
+        StepperButton("+", enabled = value + step <= max, contentDescription = stringResource(R.string.increase_cd)) { onChange(value + step) }
     }
 }
 
 @Composable
-private fun StepperButton(label: String, enabled: Boolean, onClick: () -> Unit) {
+private fun StepperButton(
+    label: String,
+    enabled: Boolean,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
     val colors = WaqfahTheme.colors
     Surface(
         onClick = onClick,
@@ -397,7 +415,9 @@ private fun StepperButton(label: String, enabled: Boolean, onClick: () -> Unit) 
         shape = CircleShape,
         color = colors.accentSoft,
         contentColor = if (enabled) colors.ink else colors.inkSoft,
-        modifier = Modifier.size(30.dp),
+        modifier = Modifier
+            .size(30.dp)
+            .semantics { this.contentDescription = contentDescription },
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
             Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())

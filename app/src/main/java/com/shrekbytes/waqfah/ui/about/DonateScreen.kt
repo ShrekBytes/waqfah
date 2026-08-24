@@ -27,12 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import kotlinx.coroutines.delay
@@ -51,11 +53,11 @@ fun DonateScreen(onBack: () -> Unit) {
         }
     }
 
-    SettingsScaffold(title = "Donate", onBack = onBack) {
+    SettingsScaffold(title = stringResource(R.string.donate_title), onBack = onBack) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(26.dp))
             Text(
-                "Waqfah was built so that opening an app could begin with a moment of Quran instead of a scroll.",
+                stringResource(R.string.donate_intro1),
                 color = colors.ink,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
@@ -65,7 +67,7 @@ fun DonateScreen(onBack: () -> Unit) {
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                "It stays free — no ads, nothing locked. If it benefited you, consider helping keep it that way.",
+                stringResource(R.string.donate_intro2),
                 color = colors.inkMuted,
                 fontSize = 13.5.sp,
                 textAlign = TextAlign.Center,
@@ -111,16 +113,16 @@ fun DonateScreen(onBack: () -> Unit) {
                 }
                 if (copied) {
                     Icon(Icons.Default.Check, contentDescription = null, tint = colors.accent, modifier = Modifier.padding(end = 6.dp))
-                    Text("Copied", color = colors.accent, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.copied), color = colors.accent, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
                 } else {
-                    Text("Tap to copy", color = colors.inkMuted, fontSize = 12.sp)
+                    Text(stringResource(R.string.tap_to_copy), color = colors.inkMuted, fontSize = 12.sp)
                 }
             }
             Spacer(Modifier.height(10.dp))
         }
 
         Text(
-            "May your generosity be returned in ways you don't expect.",
+            stringResource(R.string.donate_dua),
             color = colors.inkMuted,
             fontSize = 13.sp,
             fontStyle = FontStyle.Italic,

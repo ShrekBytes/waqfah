@@ -34,9 +34,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.theme.WaqfahColors
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import kotlinx.serialization.Serializable
@@ -65,8 +67,8 @@ fun WaqfahTabBar(selected: WaqfahTab, onHomeClick: () -> Unit, onSettingsClick: 
             .then(if (isLight) Modifier.border(1.dp, colors.line.copy(alpha = 0.6f), shape) else Modifier),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            TabItem("Home", Icons.Default.Home, selected == WaqfahTab.HOME, onHomeClick, colors)
-            TabItem("Settings", Icons.Default.Settings, selected == WaqfahTab.SETTINGS, onSettingsClick, colors)
+            TabItem(stringResource(R.string.tab_home), Icons.Default.Home, selected == WaqfahTab.HOME, onHomeClick, colors)
+            TabItem(stringResource(R.string.tab_settings), Icons.Default.Settings, selected == WaqfahTab.SETTINGS, onSettingsClick, colors)
         }
     }
 }

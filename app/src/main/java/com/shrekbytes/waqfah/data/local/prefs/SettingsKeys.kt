@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 object SettingsKeys {
     val THEME = stringPreferencesKey("theme")
     val ACCENT_COLOR = stringPreferencesKey("accent_color")
+    val APP_LANGUAGE = stringPreferencesKey("app_language")
     val READING_MODE = stringPreferencesKey("reading_mode")
     val SURAH_NAME_LANG = stringPreferencesKey("surah_name_lang")
     val ARABIC_SCRIPT = stringPreferencesKey("arabic_script")

@@ -17,9 +17,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.WaqfahBackButton
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
@@ -35,7 +37,7 @@ fun OnboardingScaffold(
     Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
         WaqfahBackButton(onClick = onBack)
         Text(
-            "Step $step of 3",
+            stringResource(R.string.step_x_of_3, step),
             color = colors.inkMuted,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,

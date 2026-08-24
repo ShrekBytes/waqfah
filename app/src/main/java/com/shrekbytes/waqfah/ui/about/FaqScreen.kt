@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,66 +24,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
-private data class FaqItem(val question: String, val answer: String)
+private data class FaqItem(val questionRes: Int, val answerRes: Int)
 
 private val items = listOf(
-    FaqItem(
-        "The reading screen doesn't appear when I open an app",
-        "Check four things:\n\n" +
-            "1. Usage access and Display over other apps are granted (Settings > App permissions).\n" +
-            "2. Waqfah is active (the toggle on Settings).\n" +
-            "3. The app you opened is in your monitored list (Settings > Manage monitored apps).\n" +
-            "4. That app isn't in its cooldown window yet.",
-    ),
-    FaqItem(
-        "Waqfah stops working after a while",
-        "Battery optimization is the usual culprit — grant \"Unrestricted battery\" in " +
-            "Settings > App permissions. On aggressive OEMs (Xiaomi/MIUI, Huawei, Oppo/Realme), also " +
-            "exclude Waqfah from the system's battery saver / auto-start manager, or background " +
-            "services get killed no matter what Android settings say.",
-    ),
-    FaqItem(
-        "Why is there a permanent notification?",
-        "Android requires any app running a continuous background service to show a notification " +
-            "saying so. Waqfah's is silent and sits at the lowest priority — it exists because the " +
-            "system demands transparency, not because it's doing anything worth interrupting you for.",
-    ),
-    FaqItem(
-        "Can Waqfah read my screen or my messages?",
-        "No. Waqfah never had screen-reading access. Usage access only tells it which app is in " +
-            "the foreground — never what's displayed in it. It cannot read notifications, messages, " +
-            "or screen content, and it has no internet permission use beyond downloading optional " +
-            "translations you explicitly request.",
-    ),
-    FaqItem(
-        "The reading screen appears a moment late",
-        "Waqfah checks which app is foregrounded about once per second rather than watching every " +
-            "window event — a deliberate trade-off that keeps battery use tiny. A sub-second delay " +
-            "before the pause appears is normal.",
-    ),
-    FaqItem(
-        "How does the cooldown work?",
-        "Each monitored app has its own timer. After Waqfah appears for Instagram, it won't appear again " +
-            "for Instagram until that wait passes — reopening via a notification, bubble or the icon makes " +
-            "no difference while the app stays in front. TikTok and your other monitored apps are unaffected. " +
-            "Set the wait at the top of Settings > Manage monitored apps. With the wait off, Waqfah appears " +
-            "for every fresh open — only quick switch-backs to an app you just left stay quiet.",
-    ),
+    FaqItem(R.string.faq_q1, R.string.faq_a1),
+    FaqItem(R.string.faq_q2, R.string.faq_a2),
+    FaqItem(R.string.faq_q3, R.string.faq_a3),
+    FaqItem(R.string.faq_q4, R.string.faq_a4),
+    FaqItem(R.string.faq_q5, R.string.faq_a5),
+    FaqItem(R.string.faq_q6, R.string.faq_a6),
 )
 
 @Composable
 fun FaqScreen(onBack: () -> Unit) {
     val colors = WaqfahTheme.colors
 
-    SettingsScaffold(title = "FAQ & troubleshooting", onBack = onBack) {
+    SettingsScaffold(title = stringResource(R.string.faq_title), onBack = onBack) {
         Text(
-            "Fixes for the things that most often go wrong, and answers to fair questions.",
+            stringResource(R.string.faq_intro),
             color = colors.inkMuted,
             fontSize = 14.sp,
             lineHeight = 21.sp,
@@ -95,7 +60,7 @@ fun FaqScreen(onBack: () -> Unit) {
             if (index < items.lastIndex) HorizontalDivider(color = colors.line)
         }
         Text(
-            "Still stuck? Reach us at ${SupportInfo.CONTACT_EMAIL}",
+            stringResource(R.string.faq_still_stuck, SupportInfo.CONTACT_EMAIL),
             color = colors.inkMuted,
             fontSize = 13.sp,
             modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
@@ -127,7 +92,7 @@ private fun ExpandableRow(item: FaqItem) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                item.question,
+                stringResource(item.questionRes),
                 color = if (expanded) colors.accent else colors.ink,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
@@ -144,7 +109,7 @@ private fun ExpandableRow(item: FaqItem) {
         }
         AnimatedVisibility(visible = expanded) {
             Text(
-                item.answer,
+                stringResource(item.answerRes),
                 color = colors.inkMuted,
                 fontSize = 13.sp,
                 lineHeight = 19.sp,

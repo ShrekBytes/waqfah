@@ -2,11 +2,13 @@ package com.shrekbytes.waqfah.data.repository
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteDatabaseCorruptException
 import android.database.sqlite.SQLiteException
 import android.util.Log
 import com.shrekbytes.waqfah.data.local.translation.TranslationDatabase
 import com.shrekbytes.waqfah.data.model.TranslationMeta
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
@@ -28,7 +30,10 @@ class TranslationRepository @Inject constructor(
     // download()/delete() run on others.
     private val openDatabases = ConcurrentHashMap<String, TranslationDatabase>()
 
-    fun isDownloaded(meta: TranslationMeta): Boolean = fileFor(meta).exists()
+    // Suspend + IO: callers poll this per-row inside flow transforms (and
+    // render paths) that run on the main dispatcher; File.exists() is disk I/O.
+    suspend fun isDownloaded(meta: TranslationMeta): Boolean =
+        withContext(Dispatchers.IO) { fileFor(meta).exists() }
 
     suspend fun getText(meta: TranslationMeta, verseId: Int): String? {
         // Bundled translations ship in the APK assets and are copied into
@@ -45,11 +50,30 @@ class TranslationRepository @Inject constructor(
 
         return try {
             open(meta).translationDao().getText(verseId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed reading '${meta.id}' for verse $verseId", e)
+            // Always drop the cached handle so the next call reopens cleanly,
+            // but only DELETE the file when it's genuinely broken: transient
+            // failures (e.g. SQLITE_BUSY while connections race a first open)
+            // must not force a pointless re-copy/re-download and blank ayahs.
+            withContext(Dispatchers.IO) {
+                openDatabases.remove(meta.id)?.close()
+                if (meta.isBundled || isCorruption(e)) {
+                    Log.w(TAG, "Evicting translation file for '${meta.id}'")
+                    fileFor(meta).delete()
+                }
+            }
             null
         }
     }
+
+    private fun isCorruption(e: Throwable): Boolean =
+        generateSequence(e as Throwable?) { it.cause }.filterNotNull().any {
+            it is SQLiteDatabaseCorruptException ||
+                (it is SQLiteException && it.message.orEmpty().contains("malformed", ignoreCase = true))
+        }
 
     /**
      * Downloads [meta] into internal storage — an asset copy for bundled
@@ -75,14 +99,27 @@ class TranslationRepository @Inject constructor(
         }
     }
 
-    fun delete(meta: TranslationMeta) {
+    suspend fun delete(meta: TranslationMeta) = withContext(Dispatchers.IO) {
         openDatabases.remove(meta.id)?.close()
         fileFor(meta).delete()
     }
 
     private fun copyBundled(meta: TranslationMeta, target: File) {
-        context.assets.open("translations/${meta.language.code}/${meta.id}.db").use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
+        // Atomic like network downloads: an interrupted copy must never leave a
+        // half-written file at the target path — that file would be treated as
+        // valid forever (isDownloaded only checks existence) and surface as
+        // sqlite corruption later.
+        val tmp = File(target.parentFile, target.name + ".tmp")
+        try {
+            context.assets.open("translations/${meta.language.code}/${meta.id}.db").use { input ->
+                tmp.outputStream().use { output -> input.copyTo(output) }
+            }
+            if (!tmp.renameTo(target)) {
+                tmp.copyTo(target, overwrite = true)
+                tmp.delete()
+            }
+        } finally {
+            tmp.delete()
         }
     }
 
@@ -104,6 +141,10 @@ class TranslationRepository @Inject constructor(
 
             val totalBytes = connection.contentLengthLong // -1 if not sent
             var bytesRead = 0L
+            // Report at most once per whole percent — the raw per-chunk cadence
+            // (every DOWNLOAD_BUFFER_BYTES) would flood StateFlow with thousands
+            // of updates and recompose the translations screen for each.
+            var lastReportedPercent = -1
             connection.inputStream.use { input ->
                 tmp.outputStream().use { output ->
                     val buffer = ByteArray(DOWNLOAD_BUFFER_BYTES)
@@ -112,7 +153,13 @@ class TranslationRepository @Inject constructor(
                         if (read == -1) break
                         output.write(buffer, 0, read)
                         bytesRead += read
-                        if (totalBytes > 0) onProgress((bytesRead.toFloat() / totalBytes).coerceIn(0f, 1f))
+                        if (totalBytes > 0) {
+                            val percent = ((bytesRead * 100) / totalBytes).toInt()
+                            if (percent != lastReportedPercent) {
+                                lastReportedPercent = percent
+                                onProgress((percent / 100f).coerceIn(0f, 1f))
+                            }
+                        }
                     }
                 }
             }
@@ -153,6 +200,18 @@ class TranslationRepository @Inject constructor(
             throw IOException("Downloaded file for '$id' isn't a readable SQLite database", e)
         }
         try {
+            // A foreign sqlite file without Room's metadata relies on its
+            // user_version matching what this build expects. version 0 means the
+            // generator never opened it through Room — Room initializes the
+            // identity on first open while keeping the existing tables — so 0 is
+            // accepted alongside the expected version. Any OTHER mismatch would
+            // surface later as destructive-migration data loss, so reject early.
+            if (db.version != 0 && db.version != TranslationDatabase.SCHEMA_VERSION) {
+                throw IOException(
+                    "Downloaded database for '$id' has schema version ${db.version}, " +
+                        "but this build expects ${TranslationDatabase.SCHEMA_VERSION}",
+                )
+            }
             db.rawQuery("SELECT verse_id, text FROM translations LIMIT 1", null).close()
         } catch (e: SQLiteException) {
             throw IOException(
@@ -168,8 +227,17 @@ class TranslationRepository @Inject constructor(
     private fun fileFor(meta: TranslationMeta): File =
         File(context.filesDir, "translations/${meta.language.code}/${meta.id}.db")
 
+    // Double-checked creation: render fires up to three concurrent getText calls
+    // for the SAME meta (main ayah + next/prev previews), and getOrPut alone is
+    // not atomic — racing threads would each build a Room instance and open the
+    // same sqlite file simultaneously, which intermittently fails (and used to
+    // look like "switching en↔bn sometimes shows an empty translation").
+    private val openLock = Any()
+
     private fun open(meta: TranslationMeta): TranslationDatabase =
-        openDatabases.getOrPut(meta.id) { TranslationDatabase.build(context, fileFor(meta)) }
+        openDatabases[meta.id] ?: synchronized(openLock) {
+            openDatabases.getOrPut(meta.id) { TranslationDatabase.build(context, fileFor(meta)) }
+        }
 
     private companion object {
         const val TAG = "TranslationRepository"

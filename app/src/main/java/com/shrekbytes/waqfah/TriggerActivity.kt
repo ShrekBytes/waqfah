@@ -34,6 +34,10 @@ class TriggerActivity : ComponentActivity() {
     // the user in a loop of interstitials.
     private var buriedRetryUsed = false
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(SettingsRepository.withAppLocale(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

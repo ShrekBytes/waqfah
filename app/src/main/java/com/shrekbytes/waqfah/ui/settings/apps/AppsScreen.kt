@@ -38,16 +38,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shrekbytes.waqfah.R
+import com.shrekbytes.waqfah.data.model.PreferenceLimits
 import com.shrekbytes.waqfah.ui.components.EmptyListNote
 import com.shrekbytes.waqfah.ui.components.InlineField
 import com.shrekbytes.waqfah.ui.components.Stepper
 import com.shrekbytes.waqfah.ui.components.WaqfahBackButton
 import com.shrekbytes.waqfah.ui.components.WaqfahSearchField
+import com.shrekbytes.waqfah.ui.components.skeletonPulseAlpha
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
 @Composable
@@ -60,7 +64,7 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
         WaqfahBackButton(onClick = onBack)
         Text(
-            "Apps",
+            stringResource(R.string.apps_title),
             fontSize = 22.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = (-0.2).sp,
@@ -68,36 +72,39 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit) {
             modifier = Modifier.padding(top = 8.dp),
         )
         Text(
-            "Waqfah appears before these apps open.",
+            stringResource(R.string.apps_subtitle),
             color = colors.inkMuted,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 10.dp, bottom = 14.dp),
         )
 
-        InlineField("Wait before showing again", showDivider = false) {
+        InlineField(stringResource(R.string.cooldown_field), showDivider = false) {
+            // Resolved outside the non-composable valueLabel lambda.
+            val offLabel = stringResource(R.string.cooldown_off)
+            val minutesFormat = stringResource(R.string.cooldown_value)
             Stepper(
                 value = state.cooldownMinutes,
                 suffix = " min",
-                min = 0,
-                max = 60,
-                valueLabel = { if (it == 0) "Off" else "$it min" },
+                min = PreferenceLimits.COOLDOWN_MIN_MINUTES,
+                max = PreferenceLimits.COOLDOWN_MAX_MINUTES,
+                valueLabel = { if (it == 0) offLabel else minutesFormat.format(it) },
                 onChange = viewModel::setCooldown,
             )
         }
         Text(
-            "Applies per app — after appearing for Instagram it won't appear again until this wait passes. \"Off\" shows it for every fresh open, but switching straight back to an app you just left stays quiet.",
+            stringResource(R.string.cooldown_explanation),
             color = colors.inkMuted,
             fontSize = 12.sp,
             lineHeight = 18.sp,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
         )
 
-        WaqfahSearchField(value = state.searchQuery, onValueChange = viewModel::setSearchQuery)
+        WaqfahSearchField(value = state.searchQuery, onValueChange = viewModel::setSearchQuery, placeholder = stringResource(R.string.search_apps_hint))
         Spacer(Modifier.height(6.dp))
 
         when {
             state.isLoading -> AppsListSkeleton(Modifier.weight(1f))
-            state.apps.isEmpty() -> EmptyListNote("No apps found")
+            state.apps.isEmpty() -> EmptyListNote(stringResource(R.string.no_apps_found))
             else -> LazyColumn(Modifier.weight(1f)) {
                 items(state.apps, key = { it.app.packageName }) { row ->
                     AppRow(row, onClick = { viewModel.toggle(row.app) })
@@ -112,13 +119,7 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit) {
 @Composable
 internal fun AppsListSkeleton(modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors
-    val transition = rememberInfiniteTransition(label = "apps_skeleton_pulse")
-    val pulseAlpha by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.85f,
-        animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "apps_skeleton_pulse_alpha",
-    )
+    val pulseAlpha = skeletonPulseAlpha()
     val barColor = colors.line.copy(alpha = pulseAlpha)
 
     Column(modifier) {
