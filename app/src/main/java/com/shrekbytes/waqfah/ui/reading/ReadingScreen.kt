@@ -44,6 +44,9 @@ fun ReadingScreen(triggeredPackage: String, viewModel: ReadingViewModel = hiltVi
         onResume = viewModel::resume,
         onCycleTranslation = viewModel::cycleTranslationSource,
         onResetTranslation = viewModel::resetTranslationSource,
+        onCompletionDismiss = viewModel::dismissCompletion,
+        onStartOver = viewModel::startOver,
+        onSwitchModeAndRestart = viewModel::switchModeAndRestart,
         bottomBar = {
             Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
                 WaqfahPrimaryButton(

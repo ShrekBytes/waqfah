@@ -67,10 +67,7 @@ class SettingsViewModel @Inject constructor(
     fun setTheme(theme: AppTheme) = viewModelScope.launch { settingsRepository.setTheme(theme) }
     fun setAccentColor(color: AccentColor) = viewModelScope.launch { settingsRepository.setAccentColor(color) }
 
-    // Both halves of "reset" move together — clearing only the read-verse table
-    // would leave the saved position behind as a stale source of truth.
     fun resetProgress() = viewModelScope.launch {
         readingProgressRepository.resetAll()
-        settingsRepository.clearLastViewedVerseId()
     }
 }

@@ -19,5 +19,9 @@ class ReadingProgressRepository @Inject constructor(
 
     suspend fun isRead(verseId: Int): Boolean = appDatabase.readVerseDao().isRead(verseId)
 
+    suspend fun getReadVerseIds(): List<Int> = appDatabase.readVerseDao().getAllReadVerseIds()
+
+    suspend fun countRead(): Int = appDatabase.readVerseDao().countAll()
+
     suspend fun resetAll() = appDatabase.readVerseDao().clearAll()
 }

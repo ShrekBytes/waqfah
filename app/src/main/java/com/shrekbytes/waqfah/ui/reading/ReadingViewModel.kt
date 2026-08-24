@@ -27,8 +27,7 @@ import javax.inject.Inject
 
 // HomeScreen and ReadingScreen live in separate Activities (MainActivity and
 // TriggerActivity), so each gets its own instance. Everything that must survive
-// across them — reading position and read status — is persisted in
-// DataStore/Room, not held in memory.
+// across them — read status — is persisted in Room, not held in memory.
 @HiltViewModel
 class ReadingViewModel @Inject constructor(
     private val quranRepository: QuranRepository,
@@ -45,6 +44,10 @@ class ReadingViewModel @Inject constructor(
     // means show the real default. Cleared on every step() so it never outlives
     // the ayah it was opened on.
     private var translationOverrideId: String? = null
+
+    // Session-local dismissal of the Quran-completed popup; Close keeps it
+    // hidden until progress actually changes again.
+    private var completionDismissed = false
 
     private val _uiState = MutableStateFlow(ReadingUiState())
     val uiState: StateFlow<ReadingUiState> = _uiState.asStateFlow()
@@ -74,6 +77,43 @@ class ReadingViewModel @Inject constructor(
         } else {
             readingProgressRepository.unmarkRead(verse.id)
         }
+        refreshCompletionState()
+    }
+
+    fun dismissCompletion() {
+        completionDismissed = true
+        _uiState.update { it.copy(isCompleted = false) }
+    }
+
+    // Both completion-popup reset paths wipe read history and land on a fresh
+    // starting ayah — Start Again keeps the current mode, the switch moves to
+    // the other mode first.
+    fun startOver() = viewModelScope.launch {
+        readingProgressRepository.resetAll()
+        beginFreshSession()
+    }
+
+    fun switchModeAndRestart() = viewModelScope.launch {
+        val newMode = if (latestPrefs.readingMode == ReadingMode.SEQUENTIAL) ReadingMode.RANDOM else ReadingMode.SEQUENTIAL
+        settingsRepository.setReadingMode(newMode)
+        latestPrefs = latestPrefs.copy(readingMode = newMode)
+        readingProgressRepository.resetAll()
+        beginFreshSession()
+    }
+
+    private suspend fun beginFreshSession() {
+        completionDismissed = false
+        currentVerse = loadStartingVerse(latestPrefs)
+        render(latestPrefs)
+    }
+
+    private suspend fun isEverythingRead(): Boolean =
+        readingProgressRepository.countRead() >= quranRepository.totalVerseCount()
+
+    // Marking the last unread ayah completes the Quran mid-session too.
+    private suspend fun refreshCompletionState() {
+        val allRead = isEverythingRead()
+        _uiState.update { it.copy(isCompleted = allRead && !completionDismissed) }
     }
 
     fun resume() = viewModelScope.launch { settingsRepository.setAppActive(true) }
@@ -116,47 +156,30 @@ class ReadingViewModel @Inject constructor(
     private suspend fun step(load: suspend (Int) -> VerseEntity?) {
         val fromId = currentVerse?.id ?: return
         currentVerse = load(fromId)
-        currentVerse?.let { settingsRepository.setLastViewedVerseId(it.id) }
         // A fresh ayah always starts on the real default translation.
         translationOverrideId = null
         render(latestPrefs)
     }
 
     // Picks the *starting* verse of a fresh session only; prev/next always step
-    // sequentially by id regardless of mode. Sequential resumes from
-    // lastViewedVerseId; Random ignores it deliberately (resuming would make it
-    // behave exactly like Sequential after the first launch).
+    // sequentially by id regardless of mode. Sequential opens on the lowest
+    // ayah not yet marked read — marking a later ayah while leaving earlier
+    // ones unmarked never strands an unread ayah behind. Random opens on any
+    // unread ayah. When everything is already read, Sequential falls back to
+    // the very first ayah so there is still content behind the popup.
     private suspend fun loadStartingVerse(prefs: UserPreferences): VerseEntity? {
-        val start = when (prefs.readingMode) {
-            ReadingMode.RANDOM -> quranRepository.getRandomVerse()
-            ReadingMode.SEQUENTIAL -> prefs.lastViewedVerseId?.let { quranRepository.getVerseById(it) }
-                ?: quranRepository.getFirstVerse()
+        val readIds = readingProgressRepository.getReadVerseIds().toHashSet()
+        return when (prefs.readingMode) {
+            ReadingMode.RANDOM -> quranRepository.getRandomUnreadVerse(readIds)
+            ReadingMode.SEQUENTIAL -> quranRepository.getFirstUnreadVerse(readIds) ?: quranRepository.getFirstVerse()
         }
-        val landed = skipAlreadyRead(start)
-        // Save the landing spot so sequential mode's next fresh load resumes
-        // from here instead of re-scanning past the same read verses.
-        if (landed != null && landed.id != prefs.lastViewedVerseId) {
-            settingsRepository.setLastViewedVerseId(landed.id)
-        }
-        return landed
-    }
-
-    // The saved position can land on an already-read verse (e.g. after stepping
-    // backward); skip forward past it, bounded so a fully-read Quran can't loop.
-    private suspend fun skipAlreadyRead(start: VerseEntity?): VerseEntity? {
-        var verse = start
-        repeat(MAX_SKIP_STEPS) {
-            val candidate = verse ?: return null
-            if (!readingProgressRepository.isRead(candidate.id)) return candidate
-            verse = quranRepository.getNextVerse(candidate.id)
-        }
-        return verse
     }
 
     private suspend fun render(prefs: UserPreferences) {
         val verse = currentVerse ?: return
         val surah = quranRepository.getSurah(verse.surahNo)
         val isRead = readingProgressRepository.isRead(verse.id)
+        val allRead = isEverythingRead()
 
         val translationLanguage = when (prefs.translationDisplay) {
             AidLanguage.NONE -> null
@@ -203,6 +226,8 @@ class ReadingViewModel @Inject constructor(
                 translationSourceName = shownMeta?.name,
                 translationHasAlternates = downloadedTranslations.size > 1,
                 isMarkedRead = isRead,
+                readingMode = prefs.readingMode,
+                isCompleted = allRead && !completionDismissed,
                 // triggeredAppLabel untouched — owned by setTriggeredPackage()
                 nextPreview = nextPreview,
                 previousPreview = previousPreview,
@@ -246,7 +271,4 @@ class ReadingViewModel @Inject constructor(
         return TranslationCatalog.all.first { it.language == lang && it.id == id }
     }
 
-    private companion object {
-        const val MAX_SKIP_STEPS = 50
-    }
 }

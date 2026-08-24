@@ -2,6 +2,7 @@ package com.shrekbytes.waqfah.ui.reading
 
 import androidx.compose.ui.unit.LayoutDirection
 import com.shrekbytes.waqfah.data.model.ArabicFont
+import com.shrekbytes.waqfah.data.model.ReadingMode
 
 // The subset of an ayah's rendered content needed to peek at a neighbouring
 // ayah mid-swipe (see AyahPeekPage in ReadingCard.kt): no surah header and no
@@ -37,6 +38,11 @@ data class ReadingUiState(
     // Whether another downloaded translation exists to compare against.
     val translationHasAlternates: Boolean = false,
     val isMarkedRead: Boolean = false,
+    // Every ayah marked read — drives the completion popup.
+    val isCompleted: Boolean = false,
+    // Active mode, echoed here so the completion popup can label its
+    // switch-to-the-other-mode action.
+    val readingMode: ReadingMode = ReadingMode.SEQUENTIAL,
     val triggeredAppLabel: String? = null, // non-null only on the trigger screen
     // Neighbouring ayahs, kept ready so a swipe reveals real content instead
     // of a blank gap; refreshed on every render().

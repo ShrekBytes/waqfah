@@ -21,5 +21,4 @@ object SettingsKeys {
     val COOLDOWN_MINUTES = intPreferencesKey("cooldown_minutes")
     val APP_ACTIVE = booleanPreferencesKey("app_active")
     val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
-    val LAST_VIEWED_VERSE_ID = intPreferencesKey("last_viewed_verse_id")
 }

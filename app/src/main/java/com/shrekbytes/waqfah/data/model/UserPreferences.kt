@@ -36,5 +36,4 @@ data class UserPreferences(
     val cooldownMinutes: Int = 30,
     val appActive: Boolean = true,
     val hasCompletedOnboarding: Boolean = false,
-    val lastViewedVerseId: Int? = null,
 )

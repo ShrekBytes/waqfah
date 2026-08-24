@@ -18,6 +18,9 @@ fun HomeScreen(viewModel: ReadingViewModel = hiltViewModel()) {
         onResume = viewModel::resume,
         onCycleTranslation = viewModel::cycleTranslationSource,
         onResetTranslation = viewModel::resetTranslationSource,
+        onCompletionDismiss = viewModel::dismissCompletion,
+        onStartOver = viewModel::startOver,
+        onSwitchModeAndRestart = viewModel::switchModeAndRestart,
         bottomBar = {},
     )
 }

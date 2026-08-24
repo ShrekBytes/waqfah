@@ -31,4 +31,7 @@ interface VerseDao {
 
     @Query("SELECT COUNT(*) FROM verses")
     suspend fun countAll(): Int
+
+    @Query("SELECT id FROM verses ORDER BY id")
+    suspend fun getAllVerseIds(): List<Int>
 }

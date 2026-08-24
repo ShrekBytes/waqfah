@@ -45,6 +45,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,6 +56,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,8 +81,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shrekbytes.waqfah.data.model.ReadingMode
 import com.shrekbytes.waqfah.ui.components.ChevronDirection
 import com.shrekbytes.waqfah.ui.components.ChevronIcon
+import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import com.shrekbytes.waqfah.ui.theme.toFontFamily
 import kotlinx.coroutines.launch
@@ -102,6 +106,9 @@ fun ReadingCard(
     onResume: () -> Unit,
     onCycleTranslation: (forward: Boolean) -> Unit,
     onResetTranslation: () -> Unit,
+    onCompletionDismiss: () -> Unit,
+    onStartOver: () -> Unit,
+    onSwitchModeAndRestart: () -> Unit,
     bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -122,16 +129,16 @@ fun ReadingCard(
     // Bumped on every mark-read so MarkReadPill can play its bounce each time.
     var markReadTrigger by remember { mutableIntStateOf(0) }
 
-    // Local UI state for the translation compare arrows — reset when the ayah
-    // changes so the switcher never stays open across an ayah switch.
-    var translationSwitcherOpen by remember { mutableStateOf(false) }
-    LaunchedEffect(state.ayahLabel) { translationSwitcherOpen = false }
-
     val handleMarkRead: () -> Unit = {
         markReadTrigger++
         onMarkRead()
     }
     val latestHandleMarkRead = rememberUpdatedState(handleMarkRead)
+
+    // Completion-popup reset confirmations — both Start Again and switching
+    // mode wipe read history, so both route through the same confirm dialog.
+    var confirmStartOver by remember { mutableStateOf(false) }
+    var confirmSwitchMode by remember { mutableStateOf(false) }
 
     Column(modifier.fillMaxSize()) {
         if (state.isLoading) {
@@ -220,117 +227,124 @@ fun ReadingCard(
                         AyahPeekPage(preview = preview, minHeight = maxHeight, offsetPx = { pageWidthPx + dragOffset.value })
                     }
 
-                    // heightIn(min = viewport height) lets Arrangement.Center center short
-                    // content while long content still lays out top-to-bottom and scrolls.
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = maxHeight)
-                            // Layout-phase read: dragging updates position/redraw only,
-                            // no recomposition per frame.
-                            .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 28.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Spacer(Modifier.height(14.dp))
-                        NumDivider(state.ayahLabel)
-                        Spacer(Modifier.height(24.dp))
-                        Text(
-                            state.arabicText,
-                            color = colors.ink,
-                            textAlign = TextAlign.Center,
-                            fontFamily = state.arabicFont.toFontFamily(),
-                            fontSize = state.arabicFontSize.sp,
-                            // Extra room so Arabic diacritics aren't clipped.
-                            lineHeight = (state.arabicFontSize * 2f).sp,
-                        )
-                        state.translitText?.let {
-                            Spacer(Modifier.height(20.dp))
-                            Text(
-                                it,
-                                color = colors.inkMuted,
-                                textAlign = TextAlign.Center,
-                                fontSize = state.translitFontSize.sp,
-                                fontStyle = FontStyle.Italic,
-                                lineHeight = (state.translitFontSize * 1.7f).sp,
-                                modifier = Modifier.widthIn(max = 280.dp),
-                            )
-                        }
-                        state.translationText?.let { translationText ->
-                            Spacer(Modifier.height(24.dp))
-                            HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
-                            Spacer(Modifier.height(24.dp))
+                    // Keyed per ayah so this whole subtree — including scroll position
+                    // and the translation-switcher state below — is rebuilt fresh on every
+                    // swap. Without the key, a switcher left open on the previous ayah
+                    // replayed its exit animation over the first frames of the incoming one.
+                    key(state.ayahLabel) {
+                        var translationSwitcherOpen by remember { mutableStateOf(false) }
 
-                            if (state.translationHasAlternates) {
-                                AnimatedVisibility(
-                                    visible = translationSwitcherOpen,
-                                    enter = fadeIn() + expandVertically(),
-                                    exit = fadeOut() + shrinkVertically(),
-                                ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            (state.translationSourceName ?: "").uppercase(),
-                                            color = colors.accent,
-                                            fontSize = 10.5.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            letterSpacing = 0.6.sp,
-                                        )
-                                        Spacer(Modifier.height(10.dp))
-                                    }
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                        // heightIn(min = viewport height) lets Arrangement.Center center short
+                        // content while long content still lays out top-to-bottom and scrolls.
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = maxHeight)
+                                // Layout-phase read: dragging updates position/redraw only,
+                                // no recomposition per frame.
+                                .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 28.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Spacer(Modifier.height(14.dp))
+                            NumDivider(state.ayahLabel)
+                            Spacer(Modifier.height(24.dp))
+                            Text(
+                                state.arabicText,
+                                color = colors.ink,
+                                textAlign = TextAlign.Center,
+                                fontFamily = state.arabicFont.toFontFamily(),
+                                fontSize = state.arabicFontSize.sp,
+                                // Extra room so Arabic diacritics aren't clipped.
+                                lineHeight = (state.arabicFontSize * 2f).sp,
+                            )
+                            state.translitText?.let {
+                                Spacer(Modifier.height(20.dp))
+                                Text(
+                                    it,
+                                    color = colors.inkMuted,
+                                    textAlign = TextAlign.Center,
+                                    fontSize = state.translitFontSize.sp,
+                                    fontStyle = FontStyle.Italic,
+                                    lineHeight = (state.translitFontSize * 1.7f).sp,
+                                    modifier = Modifier.widthIn(max = 280.dp),
+                                )
+                            }
+                            state.translationText?.let { translationText ->
+                                Spacer(Modifier.height(24.dp))
+                                HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
+                                Spacer(Modifier.height(24.dp))
+
+                                if (state.translationHasAlternates) {
                                     AnimatedVisibility(
                                         visible = translationSwitcherOpen,
-                                        enter = fadeIn() + expandHorizontally(),
-                                        exit = fadeOut() + shrinkHorizontally(),
+                                        enter = fadeIn() + expandVertically(),
+                                        exit = fadeOut() + shrinkVertically(),
                                     ) {
-                                        TranslationSwitchArrow(direction = ChevronDirection.LEFT) { onCycleTranslation(false) }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                (state.translationSourceName ?: "").uppercase(),
+                                                color = colors.accent,
+                                                fontSize = 10.5.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                letterSpacing = 0.6.sp,
+                                            )
+                                            Spacer(Modifier.height(10.dp))
+                                        }
                                     }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        AnimatedVisibility(
+                                            visible = translationSwitcherOpen,
+                                            enter = fadeIn() + expandHorizontally(),
+                                            exit = fadeOut() + shrinkHorizontally(),
+                                        ) {
+                                            TranslationSwitchArrow(direction = ChevronDirection.LEFT) { onCycleTranslation(false) }
+                                        }
+                                        Text(
+                                            translationText,
+                                            color = colors.inkMuted,
+                                            textAlign = TextAlign.Center,
+                                            fontSize = state.translationFontSize.sp,
+                                            lineHeight = (state.translationFontSize * 1.7f).sp,
+                                            modifier = Modifier
+                                                .widthIn(max = 280.dp)
+                                                // Tapping toggles compare mode for this ayah only;
+                                                // closing reverts to the default. Claims single taps
+                                                // landing on the text, so double-tapping here won't
+                                                // also trigger mark-read.
+                                                .clickable(
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null,
+                                                ) {
+                                                    translationSwitcherOpen = !translationSwitcherOpen
+                                                    if (!translationSwitcherOpen) onResetTranslation()
+                                                },
+                                        )
+                                        AnimatedVisibility(
+                                            visible = translationSwitcherOpen,
+                                            enter = fadeIn() + expandHorizontally(),
+                                            exit = fadeOut() + shrinkHorizontally(),
+                                        ) {
+                                            TranslationSwitchArrow(direction = ChevronDirection.RIGHT) { onCycleTranslation(true) }
+                                        }
+                                    }
+                                } else {
                                     Text(
                                         translationText,
                                         color = colors.inkMuted,
                                         textAlign = TextAlign.Center,
                                         fontSize = state.translationFontSize.sp,
                                         lineHeight = (state.translationFontSize * 1.7f).sp,
-                                        modifier = Modifier
-                                            .widthIn(max = 280.dp)
-                                            // Tapping toggles compare mode for this ayah only;
-                                            // closing reverts to the default. Claims single taps
-                                            // landing on the text, so double-tapping here won't
-                                            // also trigger mark-read.
-                                            .clickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null,
-                                            ) {
-                                                translationSwitcherOpen = !translationSwitcherOpen
-                                                if (!translationSwitcherOpen) onResetTranslation()
-                                            },
+                                        modifier = Modifier.widthIn(max = 280.dp),
                                     )
-                                    AnimatedVisibility(
-                                        visible = translationSwitcherOpen,
-                                        enter = fadeIn() + expandHorizontally(),
-                                        exit = fadeOut() + shrinkHorizontally(),
-                                    ) {
-                                        TranslationSwitchArrow(direction = ChevronDirection.RIGHT) { onCycleTranslation(true) }
-                                    }
                                 }
-                            } else {
-                                Text(
-                                    translationText,
-                                    color = colors.inkMuted,
-                                    textAlign = TextAlign.Center,
-                                    fontSize = state.translationFontSize.sp,
-                                    lineHeight = (state.translationFontSize * 1.7f).sp,
-                                    modifier = Modifier.widthIn(max = 280.dp),
-                                )
                             }
+                            Spacer(Modifier.height(14.dp))
                         }
-                        Spacer(Modifier.height(14.dp))
                     }
                 }
-
                 Row(
                     Modifier.fillMaxWidth().padding(vertical = 22.dp),
                     horizontalArrangement = Arrangement.Center,
@@ -346,6 +360,73 @@ fun ReadingCard(
         }
 
         bottomBar()
+    }
+
+    // Shown whenever every ayah is marked read (a fresh session landing in a
+    // finished state, or just having marked the final one). Close only hides
+    // it for this session; Start Again / Switch make reading possible again
+    // by resetting progress.
+    if (!state.isLoading && state.isCompleted) {
+        AlertDialog(
+            onDismissRequest = onCompletionDismiss,
+            title = { Text("Alhamdulillah!", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(
+                        "You have completed the Holy Quran. May Allah (SWT) accept it from you, multiply your reward, and make it a light for you.",
+                        color = colors.inkMuted,
+                        fontSize = 14.sp,
+                        lineHeight = 22.sp,
+                    )
+                    Spacer(Modifier.height(18.dp))
+                    WaqfahPrimaryButton(text = "Start Again", onClick = { confirmStartOver = true })
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(
+                        onClick = { confirmSwitchMode = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            if (state.readingMode == ReadingMode.SEQUENTIAL) "Switch to Random Mode" else "Switch to Sequential Mode",
+                            fontSize = 13.5.sp,
+                            color = colors.accent,
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = onCompletionDismiss) { Text("Close", color = colors.inkMuted) }
+            },
+        )
+    }
+
+    if (confirmStartOver || confirmSwitchMode) {
+        val willSwitch = confirmSwitchMode
+        AlertDialog(
+            onDismissRequest = { confirmStartOver = false; confirmSwitchMode = false },
+            title = { Text("Reset progress?", fontWeight = FontWeight.SemiBold) },
+            text = {
+                Text(
+                    "This will clear every ayah you have marked as read and start from the beginning." +
+                        if (willSwitch) " Reading mode will also switch." else "",
+                    color = colors.inkMuted,
+                    fontSize = 14.sp,
+                    lineHeight = 22.sp,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmStartOver = false
+                    confirmSwitchMode = false
+                    if (willSwitch) onSwitchModeAndRestart() else onStartOver()
+                }) { Text("Yes, reset", color = colors.accent) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmStartOver = false; confirmSwitchMode = false }) {
+                    Text("Cancel", color = colors.inkMuted)
+                }
+            },
+        )
     }
 }
 

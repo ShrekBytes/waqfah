@@ -28,6 +28,9 @@ interface ReadVerseDao {
     @Query("SELECT COUNT(*) FROM read_verses")
     fun observeReadCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM read_verses")
+    suspend fun countAll(): Int
+
     @Upsert
     suspend fun markRead(entity: ReadVerseEntity)
 
@@ -36,6 +39,9 @@ interface ReadVerseDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM read_verses WHERE verse_id = :verseId)")
     suspend fun isRead(verseId: Int): Boolean
+
+    @Query("SELECT verse_id FROM read_verses")
+    suspend fun getAllReadVerseIds(): List<Int>
 
     @Query("DELETE FROM read_verses")
     suspend fun clearAll()
