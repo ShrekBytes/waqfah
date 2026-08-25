@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -87,7 +88,7 @@ fun SettingsScreen(
         SectionTitle(stringResource(R.string.section_apps))
         SettingsNavRow(
             stringResource(R.string.manage_apps_row),
-            stringResource(R.string.selected_count_fmt, state.monitoredAppCount),
+            pluralStringResource(R.plurals.selected_count, state.monitoredAppCount, state.monitoredAppCount),
             onOpenApps,
         )
 

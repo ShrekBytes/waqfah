@@ -1,7 +1,6 @@
 package com.shrekbytes.waqfah.ui.about
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.shrekbytes.waqfah.BuildConfig
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.SettingsNavRow
@@ -78,13 +78,13 @@ fun AboutScreen(
             stringResource(R.string.github_row),
             SupportInfo.REPO_URL.removePrefix("https://"),
             external = true,
-            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SupportInfo.REPO_URL))) },
+            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, SupportInfo.REPO_URL.toUri())) },
         )
         SettingsNavRow(
             stringResource(R.string.contact_row),
             SupportInfo.CONTACT_EMAIL,
             external = true,
-            onClick = { context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${SupportInfo.CONTACT_EMAIL}"))) },
+            onClick = { context.startActivity(Intent(Intent.ACTION_SENDTO, "mailto:${SupportInfo.CONTACT_EMAIL}".toUri())) },
         )
         Spacer(Modifier.height(16.dp))
     }

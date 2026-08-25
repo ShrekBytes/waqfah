@@ -7,6 +7,7 @@ import android.content.pm.ResolveInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import androidx.core.graphics.createBitmap
 import com.shrekbytes.waqfah.data.local.appstate.MonitoredAppEntity
 import com.shrekbytes.waqfah.data.local.appstate.WaqfahAppDatabase
 import com.shrekbytes.waqfah.data.model.InstalledApp
@@ -82,7 +83,7 @@ class MonitoredAppsRepository @Inject constructor(
         }
 
     private fun Drawable.toFixedSizeBitmap(sizePx: Int): Bitmap {
-        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         setBounds(0, 0, sizePx, sizePx)
         draw(canvas)

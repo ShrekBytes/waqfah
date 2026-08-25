@@ -3,7 +3,7 @@ package com.shrekbytes.waqfah.data.repository
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
@@ -38,16 +38,16 @@ class PermissionsRepository @Inject constructor(
     fun usageAccessSettingsIntent(): Intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
 
     fun overlaySettingsIntent(): Intent =
-        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri())
 
     // Once granted, requesting again is a no-op on most OEMs, so this opens the
     // app's details page instead, where Battery -> Unrestricted can be revoked.
     fun batteryOptimizationRequestIntent(): Intent =
         if (isIgnoringBatteryOptimizations()) {
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri())
         } else {
             Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                data = Uri.parse("package:${context.packageName}")
+                data = "package:${context.packageName}".toUri()
             }
         }
 }

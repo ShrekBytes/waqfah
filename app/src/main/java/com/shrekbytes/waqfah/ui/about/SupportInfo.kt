@@ -8,8 +8,6 @@ object SupportInfo {
     const val REPO_URL = "https://github.com/ShrekBytes/waqfah"
     const val CONTACT_EMAIL = "shrekbytes@duck.com"
 
-    // TODO(user): replace placeholder numbers with real accounts, and the
-    // drawable placeholders (ic_bkash/ic_rocket/ic_nagad) with official icons.
     data class DonationAccount(
         val method: String,
         val number: String,
@@ -18,9 +16,9 @@ object SupportInfo {
     )
 
     val donations = listOf(
-        DonationAccount("bKash", "01XXXXXXXXX", "Personal", R.drawable.ic_bkash),
-        DonationAccount("Rocket", "01XXXXXXXXX-X", "Personal", R.drawable.ic_rocket),
-        DonationAccount("Nagad", "01XXXXXXXXX", "Personal", R.drawable.ic_nagad),
+        DonationAccount("bKash", "01725-522828", "Personal", R.drawable.ic_bkash),
+        DonationAccount("Rocket", "01725-522828", "Personal", R.drawable.ic_rocket),
+        DonationAccount("Nagad", "01725-522828", "Personal", R.drawable.ic_nagad),
     )
 
     data class Contributor(val name: String, val role: String, val url: String? = null)
@@ -29,5 +27,6 @@ object SupportInfo {
         Contributor("ShrekBytes", "Design & development", "https://github.com/shrekbytes"),
         Contributor("Md. Mahbob Alam", "Testing & feedback", "https://github.com/emptymahbob"),
         Contributor("Tahmid Alam Tamim", "Testing & feedback", "https://github.com/Mr-Explorer142"),
+        Contributor("Md. Walid Ahmed", "Testing & feedback"),
     )
 }

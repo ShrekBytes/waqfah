@@ -1,8 +1,8 @@
 package com.shrekbytes.waqfah.ui.about
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
+import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -50,7 +50,7 @@ fun GratitudeScreen(onBack: () -> Unit) {
                     .let {
                         if (contributor.url != null) {
                             it.clickable {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(contributor.url)))
+                                context.startActivity(Intent(Intent.ACTION_VIEW, contributor.url!!.toUri()))
                             }
                         } else {
                             it

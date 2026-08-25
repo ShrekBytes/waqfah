@@ -12,13 +12,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.TriggerActivity
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
@@ -296,8 +296,8 @@ class AppMonitorService : Service() {
                 Intent(Intent.ACTION_VIEW).setTypeAndNormalize("*/*"),
                 // Link grabs (1DM/ADM-style) resolve by scheme; content://
                 // covers viewers registered for in-app file URIs.
-                Intent(Intent.ACTION_VIEW, Uri.parse("https://probe.waqfah.local/link")),
-                Intent(Intent.ACTION_VIEW, Uri.parse("content://probe.waqfah.local/file")),
+                Intent(Intent.ACTION_VIEW, "https://probe.waqfah.local/link".toUri()),
+                Intent(Intent.ACTION_VIEW, "content://probe.waqfah.local/file".toUri()),
             )
             for (probe in probes) {
                 for (info in packageManager.queryIntentActivities(probe, PackageManager.MATCH_DEFAULT_ONLY)) {

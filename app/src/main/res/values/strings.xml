@@ -77,7 +77,10 @@
     <string name="cooldown_value">%1$d min</string>
     <string name="cooldown_off">Off</string>
     <string name="cooldown_explanation">Applies per app — after appearing for Instagram it won\'t appear again until this wait passes. \"Off\" shows it for every fresh open, but switching straight back to an app you just left stays quiet.</string>
-    <string name="selected_count_fmt">%1$d selected</string>
+    <plurals name="selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
 
     <!-- Translations screen -->
     <string name="translations_title">%1$s translations</string>

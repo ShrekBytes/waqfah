@@ -77,7 +77,10 @@
     <string name="cooldown_value">%1$d মিনিট</string>
     <string name="cooldown_off">বন্ধ</string>
     <string name="cooldown_explanation">প্রতি অ্যাপে প্রযোজ্য — Instagram-এর জন্য একবার দেখা হলে এই সময় পেরোনো পর্যন্ত আর দেখাবে না। \"বন্ধ\" থাকলে প্রতিটি নতুন করে খোলায় দেখাবে, তবে সম্প্রতি ছেড়ে আসা অ্যাপে সরাসরি ফিরে গেলে চুপ থাকে।</string>
-    <string name="selected_count_fmt">%1$dটি নির্বাচিত</string>
+    <plurals name="selected_count">
+        <item quantity="one">%1$dটি নির্বাচিত</item>
+        <item quantity="other">%1$dটি নির্বাচিত</item>
+    </plurals>
 
     <!-- Translations screen -->
     <string name="translations_title">%1$s অনুবাদসমূহ</string>
