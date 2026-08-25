@@ -118,7 +118,12 @@ private fun SourceCredit(title: String, subtitle: String, url: String) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, color = colors.ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            Text(url.removePrefix("https://"), color = colors.inkMuted, fontSize = 11.5.sp, modifier = Modifier.padding(top = 1.dp))
+            Text(
+                stringResource(R.string.credit_url_suffix_format, subtitle, url.removePrefix("https://").removeSuffix("/")),
+                color = colors.inkMuted,
+                fontSize = 11.5.sp,
+                modifier = Modifier.padding(top = 1.dp),
+            )
         }
         ChevronIcon(
             direction = ChevronDirection.RIGHT,

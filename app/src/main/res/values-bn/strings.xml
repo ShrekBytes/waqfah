@@ -184,6 +184,7 @@
     <string name="credit_qul_sub">অনুবাদ, স্ক্রিপ্ট ও ফন্ট</string>
     <string name="credit_tanzil_title">Tanzil Project</string>
     <string name="credit_tanzil_sub">কুরআনের পাঠ ও অনুবাদ</string>
+    <string name="credit_url_suffix_format">%1$s (%2$s)</string>
     <string name="gratitude_users_note">আর যারা চালিয়ে যাওয়ার আগে একটি আয়াতের জন্য থেমেছেন — সেই থামাটাই এর আসল উদ্দেশ্য। এটি যেন মিজানে ভারী হয়।</string>
 
     <!-- Privacy policy -->
