@@ -65,9 +65,9 @@ app open.
 
 **Recommended** (optional; denying them never blocks anything):
 
-| Permission | Why |
+| Setting / permission | Why |
 |---|---|
-| Unrestricted battery (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) | Stops aggressive OEM battery managers from killing the background monitor. |
+| Unrestricted battery *(a system setting, not a permission)* | Stops aggressive OEM battery managers from killing the background monitor. Waqfah deep-links you to its own system app page, where you choose Battery → Unrestricted — no special permission is requested or needed. |
 | Notifications (`POST_NOTIFICATIONS`) | Keeps the mandatory foreground-service notification visible on Android 13+. |
 
 **Declared by the system or implied by the above:**

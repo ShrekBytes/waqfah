@@ -56,14 +56,10 @@ class PermissionsRepository @Inject constructor(
     fun overlaySettingsIntent(): Intent =
         Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri())
 
-    // Once granted, requesting again is a no-op on most OEMs, so this opens the
-    // app's details page instead, where Battery -> Unrestricted can be revoked.
-    fun batteryOptimizationRequestIntent(): Intent =
-        if (isIgnoringBatteryOptimizations()) {
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri())
-        } else {
-            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                data = "package:${context.packageName}".toUri()
-            }
-        }
+    // No REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission is declared, so
+    // there is no direct request dialog: this deep-links to Waqfah's own
+    // system page, where Battery -> Unrestricted grants (or revokes) the
+    // exemption manually.
+    fun batterySettingsIntent(): Intent =
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri())
 }

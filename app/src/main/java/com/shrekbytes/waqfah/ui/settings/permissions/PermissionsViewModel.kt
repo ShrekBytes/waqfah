@@ -75,7 +75,7 @@ class PermissionsViewModel @Inject constructor(
     fun settingsIntentFor(key: PermissionKey): Intent = when (key) {
         PermissionKey.USAGE_ACCESS -> permissionsRepository.usageAccessSettingsIntent()
         PermissionKey.OVERLAY -> permissionsRepository.overlaySettingsIntent()
-        PermissionKey.BATTERY -> permissionsRepository.batteryOptimizationRequestIntent()
+        PermissionKey.BATTERY -> permissionsRepository.batterySettingsIntent()
         // NOTIFICATIONS is a runtime permission (see the screens' launcher);
         // this settings deep-link is only its "Don't ask again" fallback.
         else -> permissionsRepository.notificationSettingsIntent()

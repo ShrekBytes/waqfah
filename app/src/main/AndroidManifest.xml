@@ -9,7 +9,6 @@
          a denial simply keeps that notification hidden (the pre-13 behavior).
          Requested as an optional row in the permissions flow, never gated on. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"

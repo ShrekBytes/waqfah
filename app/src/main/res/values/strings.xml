@@ -52,7 +52,7 @@
     <string name="perm_overlay_name">Display over other apps</string>
     <string name="perm_overlay_desc">Lets the reading screen appear over that app</string>
     <string name="perm_battery_name">Unrestricted battery</string>
-    <string name="perm_battery_desc">Keeps Waqfah running reliably in the background</string>
+    <string name="perm_battery_desc">Keeps Waqfah running reliably — set Battery to Unrestricted</string>
     <string name="perm_notifications_name">Notifications</string>
     <string name="perm_notifications_desc">Shows Waqfah\'s silent monitoring notification</string>
     <string name="perm_section_required">Required</string>
@@ -219,4 +219,6 @@
     <string name="faq_a5">Waqfah checks which app is foregrounded about once per second rather than watching every window event — a deliberate trade-off that keeps battery use tiny. A sub-second delay before the pause appears is normal.</string>
     <string name="faq_q6">How does the cooldown work?</string>
     <string name="faq_a6">Each monitored app has its own timer. After Waqfah appears for Instagram, it won\'t appear again for Instagram until that wait passes — reopening via a notification, bubble or the icon makes no difference while the app stays in front. TikTok and your other monitored apps are unaffected. Set the wait at the top of Settings > Manage monitored apps. With the wait off, Waqfah appears for every fresh open — only quick switch-backs to an app you just left stay quiet.</string>
+    <string name="faq_q7">Usage access won\'t turn on when I tap Grant</string>
+    <string name="faq_a7">On Android 13 or newer, apps installed outside an app store (for example, an APK opened straight from your browser) are blocked from sensitive settings until you allow them once. Open Waqfah\'s system App info page (long-press its icon > App info), tap the ⋮ menu at the top right, and choose \"Allow restricted settings\". Then come back to Waqfah and grant Usage access normally. Apps installed from a store such as F-Droid or Google Play never see this extra step.</string>
 </resources>
