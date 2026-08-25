@@ -22,7 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.detection.AppMonitorService
@@ -89,8 +89,11 @@ class TriggerActivity : AppCompatActivity() {
             var closingState by remember { mutableStateOf(false) }
             val scope = rememberCoroutineScope()
 
-            // Crossfade over the app: slow-ish calm arrival, quicker departure.
-            val alpha by animateFloatAsState(
+            // Entrance: crossfade over the app while settling down from a slight
+            // overscale — a calm "lands on the screen" feel instead of a pop.
+            // Exit: quicker fade that lifts away again (the same scale term
+            // reverses, so the card visibly recedes as it dissolves).
+            val fade = animateFloatAsState(
                 targetValue = if (closingState) 0f else if (shown) 1f else 0f,
                 animationSpec = tween(
                     durationMillis = if (closingState) EXIT_FADE_MS else ENTER_FADE_MS,
@@ -120,7 +123,19 @@ class TriggerActivity : AppCompatActivity() {
                 theme = prefs?.theme ?: AppTheme.SYSTEM,
                 accentColor = prefs?.accentColor ?: AccentColor.SAGE,
             ) {
-                Box(Modifier.fillMaxSize().alpha(alpha)) {
+                // Reading fade/scale inside the graphicsLayer lambda keeps every
+                // frame a pure redraw+re-layer — no recomposition per frame.
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val progress = fade.value
+                            alpha = progress
+                            val scale = 1f + SETTLE_OVERSCALE * (1f - progress)
+                            scaleX = scale
+                            scaleY = scale
+                        },
+                ) {
                     ReadingScreen(
                         triggeredPackage = triggeredPackage,
                         onDismissRequest = ::beginClose,
@@ -180,7 +195,11 @@ class TriggerActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "TriggerActivity"
         const val EXTRA_TRIGGERED_PACKAGE = "com.shrekbytes.waqfah.EXTRA_TRIGGERED_PACKAGE"
-        private const val ENTER_FADE_MS = 180
+        private const val ENTER_FADE_MS = 360
         private const val EXIT_FADE_MS = 140
+
+        // Entrance settles from this much larger down to rest (4% ≈ subtle
+        // "lands on the screen"; anything past ~6% starts reading as a zoom).
+        private const val SETTLE_OVERSCALE = 0.04f
     }
 }
