@@ -54,7 +54,7 @@
     <string name="perm_battery_name">Unrestricted battery</string>
     <string name="perm_battery_desc">Keeps Waqfah running reliably in the background</string>
     <string name="perm_notifications_name">Notifications</string>
-    <string name="perm_notifications_desc">Shows the silent monitoring notification on Android 13+</string>
+    <string name="perm_notifications_desc">Shows Waqfah\'s silent monitoring notification</string>
     <string name="perm_section_required">Required</string>
     <string name="perm_section_optional">Recommended</string>
     <string name="permissions_title">Permissions</string>
