@@ -19,6 +19,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import com.shrekbytes.waqfah.BuildConfig
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.TriggerActivity
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
@@ -52,6 +53,10 @@ import javax.inject.Inject
 //    event several times per launch). Leaving for ANY other app re-arms it;
 //    the persisted per-app interval then decides whether the next open is
 //    allowed through.
+//  - Returning from Waqfah's own interstitial never re-triggers: finishing
+//    TriggerActivity resumes the app underneath, an event identical to a
+//    fresh open. Matched by the TriggerActivity class name so an open that
+//    comes straight from Waqfah's own main screen still counts as fresh.
 //  - Indirect entries are never paused: share-sheet targets, "Open with" file
 //    viewers and download-grabbers like 1DM/ADM surface a worker activity of
 //    the target app rather than a user-initiated open. These are spotted by
@@ -229,17 +234,28 @@ class AppMonitorService : Service() {
         // interval-Off rule below to tell a fresh open apart from a quick
         // switch-back.
         currentForeground?.let { left ->
-            lastLeftForegroundAt[left] = SystemClock.elapsedRealtime()
+            val nowElapsed = SystemClock.elapsedRealtime()
+            lastLeftForegroundAt[left] = nowElapsed
             // Bound memory: only exits within OFF_SESSION_GAP_MS matter, so
-            // stale entries are dropped instead of accumulating forever.
-            while (lastLeftForegroundAt.size > MAX_TRACKED_EXITS) {
-                lastLeftForegroundAt.remove(lastLeftForegroundAt.keys.first())
-            }
+            // expired entries are swept BY AGE. A size-cap eviction here would
+            // be wrong — re-exiting a package updates its value without
+            // refreshing its LinkedHashMap position, so "oldest inserted"
+            // isn't necessarily the oldest exit.
+            lastLeftForegroundAt.entries.removeAll { (_, exitedAt) -> nowElapsed - exitedAt >= OFF_SESSION_GAP_MS }
         }
         currentForeground = candidate
 
         val monitored = monitoredAppsRepository.monitoredApps.first()
         if (monitored.none { it.packageName == candidate }) return
+
+        // The dismissal flow: TriggerActivity finishes, the paused app
+        // underneath resumes. Without this guard that resume re-triggers
+        // whenever interval is Off and the reading session out lasted
+        // OFF_SESSION_GAP_MS — trapping the user in a loop of interstitials.
+        if (isReturnFromInterstitial(previous?.packageName, previous?.className)) {
+            Log.d(TAG, "Skipping $candidate — resumed from Waqfah's interstitial")
+            return
+        }
 
         // Share sheets, "Open with" dialogs and download-grabbers surface a
         // worker activity of the target app, not a user-initiated open —
@@ -349,11 +365,16 @@ class AppMonitorService : Service() {
         // recents-resume, so this timing rule approximates "fresh open".
         private const val OFF_SESSION_GAP_MS = 45_000L
 
-        // Cap for lastLeftForegroundAt — only recent exits matter.
-        private const val MAX_TRACKED_EXITS = 32
-
         // Lookback for isLatestForeground().
         private const val RECENT_EVENT_WINDOW_MS = 3_000L
+
+        // Pure core of the interstitial-return rule, extracted for unit
+        // testing: did [previousPackage]/[previousClass] resume Waqfah's
+        // TriggerActivity? Class match is what separates "returned from the
+        // interstitial" from "opened after using Waqfah itself".
+        internal fun isReturnFromInterstitial(previousPackage: String?, previousClass: String?): Boolean =
+            previousPackage == BuildConfig.APPLICATION_ID &&
+                previousClass == TriggerActivity::class.java.name
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, AppMonitorService::class.java))

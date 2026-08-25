@@ -29,6 +29,14 @@ import com.shrekbytes.waqfah.ui.settings.translations.TranslationsScreen
 fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
     val backStack = remember { mutableStateListOf<WaqfahDestination>(startDestination) }
 
+    // Guards against rapid double-taps pushing the same destination twice —
+    // the second tap would otherwise stack an identical screen that only
+    // reveals itself as an extra back press. Data objects/classes compare by
+    // value, so Main(HOME) and Main(SETTINGS) stay distinct.
+    fun push(destination: WaqfahDestination) {
+        if (backStack.lastOrNull() != destination) backStack.add(destination)
+    }
+
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
@@ -43,23 +51,23 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
         },
         entryProvider = entryProvider {
             entry<Welcome> {
-                OnboardWelcomeScreen(onGetStarted = { backStack.add(OnboardReadingPrefs) })
+                OnboardWelcomeScreen(onGetStarted = { push(OnboardReadingPrefs) })
             }
             entry<OnboardReadingPrefs> {
                 OnboardReadingPrefsScreen(
                     onBack = { backStack.removeLastOrNull() },
-                    onContinue = { backStack.add(OnboardChooseApps) },
+                    onContinue = { push(OnboardChooseApps) },
                 )
             }
             entry<OnboardChooseApps> {
                 OnboardChooseAppsScreen(
                     onBack = { backStack.removeLastOrNull() },
-                    onContinue = { backStack.add(OnboardPermissions) },
+                    onContinue = { push(OnboardPermissions) },
                 )
             }
             entry<OnboardPermissions> {
                 OnboardPermissionsScreen(
-                    onOpenRationale = { backStack.add(PermissionsRationale) },
+                    onOpenRationale = { push(PermissionsRationale) },
                     onBack = { backStack.removeLastOrNull() },
                     onComplete = {
                         // First-run only: land on the Settings tab after onboarding.
@@ -71,17 +79,17 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
             entry<Main> { key ->
                 MainScreen(
                     initialTab = key.initialTab,
-                    onOpenReadingDisplay = { backStack.add(ReadingDisplaySettings) },
-                    onOpenApps = { backStack.add(AppsSettings) },
-                    onOpenPermissions = { backStack.add(PermissionsSettings) },
-                    onOpenAbout = { backStack.add(About) },
-                    onOpenFaq = { backStack.add(Faq) },
-                    onOpenDonate = { backStack.add(Donate) },
+                    onOpenReadingDisplay = { push(ReadingDisplaySettings) },
+                    onOpenApps = { push(AppsSettings) },
+                    onOpenPermissions = { push(PermissionsSettings) },
+                    onOpenAbout = { push(About) },
+                    onOpenFaq = { push(Faq) },
+                    onOpenDonate = { push(Donate) },
                 )
             }
             entry<ReadingDisplaySettings> {
                 ReadingDisplayScreen(
-                    onOpenTranslations = { language -> backStack.add(TranslationsSettings(language.code)) },
+                    onOpenTranslations = { language -> push(TranslationsSettings(language.code)) },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
@@ -90,7 +98,7 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
             }
             entry<PermissionsSettings> {
                 PermissionsScreen(
-                    onOpenRationale = { backStack.add(PermissionsRationale) },
+                    onOpenRationale = { push(PermissionsRationale) },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
@@ -98,9 +106,9 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
             entry<AppsSettings> { AppsScreen(onBack = { backStack.removeLastOrNull() }) }
             entry<About> {
                 AboutScreen(
-                    onOpenPrivacyPolicy = { backStack.add(PrivacyPolicy) },
-                    onOpenGratitude = { backStack.add(Gratitude) },
-                    onOpenDonate = { backStack.add(Donate) },
+                    onOpenPrivacyPolicy = { push(PrivacyPolicy) },
+                    onOpenGratitude = { push(Gratitude) },
+                    onOpenDonate = { push(Donate) },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }

@@ -15,6 +15,11 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- Normal permission: lets BootReceiver restart the monitor service after
+         reboot so detection survives a device restart without the user
+         reopening Waqfah (no runtime prompt involved). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <!-- Exempts TriggerActivity launches from Android 10+ background activity
          start restrictions. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -73,6 +78,19 @@
                 android:value="Checks which app moved to the foreground so the reading pause can appear before selected apps open" />
 
         </service>
+
+        <receiver
+            android:name=".detection.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+
+            <!-- BOOT_COMPLETED is a protected system broadcast, so exported=false
+                 still receives it while blocking spoofed intents from other apps
+                 (the documented pattern for post-boot alarm/service restarts). -->
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Persists per-app locales below Android 13 so
              AppCompatDelegate.setApplicationLocales survives restarts there. -->

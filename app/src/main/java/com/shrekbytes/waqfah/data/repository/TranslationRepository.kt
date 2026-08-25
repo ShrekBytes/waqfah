@@ -24,6 +24,7 @@ import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URI
+import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -173,6 +174,8 @@ class TranslationRepository @Inject constructor(
 
             val totalBytes = connection.contentLengthLong // -1 if not sent
             var bytesRead = 0L
+            // Hash while streaming so integrity needs no second file read.
+            val sha256 = MessageDigest.getInstance("SHA-256")
             // Report at most once per whole percent — the raw per-chunk cadence
             // (every DOWNLOAD_BUFFER_BYTES) would flood StateFlow with thousands
             // of updates and recompose the translations screen for each.
@@ -184,6 +187,7 @@ class TranslationRepository @Inject constructor(
                         val read = input.read(buffer)
                         if (read == -1) break
                         output.write(buffer, 0, read)
+                        sha256.update(buffer, 0, read)
                         bytesRead += read
                         if (totalBytes > 0) {
                             val percent = ((bytesRead * 100) / totalBytes).toInt()
@@ -197,6 +201,7 @@ class TranslationRepository @Inject constructor(
             }
 
             validateSqliteFile(tmp, meta.id)
+            verifyChecksum(meta, sha256)
 
             // Atomic on the common case (same filesystem); fall back otherwise.
             if (!tmp.renameTo(target)) {
@@ -209,6 +214,22 @@ class TranslationRepository @Inject constructor(
             throw e
         } finally {
             connection?.disconnect()
+        }
+    }
+
+    // Rejects files whose bytes don't match the SHA-256 pinned in
+    // TranslationCatalog — runs BEFORE the atomic rename, so a tampered or
+    // silently-changed published file can never land at the target path.
+    // Bundled asset copies skip this (APK signing covers their integrity).
+    private fun verifyChecksum(meta: TranslationMeta, digest: MessageDigest) {
+        val expected = meta.checksumSha256 ?: return
+        val actual = digest.digest().joinToString("") { "%02x".format(it) }
+        if (!actual.equals(expected, ignoreCase = true)) {
+            throw IOException(
+                "Downloaded database for '${meta.id}' failed its integrity check (SHA-256 mismatch). " +
+                    "If translations/${meta.language.code}/${meta.id}.db changed in the repo, " +
+                    "update its checksum in TranslationCatalog.",
+            )
         }
     }
 

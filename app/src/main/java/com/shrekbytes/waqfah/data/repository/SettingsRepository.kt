@@ -47,15 +47,14 @@ class SettingsRepository @Inject constructor(
     suspend fun setAppActive(active: Boolean) = edit { it[SettingsKeys.APP_ACTIVE] = active }
     suspend fun setOnboardingComplete(complete: Boolean) = edit { it[SettingsKeys.ONBOARDING_COMPLETE] = complete }
 
+    // APP_LANGUAGE is only a UI-facing mirror of the selection; applying it to
+    // the system is AppCompatDelegate.setApplicationLocales' job (see
+    // SettingsViewModel.setAppLanguage), which also persists it itself and
+    // recreates the running activities — no manual recreate() needed.
+
     suspend fun setActiveTranslation(language: TranslationLanguage, id: String) = edit {
         val key = if (language == TranslationLanguage.ENGLISH) SettingsKeys.ACTIVE_TRANSLATION_EN else SettingsKeys.ACTIVE_TRANSLATION_BN
         it[key] = id
-    }
-
-    companion object {
-        // APP_LANGUAGE is only the UI-facing mirror of the selection; applying it
-        // to the system is AppCompatDelegate.setApplicationLocales' job (see
-        // SettingsViewModel), which also persists and recreates activities.
     }
 
     private suspend fun edit(transform: (MutablePreferences) -> Unit) {

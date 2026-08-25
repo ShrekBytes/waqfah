@@ -59,8 +59,9 @@ fun WaqfahTheme(
 
     // NOTE: app language is NOT applied here. Overriding LocalContext with a
     // configuration-wrapped context breaks hiltViewModel(), which needs a real
-    // Activity context — locale is applied per-activity in attachBaseContext
-    // instead (see SettingsRepository.withAppLocale).
+    // Activity context. Locale is applied by AppCompatDelegate instead:
+    // SettingsViewModel.setAppLanguage calls setApplicationLocales, which every
+    // AppCompatActivity (both hosts of this theme) picks up automatically.
 
     // enableEdgeToEdge()'s icon-contrast guess only follows system light/dark;
     // set it explicitly from whichever theme background actually resolved.

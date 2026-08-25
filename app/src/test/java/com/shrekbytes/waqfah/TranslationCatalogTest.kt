@@ -54,6 +54,28 @@ class TranslationCatalogTest {
         }
     }
 
+    // Downloads are rejected unless their bytes hash to this pinned value, so
+    // a missing/malformed checksum breaks integrity verification silently.
+    @Test
+    fun downloadableEntries_pinWellFormedSha256Checksums() {
+        TranslationCatalog.all.forEach { meta ->
+            if (meta.isBundled) {
+                assertNull(
+                    "bundled '${meta.id}' shouldn't pin a checksum — APK signing covers it",
+                    meta.checksumSha256,
+                )
+            } else {
+                val checksum = meta.checksumSha256
+                assertNotNull("downloadable '${meta.id}' needs a pinned SHA-256", checksum)
+                assertEquals("'${meta.id}' checksum must be 64 hex chars", 64, checksum!!.length)
+                assertTrue(
+                    "'${meta.id}' checksum must be hex",
+                    checksum.all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' },
+                )
+            }
+        }
+    }
+
     @Test
     fun languageCodes_matchBackupDirectoryNames() {
         assertEquals("en", TranslationLanguage.ENGLISH.code)

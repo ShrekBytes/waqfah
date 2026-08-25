@@ -99,11 +99,16 @@ class ReadingViewModel @Inject constructor(
     suspend fun previous() = mutationMutex.withLock { step { quranRepository.getPreviousVerse(it) } }
 
     fun markCurrentRead() = viewModelScope.launch {
-        val newIsRead = !_uiState.value.isMarkedRead
-        // Optimistic UI update first — awaiting the DB write delays feedback.
-        _uiState.update { it.copy(isMarkedRead = newIsRead) }
         mutationMutex.withLock {
+            // Decision and target verse are captured under the same lock the
+            // DB write uses. Computing the toggle from uiState OUTSIDE the
+            // lock let a swipe committing mid-gesture apply ayah A's tap to
+            // whichever ayah B had just become current. DB truth (one cheap
+            // EXISTS) is the source instead of possibly-stale ui state.
             val verse = currentVerse ?: return@withLock
+            val newIsRead = !readingProgressRepository.isRead(verse.id)
+            // Optimistic UI update before the write keeps feedback instant.
+            _uiState.update { it.copy(isMarkedRead = newIsRead) }
             if (newIsRead) {
                 readingProgressRepository.markRead(verse.id)
             } else {
