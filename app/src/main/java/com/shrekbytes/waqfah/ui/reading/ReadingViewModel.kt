@@ -52,6 +52,11 @@ class ReadingViewModel @Inject constructor(
     private var currentVerse: VerseEntity? = null
     private var latestPrefs = UserPreferences()
 
+    // Signature of the last rendered preferences (see readingRenderSignature);
+    // null until the first emission. Emissions that don't change it skip the
+    // full render.
+    private var lastRenderSignature: List<Any?>? = null
+
     // Session-local "compare translations" override for the current ayah; null
     // means show the real default. Cleared on every step() so it never outlives
     // the ayah it was opened on.
@@ -72,7 +77,16 @@ class ReadingViewModel @Inject constructor(
                 // like it "didn't update" while the old override still renders.
                 val defaultChanged = prefs.activeTranslationEnglish != latestPrefs.activeTranslationEnglish ||
                     prefs.activeTranslationBengali != latestPrefs.activeTranslationBengali
+                // The first emission always renders (it loads the starting
+                // verse); later ones only when something the card displays
+                // changed — unrelated writes (theme ticks, cooldown stepper,
+                // locale mirror…) skip the render instead of paying ~6 DB
+                // queries per emission.
+                val firstLoad = currentVerse == null
+                val signature = readingRenderSignature(prefs)
                 latestPrefs = prefs
+                if (!firstLoad && signature == lastRenderSignature) return@collect
+                lastRenderSignature = signature
                 mutationMutex.withLock {
                     if (defaultChanged) translationOverrideId = null
                     if (currentVerse == null) currentVerse = loadStartingVerse(prefs)
@@ -199,15 +213,6 @@ class ReadingViewModel @Inject constructor(
         _uiState.update { it.copy(triggeredAppLabel = label) }
     }
 
-    // Records that the interstitial session ended (dismissed via back or the
-    // open-app button). Refreshes the per-app shown timestamp so cooldown/
-    // interval bookkeeping stays accurate; revealing the underlying task is
-    // handled by the caller finishing the activity.
-    fun dismissInterstitial(packageName: String, onDismissed: () -> Unit) = viewModelScope.launch {
-        monitoredAppsRepository.recordShown(packageName)
-        onDismissed()
-    }
-
     // Caller must hold mutationMutex.
     private suspend fun step(load: suspend (Int) -> VerseEntity?) {
         val fromId = currentVerse?.id ?: return
@@ -329,3 +334,25 @@ class ReadingViewModel @Inject constructor(
     }
 
 }
+
+// Pure core of ReadingViewModel's preferences filter, extracted for unit
+// testing: exactly the UserPreferences fields the reading card renders (or
+// echoes in its UI state). Anything NOT listed here changes none of this
+// screen's output, so its emissions skip the full re-render — see
+// ReadingRelevanceTest, which pins both the inclusions and the exclusions.
+// When a new preference starts affecting this card, add it here AND to that
+// test; when one doesn't, leave it out.
+internal fun readingRenderSignature(p: UserPreferences): List<Any?> = listOf(
+    p.appActive,
+    p.readingMode,
+    p.surahNameLanguage,
+    p.arabicScript,
+    p.arabicFont,
+    p.arabicFontSize,
+    p.pronunciation,
+    p.translitFontSize,
+    p.translationDisplay,
+    p.translationFontSize,
+    p.activeTranslationEnglish,
+    p.activeTranslationBengali,
+)

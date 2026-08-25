@@ -30,6 +30,11 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug --console=plain
 
+      # Proves the R8/resource-shrinking release path compiles; an R8 failure
+      # would otherwise surface only at release time.
+      - name: Assemble release APK (R8 check)
+        run: ./gradlew :app:assembleRelease --console=plain
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:

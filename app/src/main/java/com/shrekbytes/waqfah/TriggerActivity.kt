@@ -61,11 +61,14 @@ class TriggerActivity : AppCompatActivity() {
     private var closing = false
 
     // Set after the single re-assertion below, so a stubborn app can't trap
-    // the user in a loop of interstitials.
+    // the user in a loop of interstitials. Persisted across recreation
+    // (rotation, locale switch mid-display) so the recreated instance can't
+    // fire the retry a second time.
     private var buriedRetryUsed = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        buriedRetryUsed = savedInstanceState?.getBoolean(STATE_BURIED_RETRY_USED) ?: false
         enableEdgeToEdge()
 
         // Zero every window-level transition on all supported APIs: the visual
@@ -145,6 +148,11 @@ class TriggerActivity : AppCompatActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_BURIED_RETRY_USED, buriedRetryUsed)
+    }
+
     override fun onStop() {
         super.onStop()
         val triggeredPackage = intent?.getStringExtra(EXTRA_TRIGGERED_PACKAGE) ?: return
@@ -195,6 +203,7 @@ class TriggerActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "TriggerActivity"
         const val EXTRA_TRIGGERED_PACKAGE = "com.shrekbytes.waqfah.EXTRA_TRIGGERED_PACKAGE"
+        private const val STATE_BURIED_RETRY_USED = "waqfah.buriedRetryUsed"
         private const val ENTER_FADE_MS = 360
         private const val EXIT_FADE_MS = 140
 

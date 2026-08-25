@@ -22,6 +22,7 @@ import androidx.core.net.toUri
 import com.shrekbytes.waqfah.BuildConfig
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.TriggerActivity
+import com.shrekbytes.waqfah.data.local.appstate.MonitoredAppEntity
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -99,6 +101,11 @@ class AppMonitorService : Service() {
     // events can be paired — that pairing is how picker-mediated entries are
     // recognized even when the chooser flash is shorter than one poll.
     private var lastResumedActivity: ResumedActivity? = null
+
+    // Latest monitored-apps snapshot, kept fresh by monitorGate's combine.
+    // evaluateForegroundChange reads this instead of re-querying Room once per
+    // foreground change.
+    private var monitoredSnapshot: List<MonitoredAppEntity> = emptyList()
 
     // Lazily-built cache of each package's alternate entry-point activities
     // (share targets, file/link viewers). Queried once per package on first
@@ -180,9 +187,18 @@ class AppMonitorService : Service() {
         // True only when a foreground change could actually produce a trigger.
         val monitorGate = combine(
             settingsRepository.preferences.map { it.appActive }.distinctUntilChanged(),
-            monitoredAppsRepository.monitoredApps.map { it.isNotEmpty() }.distinctUntilChanged(),
+            monitoredAppsRepository.monitoredApps,
             screenOn,
-        ) { active, hasMonitoredApps, screenOnNow -> active && hasMonitoredApps && screenOnNow }
+        ) { active, monitored, screenOnNow ->
+            monitoredSnapshot = monitored
+            active && monitored.isNotEmpty() && screenOnNow
+        }
+            // A detection pause must also sever the picker-pairing context: a
+            // chooser flash from before a pause (screen off, monitoring
+            // toggled off) must never be paired against a post-wake resume.
+            // The loop's window reset already drops old events; this drops
+            // their remembered counterpart.
+            .onEach { open -> if (!open) lastResumedActivity = null }
 
         while (serviceScope.isActive) {
             monitorGate.first { it }
@@ -245,8 +261,7 @@ class AppMonitorService : Service() {
         }
         currentForeground = candidate
 
-        val monitored = monitoredAppsRepository.monitoredApps.first()
-        if (monitored.none { it.packageName == candidate }) return
+        if (monitoredSnapshot.none { it.packageName == candidate }) return
 
         // The dismissal flow: TriggerActivity finishes, the paused app
         // underneath resumes. Without this guard that resume re-triggers

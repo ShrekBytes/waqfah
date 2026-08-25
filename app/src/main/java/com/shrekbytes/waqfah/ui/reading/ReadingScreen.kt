@@ -67,9 +67,9 @@ fun ReadingScreen(
         Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
             WaqfahPrimaryButton(
                 text = stringResource(R.string.open_app_button, state.triggeredAppLabel ?: stringResource(R.string.app_name)),
-                onClick = {
-                    viewModel.dismissInterstitial(triggeredPackage, onDismissed = ::requestDismiss)
-                },
+                // Cooldown bookkeeping happens in AppMonitorService at trigger
+                // time; dismissal only reveals the app underneath.
+                onClick = ::requestDismiss,
             )
         }
     }

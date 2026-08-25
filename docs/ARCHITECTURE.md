@@ -16,7 +16,8 @@ over the target app when all trigger rules pass:
 2. never on indirect entries (picker-mediated or worker activities),
 3. never when returning from Waqfah's own interstitial,
 4. cooldown (`interval > 0`) or Off-session gap (`interval = 0`) decides
-   whether a fresh open is allowed through.
+   whether a fresh open is allowed through; `last_shown_at` is stamped once,
+   at trigger time, regardless of how the interstitial is later dismissed.
 
 **TriggerActivity** is a translucent interstitial rendering **ReadingCard**;
 finishing it falls through to whatever was really underneath.
