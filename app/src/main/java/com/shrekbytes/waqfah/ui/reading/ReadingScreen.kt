@@ -28,7 +28,6 @@ fun WaqfahReadingContent(viewModel: ReadingViewModel, bottomBar: @Composable () 
         onMarkRead = viewModel::markCurrentRead,
         onNext = viewModel::next,
         onPrevious = viewModel::previous,
-        onResume = viewModel::resume,
         onCycleTranslation = viewModel::cycleTranslationSource,
         onResetTranslation = viewModel::resetTranslationSource,
         onCompletionDismiss = viewModel::dismissCompletion,

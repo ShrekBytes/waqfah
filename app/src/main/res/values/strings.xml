@@ -53,6 +53,8 @@
     <string name="perm_overlay_desc">Lets the reading screen appear over that app</string>
     <string name="perm_battery_name">Unrestricted battery</string>
     <string name="perm_battery_desc">Keeps Waqfah running reliably in the background</string>
+    <string name="perm_notifications_name">Notifications</string>
+    <string name="perm_notifications_desc">Optional — shows Waqfah\'s silent "monitoring" notification on Android 13+. Reading pauses work without it.</string>
     <string name="permissions_title">Permissions</string>
     <string name="permissions_body">Waqfah needs these to notice app launches and keep running. Review or change them anytime.</string>
     <string name="rationale_title">Why Waqfah needs these</string>
@@ -145,8 +147,6 @@
     <string name="cd_next_ayah">Next ayah</string>
     <string name="cd_prev_translation">Previous translation</string>
     <string name="cd_next_translation">Next translation</string>
-    <string name="paused_message">Waqfah is off right now.</string>
-    <string name="turn_back_on">Turn back on</string>
     <string name="open_app_button">Open %1$s →</string>
     <string name="completion_title">Alhamdulillah!</string>
     <string name="completion_body">You have completed the Holy Quran. May Allah (SWT) accept it from you, multiply your reward, and make it a light for you.</string>

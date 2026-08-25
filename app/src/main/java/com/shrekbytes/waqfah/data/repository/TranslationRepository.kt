@@ -57,8 +57,11 @@ class TranslationRepository @Inject constructor(
 
     suspend fun getText(meta: TranslationMeta, verseId: Int): String? {
         // Bundled translations ship in the APK assets and are copied into
-        // internal storage once, the first time they're needed.
-        if (meta.isBundled && !isDownloaded(meta)) {
+        // internal storage once, the first time they're needed. One existence
+        // check serves both branches: a missing non-bundled file returns null,
+        // a missing bundled one triggers the asset copy.
+        if (!isDownloaded(meta)) {
+            if (!meta.isBundled) return null
             try {
                 download(meta)
             } catch (e: CancellationException) {
@@ -68,7 +71,6 @@ class TranslationRepository @Inject constructor(
                 return null
             }
         }
-        if (!isDownloaded(meta)) return null
 
         return try {
             open(meta).translationDao().getText(verseId)

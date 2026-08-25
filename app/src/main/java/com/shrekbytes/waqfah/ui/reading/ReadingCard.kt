@@ -108,7 +108,6 @@ fun ReadingCard(
     onMarkRead: () -> Unit,
     onNext: suspend () -> Unit,
     onPrevious: suspend () -> Unit,
-    onResume: () -> Unit,
     onCycleTranslation: (forward: Boolean) -> Unit,
     onResetTranslation: () -> Unit,
     onCompletionDismiss: () -> Unit,
@@ -160,18 +159,10 @@ fun ReadingCard(
                 }
             }
 
-            if (state.isPaused) {
-                Column(
-                    Modifier.weight(1f).fillMaxWidth().padding(24.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(stringResource(R.string.paused_message), color = colors.inkMuted, fontSize = 14.sp)
-                    TextButton(onClick = onResume) {
-                        Text(stringResource(R.string.turn_back_on), color = colors.accent, fontSize = 13.5.sp, fontWeight = FontWeight.Medium)
-                    }
-                }
-            } else {
+            // Ayah pager — always shown. Waqfah's on/off toggle governs
+            // detection only; it must never gate reading here (see the toggle
+            // note in docs/ARCHITECTURE.md).
+            run {
                 BoxWithConstraints(
                     Modifier
                         .weight(1f)

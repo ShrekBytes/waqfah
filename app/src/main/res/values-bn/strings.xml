@@ -53,6 +53,8 @@
     <string name="perm_overlay_desc">তিলাওয়াতের স্ক্রিনটিকে সেই অ্যাপের ওপরে দেখাতে দেয়</string>
     <string name="perm_battery_name">ব্যাটারি অপ্টিমাইজেশন থেকে অব্যাহতি</string>
     <string name="perm_battery_desc">Waqfah-কে ব্যাকগ্রাউন্ডে নির্ভরযোগ্যভাবে চালু রাখে</string>
+    <string name="perm_notifications_name">বিজ্ঞপ্তি</string>
+    <string name="perm_notifications_desc">ঐচ্ছিক — Android 13-এ Waqfah-এর নীরব \"মনিটরিং\" বিজ্ঞপ্তিটি দেখায়। এটি ছাড়াও তিলাওয়াতের বিরতি কাজ করে।</string>
     <string name="permissions_title">অনুমতিসমূহ</string>
     <string name="permissions_body">অ্যাপ খোলা টের পাওয়ার জন্য ও চলমান থাকার জন্য Waqfah-এর এগুলো দরকার। যখন খুশি দেখে নিন বা বদলান।</string>
     <string name="rationale_title">Waqfah কেন এগুলো চায়</string>
@@ -145,8 +147,6 @@
     <string name="cd_next_ayah">পরের আয়াত</string>
     <string name="cd_prev_translation">আগের অনুবাদ</string>
     <string name="cd_next_translation">পরের অনুবাদ</string>
-    <string name="paused_message">Waqfah এখন বন্ধ আছে।</string>
-    <string name="turn_back_on">আবার চালু করুন</string>
     <string name="open_app_button">%1$s খুলুন →</string>
     <string name="completion_title">আলহামদুলিল্লাহ!</string>
     <string name="completion_body">আপনি পবিত্র কুরআন সম্পূর্ণ করেছেন। আল্লাহ আপনার পক্ষ থেকে এটি কবুল করুন, প্রতিদান বহুগুণে বাড়িয়ে দিন, এবং এটিকে আপনার জন্য নূর বানান।</string>

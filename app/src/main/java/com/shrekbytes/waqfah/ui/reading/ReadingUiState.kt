@@ -20,7 +20,6 @@ data class AyahPreview(
 
 data class ReadingUiState(
     val isLoading: Boolean = true,
-    val isPaused: Boolean = false,
     val surahName: String = "",
     val surahNameDirection: LayoutDirection = LayoutDirection.Ltr,
     val ayahLabel: String = "",

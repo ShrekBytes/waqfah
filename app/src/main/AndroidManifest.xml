@@ -4,11 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- POST_NOTIFICATIONS is intentionally NOT declared: the foreground-service
-         notification is purely informational, so requesting a runtime permission
-         (and the Play-review surface that comes with it) isn't worth it. On
-         Android 13+ the FGS notification is simply not shown; on older versions
-         it stays MIN-importance, i.e. silent and drawer-only. -->
+    <!-- Normal runtime permission: only decides whether the foreground-service
+         notification is visible on Android 13+. Detection never depends on it —
+         a denial simply keeps that notification hidden (the pre-13 behavior).
+         Requested as an optional row in the permissions flow, never gated on. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <uses-permission

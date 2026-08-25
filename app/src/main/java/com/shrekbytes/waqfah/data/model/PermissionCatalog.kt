@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import com.shrekbytes.waqfah.R
 
 // Stable identity for each permission row so screens never depend on list order.
-enum class PermissionKey { USAGE_ACCESS, OVERLAY, BATTERY }
+enum class PermissionKey { USAGE_ACCESS, OVERLAY, BATTERY, NOTIFICATIONS }
 
 data class PermissionInfo(val key: PermissionKey, @StringRes val nameRes: Int, @StringRes val descriptionRes: Int)
 
@@ -26,4 +26,13 @@ object PermissionCatalog {
     )
 
     val all = listOf(usage, overlay, battery)
+
+    // Optional fourth row: purely cosmetic — visibility of the monitor
+    // notification on Android 13+. Kept OUT of [all] because screens iterate
+    // that list to render REQUIRED rows, and monitoring never depends on this.
+    val notifications = PermissionInfo(
+        PermissionKey.NOTIFICATIONS,
+        R.string.perm_notifications_name,
+        R.string.perm_notifications_desc,
+    )
 }

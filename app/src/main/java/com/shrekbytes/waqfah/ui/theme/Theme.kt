@@ -1,6 +1,8 @@
 package com.shrekbytes.waqfah.ui.theme
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +20,11 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 enum class AppTheme { SYSTEM, LIGHT, DARK, CREAM, RETRO, STONE }
+
+// CREAM/RETRO/STONE ship a hand-tuned fixed accent (see BasePalettes), so the
+// accent picker only makes sense for the three base themes.
+val AppTheme.hasAccentPicker: Boolean
+    get() = this == AppTheme.SYSTEM || this == AppTheme.LIGHT || this == AppTheme.DARK
 
 data class WaqfahColors(
     val background: Color,
@@ -49,6 +56,13 @@ private fun resolveColors(theme: AppTheme, isSystemDark: Boolean, accentColor: A
 
 val LocalWaqfahColors = staticCompositionLocalOf { BasePalettes.Light }
 
+// Recursively unwraps ContextWrapper chains down to the hosting Activity.
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 @Composable
 fun WaqfahTheme(
     theme: AppTheme = AppTheme.SYSTEM,
@@ -68,7 +82,11 @@ fun WaqfahTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
+            // Both current hosts attach themselves as the ComposeView context,
+            // but unwrap defensively anyway: an OEM LayoutInflater wrapper (or
+            // a future non-activity host) must skip bar tinting, not crash
+            // every theme application.
+            val window = view.context.findActivity()?.window ?: return@SideEffect
             val useLightIcons = colors.background.luminance() > 0.5f
             val controller = WindowCompat.getInsetsController(window, view)
             controller.isAppearanceLightStatusBars = useLightIcons

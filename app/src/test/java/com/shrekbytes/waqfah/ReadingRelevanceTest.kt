@@ -19,6 +19,8 @@ import org.junit.Test
 // renders it) or deliberately stay out (so its changes skip the full
 // re-render). These tests pin both sides of that decision — adding a new
 // preference without updating readingRenderSignature fails loudly here.
+// Note: appActive deliberately stays OUT — the on/off toggle governs detection
+// only and must never gate or re-render the reading card.
 class ReadingRelevanceTest {
 
     private val base = UserPreferences()
@@ -30,7 +32,6 @@ class ReadingRelevanceTest {
 
     @Test
     fun renderedFields_changeTheSignature() {
-        assertNotEquals(sig(), sig { it.copy(appActive = false) })
         assertNotEquals(sig(), sig { it.copy(readingMode = ReadingMode.RANDOM) })
         assertNotEquals(sig(), sig { it.copy(surahNameLanguage = NameDisplayLanguage.ARABIC) })
         assertNotEquals(sig(), sig { it.copy(arabicScript = ArabicScript.UTHMANI) })
@@ -49,6 +50,7 @@ class ReadingRelevanceTest {
         assertEquals(sig(), sig { it.copy(theme = AppTheme.DARK) })
         assertEquals(sig(), sig { it.copy(accentColor = AccentColor.CLAY) })
         assertEquals(sig(), sig { it.copy(cooldownMinutes = 45) })
+        assertEquals(sig(), sig { it.copy(appActive = false) })
         assertEquals(sig(), sig { it.copy(appLanguage = AppLanguage.BENGALI) })
         assertEquals(sig(), sig { it.copy(hasCompletedOnboarding = true) })
     }

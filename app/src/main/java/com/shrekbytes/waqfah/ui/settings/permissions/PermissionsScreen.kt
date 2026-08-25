@@ -1,5 +1,10 @@
 package com.shrekbytes.waqfah.ui.settings.permissions
 
+import android.Manifest
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -35,6 +40,18 @@ fun PermissionsScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
+    // Runtime request for the OPTIONAL notification permission. The three
+    // required rows above are settings-page grants and never go through this.
+    val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        viewModel.onNotificationRequestResult(
+            granted = granted,
+            canAskAgain = ActivityCompat.shouldShowRequestPermissionRationale(
+                context as Activity,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ),
+        )
+    }
+
     SettingsScaffold(title = stringResource(R.string.permissions_title), onBack = onBack) {
         Text(
             stringResource(R.string.permissions_body),
@@ -58,5 +75,22 @@ fun PermissionsScreen(
                 onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
             )
         }
+        // Optional, not part of the required set above: a denial only hides the
+        // silent monitor notification on Android 13+.
+        PermissionToggleRow(
+            title = stringResource(PermissionCatalog.notifications.nameRes),
+            subtitle = stringResource(PermissionCatalog.notifications.descriptionRes),
+            granted = state.notificationsGranted,
+            onOpenSettings = {
+                if (state.notificationsGranted || state.notificationsPermanentlyDenied) {
+                    // Once granted (or permanently denied) the runtime dialog
+                    // can't change anything — the system notification page is
+                    // the only place the choice can be flipped.
+                    context.startActivity(viewModel.notificationSettingsIntent())
+                } else {
+                    notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+        )
     }
 }

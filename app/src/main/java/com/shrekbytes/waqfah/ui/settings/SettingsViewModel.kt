@@ -1,17 +1,23 @@
 package com.shrekbytes.waqfah.ui.settings
 
+import android.content.Context
+import android.content.Intent
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
+import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.model.AppLanguage
+import com.shrekbytes.waqfah.detection.AppMonitorService
 import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
+import com.shrekbytes.waqfah.ui.theme.hasAccentPicker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +44,8 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val readingProgressRepository: ReadingProgressRepository,
     private val monitoredAppsRepository: MonitoredAppsRepository,
+    private val permissionsRepository: PermissionsRepository,
+    @ApplicationContext private val context: Context,
     quranRepository: QuranRepository,
 ) : ViewModel() {
 
@@ -54,7 +62,7 @@ class SettingsViewModel @Inject constructor(
             theme = prefs.theme,
             accentColor = prefs.accentColor,
             appLanguage = prefs.appLanguage,
-            showAccentPicker = prefs.theme == AppTheme.SYSTEM || prefs.theme == AppTheme.LIGHT || prefs.theme == AppTheme.DARK,
+            showAccentPicker = prefs.theme.hasAccentPicker,
             readCount = readCount,
             totalCount = total,
             progressPercent = if (total > 0) (readCount * 100 / total) else 0,
@@ -68,8 +76,24 @@ class SettingsViewModel @Inject constructor(
 
     // Reads the persisted value rather than uiState, whose default (active =
     // true) is wrong until DataStore's first emission arrives.
+    //
+    // The foreground service's lifetime mirrors this toggle exactly: turning
+    // Waqfah off tears the monitor down (notification included) instead of
+    // leaving an idle service parked in memory; turning it back on restarts it
+    // immediately — the user is looking at the switch, so waiting for a
+    // MainActivity resume would feel broken. Without permissions there is no
+    // point starting (the service would stop itself on its first check);
+    // MainActivity.onResume covers the grant-later path.
     fun toggleActive() = viewModelScope.launch {
-        settingsRepository.setAppActive(!settingsRepository.preferences.first().appActive)
+        val activate = !settingsRepository.preferences.first().appActive
+        settingsRepository.setAppActive(activate)
+        if (activate) {
+            if (permissionsRepository.hasRequiredPermissions()) {
+                AppMonitorService.start(context)
+            }
+        } else {
+            context.stopService(Intent(context, AppMonitorService::class.java))
+        }
     }
 
     fun setTheme(theme: AppTheme) = viewModelScope.launch { settingsRepository.setTheme(theme) }

@@ -1,5 +1,10 @@
 package com.shrekbytes.waqfah.ui.onboarding
 
+import android.Manifest
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -38,6 +43,19 @@ fun OnboardPermissionsScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
+    // Runtime request for the OPTIONAL notification permission — deliberately
+    // outside allGranted below: denying it never blocks onboarding, it just
+    // keeps the silent monitor notification hidden on Android 13+.
+    val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        viewModel.onNotificationRequestResult(
+            granted = granted,
+            canAskAgain = ActivityCompat.shouldShowRequestPermissionRationale(
+                context as Activity,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ),
+        )
+    }
+
     OnboardingScaffold(
         step = 3,
         title = stringResource(R.string.onboard_perms_title),
@@ -75,5 +93,21 @@ fun OnboardPermissionsScreen(
                 onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
             )
         }
+        // Optional extra row after the required three — see notifLauncher above.
+        OnboardPermissionRow(
+            title = stringResource(PermissionCatalog.notifications.nameRes),
+            subtitle = stringResource(PermissionCatalog.notifications.descriptionRes),
+            granted = state.notificationsGranted,
+            onOpenSettings = {
+                if (state.notificationsGranted || state.notificationsPermanentlyDenied) {
+                    // Once granted (or permanently denied) the runtime dialog
+                    // can't change anything — the system notification page is
+                    // the only place the choice can be flipped.
+                    context.startActivity(viewModel.notificationSettingsIntent())
+                } else {
+                    notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+        )
     }
 }

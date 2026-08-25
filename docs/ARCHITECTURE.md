@@ -47,6 +47,18 @@ finishing it falls through to whatever was really underneath.
 
 ## Lifecycle
 
-- Service starts from MainActivity.onResume (and BootReceiver after reboot);
-  it self-stops if permissions are revoked (re-checked every 30s).
-- POST_NOTIFICATIONS is deliberately not declared — see AndroidManifest.
+- Service lifetime mirrors the Waqfah on/off toggle: **SettingsViewModel.toggleActive**
+  starts it (permissions permitting) or stops it outright; MainActivity.onResume
+  restarts it when permissions were just granted (but never resurrects a
+  toggled-off monitor); BootReceiver restarts it after reboot only when
+  permissions are present AND Waqfah is toggled on. The service also self-stops
+  if permissions are revoked mid-run (re-checked every 30s). While running, the
+  polling loop suspends whenever the screen is off, monitoring is off, or no
+  apps are monitored.
+- **The toggle governs DETECTION only.** Home-tab reading (`ReadingViewModel` /
+  `ReadingCard`) never reads `appActive` and runs entirely off Room + DataStore;
+  stopping the service must never affect it. Keep these decoupled.
+- POST_NOTIFICATIONS is declared but strictly optional: it only makes the
+  monitor notification visible on Android 13+. It's rendered as a separate
+  non-gated row in the permissions flow (see PermissionsViewModel); a denial
+  never affects detection.

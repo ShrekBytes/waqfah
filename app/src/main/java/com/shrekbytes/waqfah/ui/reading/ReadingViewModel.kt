@@ -177,8 +177,6 @@ class ReadingViewModel @Inject constructor(
         _uiState.update { it.copy(isCompleted = allRead && !completionDismissed) }
     }
 
-    fun resume() = viewModelScope.launch { settingsRepository.setAppActive(true) }
-
     // Steps the preview to the next/previous downloaded translation for the
     // active display language, wrapping around. Never touches the persisted
     // default — pure "peek at another wording" for this ayah only.
@@ -275,7 +273,6 @@ class ReadingViewModel @Inject constructor(
             _uiState.update { current ->
                 current.copy(
                     isLoading = false,
-                    isPaused = !prefs.appActive,
                     surahName = surahDeferred.await()?.let { surahDisplayName(it, prefs.surahNameLanguage) } ?: "",
                     surahNameDirection = if (prefs.surahNameLanguage == NameDisplayLanguage.ARABIC) LayoutDirection.Rtl else LayoutDirection.Ltr,
                     ayahLabel = ayahLabel(verse, prefs.surahNameLanguage),
@@ -343,7 +340,6 @@ class ReadingViewModel @Inject constructor(
 // When a new preference starts affecting this card, add it here AND to that
 // test; when one doesn't, leave it out.
 internal fun readingRenderSignature(p: UserPreferences): List<Any?> = listOf(
-    p.appActive,
     p.readingMode,
     p.surahNameLanguage,
     p.arabicScript,

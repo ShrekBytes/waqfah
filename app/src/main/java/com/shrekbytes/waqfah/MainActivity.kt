@@ -9,6 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.SideEffect
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.shrekbytes.waqfah.data.model.UserPreferences
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.detection.AppMonitorService
@@ -19,6 +21,7 @@ import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 // Handles normal app usage (onboarding, Home, Settings). The triggered reading
@@ -30,6 +33,11 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var settingsRepository: SettingsRepository
     @Inject lateinit var permissionsRepository: PermissionsRepository
 
+    // Latest preferences snapshot for onResume, which runs outside composition.
+    // null until DataStore's first emission — treated as "don't start yet"
+    // rather than assuming the default (active = true).
+    private var latestPrefs: UserPreferences? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Must run before super.onCreate(): on Android 12+ it hands control to
         // the system SplashScreen (started from Theme.Waqfah.Starting), and on
@@ -38,6 +46,13 @@ class MainActivity : AppCompatActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Keep latestPrefs fresh for onResume (see below); the composition's
+        // own collector drives the UI and can't be read from lifecycle
+        // callbacks.
+        lifecycleScope.launch {
+            settingsRepository.preferences.collect { latestPrefs = it }
+        }
 
         // Hold the splash until DataStore's first value resolves, so the first
         // visible frame is already painted in the user's chosen theme instead
@@ -75,7 +90,10 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         // Re-checked on every resume: the permissions may have just been granted
         // in system settings. Starting an already-running service is a no-op.
-        if (permissionsRepository.hasRequiredPermissions()) {
+        // Skipped while Waqfah is toggled off — SettingsViewModel.toggleActive
+        // owns the service lifetime, so resuming the app must not resurrect a
+        // monitor the user explicitly stopped.
+        if (latestPrefs?.appActive == true && permissionsRepository.hasRequiredPermissions()) {
             AppMonitorService.start(this)
         }
     }
