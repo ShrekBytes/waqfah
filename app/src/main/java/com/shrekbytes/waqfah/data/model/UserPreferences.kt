@@ -28,7 +28,6 @@ enum class ArabicFont(val script: ArabicScript) {
     DIGITAL_KHATT_V2(ArabicScript.INDOPAK),
     MEQURAN(ArabicScript.UTHMANI),
     AMIRI(ArabicScript.UTHMANI),
-    KFGQPC_NASTALEEQ(ArabicScript.UTHMANI),
 }
 
 data class UserPreferences(

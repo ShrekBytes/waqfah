@@ -9,14 +9,12 @@ private val DigitalKhattIndopakFontFamily = FontFamily(Font(R.font.digital_khatt
 private val DigitalKhattV2FontFamily = FontFamily(Font(R.font.digital_khatt_v2))
 private val MeQuranFontFamily = FontFamily(Font(R.font.mequran))
 private val AmiriFontFamily = FontFamily(Font(R.font.amiri))
-private val KfgqpcNastaleeqFontFamily = FontFamily(Font(R.font.kfgqpc_nastaleeq))
 
 fun ArabicFont.toFontFamily(): FontFamily = when (this) {
     ArabicFont.DIGITAL_KHATT_INDOPAK -> DigitalKhattIndopakFontFamily
     ArabicFont.DIGITAL_KHATT_V2 -> DigitalKhattV2FontFamily
     ArabicFont.MEQURAN -> MeQuranFontFamily
     ArabicFont.AMIRI -> AmiriFontFamily
-    ArabicFont.KFGQPC_NASTALEEQ -> KfgqpcNastaleeqFontFamily
 }
 
 fun ArabicFont.displayName(): String = when (this) {
@@ -24,5 +22,4 @@ fun ArabicFont.displayName(): String = when (this) {
     ArabicFont.DIGITAL_KHATT_V2 -> "Digital Khatt V2"
     ArabicFont.MEQURAN -> "MeQuran"
     ArabicFont.AMIRI -> "Amiri"
-    ArabicFont.KFGQPC_NASTALEEQ -> "KFGQPC Nastaleeq"
 }

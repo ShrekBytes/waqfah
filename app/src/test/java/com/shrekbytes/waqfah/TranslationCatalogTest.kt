@@ -42,7 +42,7 @@ class TranslationCatalogTest {
 
     @Test
     fun downloadUrls_pointAtExpectedRepoPath() {
-        val expectedPrefix = "https://raw.githubusercontent.com/ShrekBytes/waqfah/main/translations/"
+        val expectedPrefix = "https://raw.githubusercontent.com/ShrekBytes/waqfah-translations/main/"
         TranslationCatalog.all.forEach { meta ->
             meta.downloadUrl?.let { url ->
                 assertTrue(

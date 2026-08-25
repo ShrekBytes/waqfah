@@ -81,6 +81,17 @@ fun GratitudeScreen(onBack: () -> Unit) {
             fontSize = 13.sp,
             lineHeight = 19.sp,
         )
+        Spacer(Modifier.height(12.dp))
+        SourceCredit(
+            title = stringResource(R.string.credit_qul_title),
+            subtitle = stringResource(R.string.credit_qul_sub),
+            url = "https://qul.tarteel.ai/resources",
+        )
+        SourceCredit(
+            title = stringResource(R.string.credit_tanzil_title),
+            subtitle = stringResource(R.string.credit_tanzil_sub),
+            url = "https://tanzil.net/trans/",
+        )
         Spacer(Modifier.height(22.dp))
         Text(
             stringResource(R.string.gratitude_users_note),
@@ -90,5 +101,29 @@ fun GratitudeScreen(onBack: () -> Unit) {
             lineHeight = 19.sp,
         )
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+// Linked source-attribution row for the Credits section.
+@Composable
+private fun SourceCredit(title: String, subtitle: String, url: String) {
+    val colors = WaqfahTheme.colors
+    val context = LocalContext.current
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable { context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = colors.ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(url.removePrefix("https://"), color = colors.inkMuted, fontSize = 11.5.sp, modifier = Modifier.padding(top = 1.dp))
+        }
+        ChevronIcon(
+            direction = ChevronDirection.RIGHT,
+            tint = colors.inkSoft,
+            modifier = Modifier.size(14.dp).rotate(-45f),
+        )
     }
 }

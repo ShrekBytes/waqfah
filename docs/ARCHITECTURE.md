@@ -29,10 +29,12 @@ finishing it falls through to whatever was really underneath.
 - `data/local/appstate` — user data (`monitored_apps`, `read_verses`);
   **no** destructive fallback here, migrations must be written if schema changes.
 - `data/local/translation` + **TranslationRepository** — per-language
-  translation `.db` files downloaded from the repo into internal storage;
+  translation `.db` files hosted in the separate waqfah-translations repo and
+  downloaded into internal storage;
   atomic tmp-rename writes, sqlite-magic/schema probes, SHA-256 checksums from
-  `TranslationCatalog` (regenerate those whenever a `translations/**.db`
-  changes), corruption-vs-transient error classification.
+  `TranslationCatalog` (regenerate those whenever a `.db` in the
+  waqfah-translations repo changes), corruption-vs-transient error
+  classification.
 - **SettingsRepository** — DataStore-backed `UserPreferences`; enum values
   degrade to defaults instead of crashing after renames.
 - Repositories expose Flows; ViewModels combine them into immutable UI state;

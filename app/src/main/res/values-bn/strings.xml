@@ -179,7 +179,11 @@
     <!-- Gratitude -->
     <string name="gratitude_intro">Waqfah মানুষের হাতে, মানুষের জন্যই তৈরি। যাঁরা সময় দিয়ে এটিকে পরখ, সমালোচনা ও এগিয়ে নিয়ে যাওয়ার সাথী হয়েছেন — সবাইকে জাযাকাল্লাহু খাইরান।</string>
     <string name="credits_section">স্বীকৃতি</string>
-    <string name="credits_body">কুরআনের পাঠ, অনুবাদসমূহ (Sahih International ও Taisirul-সহ) এবং আরবি ফন্টগুলো (Digital Khatt, Me Quran, Amiri, KFGQPC Nastaleeq) সংশ্লিষ্ট প্রকাশক ও নির্মাতাদের সম্পদ। তাঁদের কাজ ব্যবহার করতে পেয়ে Waqfah কৃতজ্ঞ।</string>
+    <string name="credits_body">কুরআনের পাঠ, অনুবাদ ও আরবি ফন্ট সংশ্লিষ্ট প্রকাশক, অনুবাদক ও নির্মাতাদের — Waqfah এগুলোর মালিক নয়। নিচের প্রকল্পগুলোর মাধ্যমে তাঁদের শর্ত অনুযায়ী ব্যবহৃত হয়; কৃতজ্ঞতা সহকারে।</string>
+    <string name="credit_qul_title">Quranic Universal Library</string>
+    <string name="credit_qul_sub">অনুবাদ, স্ক্রিপ্ট ও ফন্ট</string>
+    <string name="credit_tanzil_title">Tanzil Project</string>
+    <string name="credit_tanzil_sub">কুরআনের পাঠ ও অনুবাদ</string>
     <string name="gratitude_users_note">আর যারা চালিয়ে যাওয়ার আগে একটি আয়াতের জন্য থেমেছেন — সেই থামাটাই এর আসল উদ্দেশ্য। এটি যেন মিজানে ভারী হয়।</string>
 
     <!-- Privacy policy -->

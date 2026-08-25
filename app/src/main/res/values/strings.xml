@@ -179,7 +179,11 @@
     <!-- Gratitude -->
     <string name="gratitude_intro">Waqfah is made by people, for people. JazakumAllahu khairan to everyone who gave their time to test, critique, and carry it along.</string>
     <string name="credits_section">Credits</string>
-    <string name="credits_body">Quran text, translations (including Sahih International and Taisirul), and Arabic fonts (Digital Khatt, Me Quran, Amiri, KFGQPC Nastaleeq) belong to their respective publishers and authors. Waqfah is grateful to make use of their work.</string>
+    <string name="credits_body">Quran text, translations and Arabic fonts belong to their respective publishers, translators and authors — Waqfah does not own them. They are sourced via the projects below and used under those platforms\' terms of use, with gratitude.</string>
+    <string name="credit_qul_title">Quranic Universal Library</string>
+    <string name="credit_qul_sub">Translations, scripts &amp; fonts</string>
+    <string name="credit_tanzil_title">Tanzil Project</string>
+    <string name="credit_tanzil_sub">Quran text &amp; translations</string>
     <string name="gratitude_users_note">And to every user who pauses for an ayah before continuing — that pause is the whole point. May it weigh heavy on the scale.</string>
 
     <!-- Privacy policy -->
