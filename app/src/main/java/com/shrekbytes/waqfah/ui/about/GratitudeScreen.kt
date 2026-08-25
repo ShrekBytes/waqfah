@@ -85,12 +85,12 @@ fun GratitudeScreen(onBack: () -> Unit) {
         SourceCredit(
             title = stringResource(R.string.credit_qul_title),
             subtitle = stringResource(R.string.credit_qul_sub),
-            url = "https://qul.tarteel.ai/resources",
+            url = "https://qul.tarteel.ai/",
         )
         SourceCredit(
             title = stringResource(R.string.credit_tanzil_title),
             subtitle = stringResource(R.string.credit_tanzil_sub),
-            url = "https://tanzil.net/trans/",
+            url = "https://tanzil.net/",
         )
         Spacer(Modifier.height(22.dp))
         Text(
