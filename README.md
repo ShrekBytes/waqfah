@@ -1,18 +1,25 @@
 # Waqfah
 
-**Waqfah** (وقفة — "a pause") is a digital *mushaf pause* for Android: when you
-open one of your chosen apps, Waqfah steps in first with a single ayah to read.
-Read it (or skip it) and continue — the point is a small, deliberate pause in
-the scroll.
+**Waqfah** (وقفة — "a pause") shows a single Quranic ayah before the apps you
+choose. When you open a monitored app — any app at all, whether it's a social
+network, a game, or a calculator — Waqfah's reading screen appears first.
+Read the ayah or skip it, continue into the app, and get on with your day.
+
+That's the whole idea. Waqfah isn't trying to stop you from doing anything,
+fix a habit, or change how you use your phone. There's no blocking, no
+limits, no tracking, and no lectures — just an ayah, shown before a selected
+app opens, nothing more.
+
+## Features
 
 - **Reading modes:** sequential (resume at the lowest unread ayah) or random
   (any unread ayah), with progress tracking across the whole Quran.
-- **Arabic:** Indopak / Uthmani scripts, five fonts, adjustable sizes,
-  transliteration and translations in English or Bengali, plus extra
-  downloadable translations.
-- **Gentle by design:** at most one pause per app open; a configurable cooldown
-  interval (or Off) controls how often repeats can trigger. Share-sheet and
-  "Open with" entries never interrupt.
+- **Arabic display:** Indopak and Uthmani scripts, four bundled fonts,
+  adjustable sizes, plus optional transliteration and translations in English
+  or Bengali — with more available as downloads.
+- **Unobtrusive by design:** at most one reading screen per app open; a
+  configurable cooldown interval (or Off) controls how often repeats can
+  trigger. Share-sheet and "Open with" entries never trigger it.
 
 ## How detection works
 

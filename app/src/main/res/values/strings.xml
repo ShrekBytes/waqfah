@@ -172,7 +172,7 @@
 
     <!-- Donate -->
     <string name="donate_title">Donate</string>
-    <string name="donate_intro1">Waqfah was built so that opening an app could begin with a moment of Quran instead of a scroll.</string>
+    <string name="donate_intro1">Waqfah was built so that opening an app can begin with a moment of Quran.</string>
     <string name="donate_intro2">It stays free — no ads, nothing locked. If it benefited you, consider helping keep it that way.</string>
     <string name="donate_dua">May your generosity be returned in ways you don\'t expect.</string>
 
