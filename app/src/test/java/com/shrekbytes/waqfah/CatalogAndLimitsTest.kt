@@ -4,26 +4,28 @@ import com.shrekbytes.waqfah.data.model.PermissionCatalog
 import com.shrekbytes.waqfah.data.model.PermissionKey
 import com.shrekbytes.waqfah.data.model.PreferenceLimits
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CatalogAndLimitsTest {
 
     @Test
-    fun permissionCatalog_requiredRowsCoverEveryNonOptionalKeyExactlyOnce() {
+    fun permissionCatalog_requiredRowsAreExactlyTheIndispensableOnes() {
         val requiredKeys = PermissionCatalog.all.map { it.key }
-        // NOTIFICATIONS is deliberately excluded from [all]: it's the optional,
-        // non-gated visibility toggle (see PermissionsViewModel), so screens
-        // iterating [all] must never gate onboarding on it.
-        assertEquals(PermissionKey.entries.toSet() - PermissionKey.NOTIFICATIONS, requiredKeys.toSet())
+        // Only usage access and overlay are indispensable: without either,
+        // monitoring cannot function at all. Battery (reliability on aggressive
+        // OEMs) and notifications (visibility on 13+) deliberately stay out so
+        // they never gate onboarding's Continue button.
+        assertEquals(setOf(PermissionKey.USAGE_ACCESS, PermissionKey.OVERLAY), requiredKeys.toSet())
         assertEquals("Keys must be unique", requiredKeys.size, requiredKeys.toSet().size)
     }
 
     @Test
-    fun permissionCatalog_optionalNotificationsRowIsSeparateFromRequiredSet() {
-        assertFalse(PermissionCatalog.all.any { it.key == PermissionKey.NOTIFICATIONS })
-        assertEquals(PermissionKey.NOTIFICATIONS, PermissionCatalog.notifications.key)
+    fun permissionCatalog_optionalRowsCoverEverythingElse_exactlyOnce() {
+        val optionalKeys = PermissionCatalog.recommended.map { it.key }
+        val expected = PermissionKey.entries.toSet() - PermissionCatalog.all.map { it.key }.toSet()
+        assertEquals(expected, optionalKeys.toSet())
+        assertEquals("Keys must be unique", optionalKeys.size, optionalKeys.toSet().size)
     }
 
     @Test

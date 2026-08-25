@@ -81,8 +81,6 @@ class PermissionsViewModel @Inject constructor(
         else -> permissionsRepository.notificationSettingsIntent()
     }
 
-    fun notificationSettingsIntent(): Intent = permissionsRepository.notificationSettingsIntent()
-
     // Onboarding-only: Gated in the UI (see OnboardPermissionsScreen's
     // allGranted) — records completion once all permissions are actually granted.
     fun completeOnboarding() = viewModelScope.launch {

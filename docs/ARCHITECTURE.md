@@ -58,7 +58,8 @@ finishing it falls through to whatever was really underneath.
 - **The toggle governs DETECTION only.** Home-tab reading (`ReadingViewModel` /
   `ReadingCard`) never reads `appActive` and runs entirely off Room + DataStore;
   stopping the service must never affect it. Keep these decoupled.
-- POST_NOTIFICATIONS is declared but strictly optional: it only makes the
-  monitor notification visible on Android 13+. It's rendered as a separate
-  non-gated row in the permissions flow (see PermissionsViewModel); a denial
-  never affects detection.
+- Battery exemption and POST_NOTIFICATIONS are strictly optional rows rendered
+  after the required two (see PermissionCatalog.recommended): battery keeps the
+  monitor alive on OEMs that kill background apps — stock Android needs it less
+  — and POST_NOTIFICATIONS only makes that notification visible on Android 13+.
+  Denials never block onboarding nor affect detection.

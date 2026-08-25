@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -24,7 +23,9 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.data.model.PermissionCatalog
+import com.shrekbytes.waqfah.data.model.PermissionKey
 import com.shrekbytes.waqfah.ui.components.PermissionToggleRow
+import com.shrekbytes.waqfah.ui.components.SectionTitle
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
@@ -66,7 +67,9 @@ fun PermissionsScreen(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenRationale),
         )
-        Spacer(Modifier.height(6.dp))
+        // Two labeled groups so users see at a glance what's indispensable
+        // versus recommended (SectionTitle carries the spacing itself).
+        SectionTitle(stringResource(R.string.perm_section_required))
         PermissionCatalog.all.forEach { info ->
             PermissionToggleRow(
                 title = stringResource(info.nameRes),
@@ -75,22 +78,25 @@ fun PermissionsScreen(
                 onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
             )
         }
-        // Optional, not part of the required set above: a denial only hides the
-        // silent monitor notification on Android 13+.
-        PermissionToggleRow(
-            title = stringResource(PermissionCatalog.notifications.nameRes),
-            subtitle = stringResource(PermissionCatalog.notifications.descriptionRes),
-            granted = state.notificationsGranted,
-            onOpenSettings = {
-                if (state.notificationsGranted || state.notificationsPermanentlyDenied) {
-                    // Once granted (or permanently denied) the runtime dialog
-                    // can't change anything — the system notification page is
-                    // the only place the choice can be flipped.
-                    context.startActivity(viewModel.notificationSettingsIntent())
-                } else {
-                    notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            },
-        )
+        // Optional rows — recommended for reliability (battery) and visibility
+        // (notifications), but neither gates anything.
+        SectionTitle(stringResource(R.string.perm_section_optional))
+        PermissionCatalog.recommended.forEach { info ->
+            PermissionToggleRow(
+                title = stringResource(info.nameRes),
+                subtitle = stringResource(info.descriptionRes),
+                granted = state.isGranted(info.key),
+                onOpenSettings = {
+                    if (info.key == PermissionKey.NOTIFICATIONS &&
+                        !state.notificationsGranted &&
+                        !state.notificationsPermanentlyDenied
+                    ) {
+                        notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        context.startActivity(viewModel.settingsIntentFor(info.key))
+                    }
+                },
+            )
+        }
     }
 }

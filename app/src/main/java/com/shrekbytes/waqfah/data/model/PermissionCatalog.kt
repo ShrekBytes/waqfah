@@ -19,20 +19,26 @@ object PermissionCatalog {
         R.string.perm_overlay_name,
         R.string.perm_overlay_desc,
     )
+    // Required: monitoring literally cannot function without these two, so
+    // they're the only rows gated behind onboarding's Continue button.
+    val all = listOf(usage, overlay)
+
     val battery = PermissionInfo(
         PermissionKey.BATTERY,
         R.string.perm_battery_name,
         R.string.perm_battery_desc,
     )
-
-    val all = listOf(usage, overlay, battery)
-
-    // Optional fourth row: purely cosmetic — visibility of the monitor
-    // notification on Android 13+. Kept OUT of [all] because screens iterate
-    // that list to render REQUIRED rows, and monitoring never depends on this.
     val notifications = PermissionInfo(
         PermissionKey.NOTIFICATIONS,
         R.string.perm_notifications_name,
         R.string.perm_notifications_desc,
     )
+
+    // Optional rows rendered after the required ones, never gating anything:
+    // - BATTERY: reliability only — stock Android runs the monitor fine without
+    //   it, but aggressive OEM task-killers need the exemption to leave the
+    //   foreground service alone.
+    // - NOTIFICATIONS: purely cosmetic — visibility of the monitor notification
+    //   on Android 13+.
+    val recommended = listOf(battery, notifications)
 }

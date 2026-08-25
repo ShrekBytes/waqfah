@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -24,7 +23,9 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.data.model.PermissionCatalog
+import com.shrekbytes.waqfah.data.model.PermissionKey
 import com.shrekbytes.waqfah.ui.components.OnboardPermissionRow
+import com.shrekbytes.waqfah.ui.components.SectionTitle
 import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 import com.shrekbytes.waqfah.ui.settings.permissions.PermissionsViewModel
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
@@ -39,7 +40,11 @@ fun OnboardPermissionsScreen(
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
-    val allGranted = state.usageAccessGranted && state.overlayGranted && state.batteryExempted
+    // Battery exemption was deliberately moved out of this gate: it improves
+    // reliability (aggressive OEMs kill non-exempted monitors) but monitoring
+    // works without it, so refusing onboarding over it would lock users out of
+    // a fully functional core for a nice-to-have.
+    val allGranted = state.usageAccessGranted && state.overlayGranted
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
@@ -84,7 +89,10 @@ fun OnboardPermissionsScreen(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenRationale),
         )
-        Spacer(Modifier.height(6.dp))
+        // The two groups get explicit headers so users can see at a glance
+        // what's indispensable versus nice-to-have (SectionTitle carries the
+        // group separation spacing itself).
+        SectionTitle(stringResource(R.string.perm_section_required))
         PermissionCatalog.all.forEach { info ->
             OnboardPermissionRow(
                 title = stringResource(info.nameRes),
@@ -93,21 +101,27 @@ fun OnboardPermissionsScreen(
                 onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
             )
         }
-        // Optional extra row after the required three — see notifLauncher above.
-        OnboardPermissionRow(
-            title = stringResource(PermissionCatalog.notifications.nameRes),
-            subtitle = stringResource(PermissionCatalog.notifications.descriptionRes),
-            granted = state.notificationsGranted,
-            onOpenSettings = {
-                if (state.notificationsGranted || state.notificationsPermanentlyDenied) {
-                    // Once granted (or permanently denied) the runtime dialog
-                    // can't change anything — the system notification page is
-                    // the only place the choice can be flipped.
-                    context.startActivity(viewModel.notificationSettingsIntent())
-                } else {
-                    notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            },
-        )
+        // Optional rows — recommended for reliability (battery) and visibility
+        // (notifications) but never gating Continue. Battery routes through
+        // system settings; notifications uses the runtime request above until
+        // it can no longer change anything.
+        SectionTitle(stringResource(R.string.perm_section_optional))
+        PermissionCatalog.recommended.forEach { info ->
+            OnboardPermissionRow(
+                title = stringResource(info.nameRes),
+                subtitle = stringResource(info.descriptionRes),
+                granted = state.isGranted(info.key),
+                onOpenSettings = {
+                    if (info.key == PermissionKey.NOTIFICATIONS &&
+                        !state.notificationsGranted &&
+                        !state.notificationsPermanentlyDenied
+                    ) {
+                        notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        context.startActivity(viewModel.settingsIntentFor(info.key))
+                    }
+                },
+            )
+        }
     }
 }
