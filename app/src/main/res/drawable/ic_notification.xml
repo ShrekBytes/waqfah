@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Flat white logo mark for the foreground-service status-bar notification
-     (small notification icons must be single-color alpha glyphs). -->
+     (small notification icons must be single-color alpha glyphs).
+     The glyph paths cover ~half the 108 viewport, so the group scales them up
+     to fill ~17dp of the fixed 24dp small-icon canvas — matching the visual
+     weight of other apps' notification icons. Tune scaleX/scaleY only. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -9,8 +12,8 @@
     <group
         android:pivotX="54"
         android:pivotY="54"
-        android:scaleX="0.8"
-        android:scaleY="0.8">
+        android:scaleX="1.4"
+        android:scaleY="1.4">
         <path
             android:fillColor="#FFFFFFFF"
             android:pathData="M50.2031,33.3281 C44.9297,28.8984 36.4922,26.7891 28.0547,27.6328 L28.0547,69.8203 C36.4922,68.9766 44.9297,71.0859 50.2031,75.5156 Z"
