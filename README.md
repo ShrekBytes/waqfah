@@ -24,6 +24,13 @@ app opens, nothing more.
 - **No accounts, no servers:** everything works offline except the explicit
   download of an optional translation.
 
+## Download
+
+Waqfah's APK is available now from
+[GitHub Releases](https://github.com/ShrekBytes/waqfah/releases).
+It is also coming soon — in shaa Allah — to [F-Droid](https://f-droid.org/packages/com.shrekbytes.waqfah)
+and Google Play.
+
 ## Privacy
 
 Waqfah collects nothing and sends nothing anywhere. Monitored apps, reading
@@ -83,6 +90,21 @@ Requirements: JDK 17 and Android SDK platform 37 (AGP 9.x-compatible
 tooling, e.g. a current Android Studio).
 minSdk 28 (Android 9) · targetSdk 37.
 
+Built with Kotlin and Jetpack Compose (Material 3); persistence via Room and
+DataStore; dependency injection with Hilt.
+
+## Contributing
+
+Bug reports, feature ideas, and pull requests are welcome — please open an
+issue first for larger changes. If you want to work on the code,
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) is the map to start from.
+
+To contribute a UI translation, copy
+`app/src/main/res/values/strings.xml` into a new
+`values-<language-code>/` folder, translate the strings, and open a pull
+request. To publish a Quran translation database instead, see the next
+section.
+
 ## Contributing a translation database
 
 Downloadable translations are plain SQLite files hosted in the separate
@@ -101,7 +123,8 @@ row.
 
 ## Links
 
-- Repository & issue tracker: [github.com/ShrekBytes/waqfah](https://github.com/ShrekBytes/waqfah/issues)
+- Repository: [github.com/ShrekBytes/waqfah](https://github.com/ShrekBytes/waqfah)
+- Issue tracker: [github.com/ShrekBytes/waqfah/issues](https://github.com/ShrekBytes/waqfah/issues)
 - Contact: [shrekbytes@duck.com](mailto:shrekbytes@duck.com)
 
 ## License
