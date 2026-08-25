@@ -319,8 +319,12 @@ class AppMonitorService : Service() {
             // Waqfah holds SYSTEM_ALERT_WINDOW (see AndroidManifest).
             // EXCLUDE_FROM_RECENTS mirrors the manifest attribute — some OEM
             // recents screens only honor one or the other.
+            // NO_ANIMATION drops the ROM's default activity slide; the
+            // interstitial defines its own calm fade instead (see TriggerActivity).
             addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS,
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
+                    Intent.FLAG_ACTIVITY_NO_ANIMATION,
             )
         }
         try {

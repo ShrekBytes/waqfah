@@ -38,9 +38,15 @@ fun WaqfahReadingContent(viewModel: ReadingViewModel, bottomBar: @Composable () 
     )
 }
 
-// Only ever reached via TriggerActivity — see its doc comment.
+// Only ever reached via TriggerActivity — see its doc comment. [onDismissRequest]
+// lets the host run its own exit animation before actually finishing; when null,
+// dismissal finishes the hosting activity directly.
 @Composable
-fun ReadingScreen(triggeredPackage: String, viewModel: ReadingViewModel = hiltViewModel()) {
+fun ReadingScreen(
+    triggeredPackage: String,
+    viewModel: ReadingViewModel = hiltViewModel(),
+    onDismissRequest: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -51,18 +57,18 @@ fun ReadingScreen(triggeredPackage: String, viewModel: ReadingViewModel = hiltVi
     // share sheet, file viewer) — exactly like a normal back press. No launch
     // intent is needed; getLaunchIntentForPackage would only ever restart the
     // app's main activity.
-    fun dismiss() {
-        (context as? Activity)?.finish()
+    fun requestDismiss() {
+        onDismissRequest?.invoke() ?: (context as? Activity)?.finish()
     }
 
-    BackHandler { dismiss() }
+    BackHandler(onBack = ::requestDismiss)
 
     WaqfahReadingContent(viewModel = viewModel) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
             WaqfahPrimaryButton(
                 text = stringResource(R.string.open_app_button, state.triggeredAppLabel ?: stringResource(R.string.app_name)),
                 onClick = {
-                    viewModel.dismissInterstitial(triggeredPackage) { dismiss() }
+                    viewModel.dismissInterstitial(triggeredPackage, onDismissed = ::requestDismiss)
                 },
             )
         }

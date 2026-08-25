@@ -10,6 +10,10 @@ import com.shrekbytes.waqfah.data.model.TranslationMeta
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -28,6 +32,12 @@ import javax.inject.Singleton
 class TranslationRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    // Bumped whenever translation files appear or disappear (download finished,
+    // file deleted, bundled first-copy). Lets long-lived screens restat
+    // availability reactively instead of staying stale until their next render.
+    private val _downloadsChanged = MutableStateFlow(0)
+    val downloadsChanged: StateFlow<Int> = _downloadsChanged.asStateFlow()
+
     // ConcurrentHashMap: getText() runs on arbitrary dispatchers while
     // download()/delete() run on others.
     private val openDatabases = ConcurrentHashMap<String, TranslationDatabase>()
@@ -109,6 +119,7 @@ class TranslationRepository @Inject constructor(
                     runInterruptible { downloadOverNetwork(meta, url, target, onProgress) }
                 }
             }
+            _downloadsChanged.update { it + 1 }
         }
     }
 
@@ -121,6 +132,7 @@ class TranslationRepository @Inject constructor(
                 openDatabases.remove(meta.id)?.close()
                 fileFor(meta).delete()
             }
+            _downloadsChanged.update { it + 1 }
         }
     }
 

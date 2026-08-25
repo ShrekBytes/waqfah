@@ -61,7 +61,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.Waqfah" />
+            android:theme="@style/Theme.Waqfah.Trigger" />
 
         <service
             android:name=".detection.AppMonitorService"

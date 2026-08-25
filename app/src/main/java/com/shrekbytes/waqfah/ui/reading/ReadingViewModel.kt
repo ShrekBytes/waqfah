@@ -23,6 +23,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -76,6 +77,17 @@ class ReadingViewModel @Inject constructor(
                     if (defaultChanged) translationOverrideId = null
                     if (currentVerse == null) currentVerse = loadStartingVerse(prefs)
                     render(prefs)
+                }
+            }
+        }
+        // A download/delete can land while this screen is already alive (e.g. a
+        // translation finishes downloading in Settings, then the user returns
+        // Home). Re-render so compare-switcher availability reflects the new
+        // file instead of staying stale until the next ayah change.
+        viewModelScope.launch {
+            translationRepository.downloadsChanged.drop(1).collect {
+                mutationMutex.withLock {
+                    if (currentVerse != null) render(latestPrefs)
                 }
             }
         }
@@ -154,7 +166,11 @@ class ReadingViewModel @Inject constructor(
     fun cycleTranslationSource(forward: Boolean) = viewModelScope.launch {
         val lang = latestPrefs.translationDisplay.toTranslationLanguage() ?: return@launch
         mutationMutex.withLock {
-            val downloaded = TranslationCatalog.all.filter { it.language == lang && translationRepository.isDownloaded(it) }
+            // Same availability rule as render(): bundled counts even before its
+            // lazy first-copy, otherwise cycling was a no-op on fresh sessions.
+            val downloaded = TranslationCatalog.all.filter {
+                it.language == lang && (it.isBundled || translationRepository.isDownloaded(it))
+            }
             if (downloaded.size < 2) return@withLock
             val currentId = translationOverrideId ?: activeTranslation(lang, latestPrefs).id
             val currentIndex = downloaded.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
@@ -226,10 +242,16 @@ class ReadingViewModel @Inject constructor(
                 async { quranRepository.getPreviousVerse(verse.id)?.let { buildPreview(it, prefs) } }
 
             val translationLanguage = prefs.translationDisplay.toTranslationLanguage()
-            // Downloaded alternatives decide whether the switcher shows at all;
-            // catalog entries without a local file have nothing to preview.
+            // Availability rule: bundled translations always count — their file
+            // is created lazily on the first getText() below, and statting for
+            // existence BEFORE that copy made the switcher vanish on fresh
+            // sessions (it only reappeared after the next ayah/reopen).
             val downloadedTranslations = translationLanguage
-                ?.let { lang -> TranslationCatalog.all.filter { it.language == lang && translationRepository.isDownloaded(it) } }
+                ?.let { lang ->
+                    TranslationCatalog.all.filter {
+                        it.language == lang && (it.isBundled || translationRepository.isDownloaded(it))
+                    }
+                }
                 .orEmpty()
             val defaultMeta = translationLanguage?.let { activeTranslation(it, prefs) }
             val shownMeta = downloadedTranslations.find { it.id == translationOverrideId } ?: defaultMeta

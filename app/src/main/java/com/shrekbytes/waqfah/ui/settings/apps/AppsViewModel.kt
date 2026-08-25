@@ -20,7 +20,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class AppRowState(val app: InstalledApp, val isMonitored: Boolean)
+data class AppRowState(val app: InstalledApp, val isMonitored: Boolean, val pinnedTop: Boolean)
+
+// An installed app plus whether it was monitored when the list was loaded —
+// the pinning decision is frozen per list session so live toggles never
+// reshuffle rows under the user's finger.
+private data class LoadedApp(val app: InstalledApp, val pinnedTop: Boolean)
 
 data class AppsUiState(
     // Mirrors UserPreferences' persisted default so the pre-DataStore frame
@@ -46,8 +51,12 @@ class AppsViewModel @Inject constructor(
     // repository. Lazily, not Eagerly: the scan only happens when a screen
     // actually collects uiState, but the result is then kept for the ViewModel's
     // lifetime instead of rescanning on every revisit.
-    private val installedApps: StateFlow<List<InstalledApp>> = flow {
-        emit(monitoredAppsRepository.getInstalledLaunchableApps())
+    private val installedApps: StateFlow<List<LoadedApp>> = flow {
+        val all = monitoredAppsRepository.getInstalledLaunchableApps()
+        // Snapshot of the monitored set at load time — this decides who starts
+        // pinned to the top for this list session.
+        val baseline = monitoredAppsRepository.monitoredApps.first().map { it.packageName }.toSet()
+        emit(all.map { LoadedApp(it, it.packageName in baseline) })
         isLoadingApps.value = false
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -69,8 +78,12 @@ class AppsViewModel @Inject constructor(
             cooldownMinutes = cooldown,
             searchQuery = query,
             apps = allApps
-                .filter { it.label.contains(query, ignoreCase = true) }
-                .map { AppRowState(it, it.packageName in monitoredIds) },
+                .filter { it.app.label.contains(query, ignoreCase = true) }
+                .map { AppRowState(it.app, it.app.packageName in monitoredIds, it.pinnedTop) }
+                // Monitored-at-load apps float to the top; sortByDescending is
+                // stable, so each group stays alphabetized. Toggling only flips
+                // the checkbox — the reorder lands on the next list open.
+                .sortedByDescending { it.pinnedTop },
             isLoading = loading,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppsUiState())

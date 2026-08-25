@@ -6,6 +6,17 @@
          widgets/windowBackground defaults are never visible. -->
     <style name="Theme.Waqfah" parent="Theme.AppCompat.DayNight.NoActionBar" />
 
+    <!-- TriggerActivity: translucent, transparent-background window sitting
+         directly on the target app's task. The interstitial animates itself in
+         Compose (see TriggerActivity), so its own content crossfades over the
+         app underneath — no opaque window ever flashes, and no OEM/predictive-
+         back animation can override the effect. -->
+    <style name="Theme.Waqfah.Trigger">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
     <!-- Cold-start splash for MainActivity (no separate SplashActivity).
          On Android 12+ the system reads these attributes for its native
          SplashScreen; on older versions the androidx compat library draws the
