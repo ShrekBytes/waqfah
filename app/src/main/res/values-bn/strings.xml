@@ -52,7 +52,7 @@
     <string name="perm_overlay_name">অন্য অ্যাপের ওপর প্রদর্শন</string>
     <string name="perm_overlay_desc">তিলাওয়াতের স্ক্রিনটিকে সেই অ্যাপের ওপরে দেখাতে দেয়</string>
     <string name="perm_battery_name">ব্যাটারি অপ্টিমাইজেশন থেকে অব্যাহতি</string>
-    <string name="perm_battery_desc">Waqfah-কে ব্যাকগ্রাউন্ডে নির্ভরযোগ্যভাবে চালু রাখে — Battery-তে Unrestricted নির্বাচন করুন</string>
+    <string name="perm_battery_desc">Waqfah-কে নির্ভরযোগ্যভাবে চালু রাখে — পরের স্ক্রিনে Battery খুলে Unrestricted নির্বাচন করুন</string>
     <string name="perm_notifications_name">বিজ্ঞপ্তি</string>
     <string name="perm_notifications_desc">Waqfah-এর নীরব মনিটরিং বিজ্ঞপ্তিটি দেখায়</string>
     <string name="perm_section_required">প্রয়োজনীয়</string>

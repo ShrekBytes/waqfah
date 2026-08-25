@@ -52,7 +52,7 @@
     <string name="perm_overlay_name">Display over other apps</string>
     <string name="perm_overlay_desc">Lets the reading screen appear over that app</string>
     <string name="perm_battery_name">Unrestricted battery</string>
-    <string name="perm_battery_desc">Keeps Waqfah running reliably — set Battery to Unrestricted</string>
+    <string name="perm_battery_desc">Keeps Waqfah running reliably (on the next screen, open Battery and select Unrestricted)</string>
     <string name="perm_notifications_name">Notifications</string>
     <string name="perm_notifications_desc">Shows Waqfah\'s silent monitoring notification</string>
     <string name="perm_section_required">Required</string>
