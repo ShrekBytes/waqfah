@@ -73,8 +73,8 @@ private const val TOUR_LINK_TAG = "tour_translation_link"
 
 private enum class TaskKind { MARK_READ, CHANGE_AYAH, SWITCH_TRANSLATION }
 
-// One stop of the feature tour. Flow shows how Waqfah works as a blockquote-
-// style chain, TryIt asks the user to perform the real action on the live
+// One stop of the feature tour. Flow shows how Waqfah works as a
+// blockquote-style chain, TryIt asks the user to perform the real action on the live
 // reading card, SettingRows/Checklist visualize where things live.
 private sealed interface TourStep {
     val titleRes: Int
@@ -159,7 +159,7 @@ fun FeatureTourOverlay(
     var stepIndex by rememberSaveable { mutableIntStateOf(0) }
     val isLast = stepIndex == TOUR_STEPS.lastIndex
 
-    // Back goes back a step; from the first step it dismisses early (a skip).
+    // Back goes a step back; from the first step it dismisses early (a skip).
     BackHandler {
         if (stepIndex > 0) stepIndex-- else onSkip()
     }
