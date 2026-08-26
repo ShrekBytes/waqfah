@@ -249,7 +249,7 @@
     <string name="tour_r_trans_t">অনুবাদ</string>
     <string name="tour_r_trans_d">আরও অনুবাদ ডাউনলোড করুন</string>
     <string name="tour_flow_title">Waqfah কীভাবে কাজ করে</string>
-    <string name="tour_flow_hint">এটিই পুরো ধারা — আপনি প্রতিবার কোনো অ্যাপ খুললেই এটি ঘটে।</string>
+    <string name="tour_flow_hint">এই ধারা প্রতিবার কোনো অ্যাপ খুললে ঘটে।</string>
     <string name="tour_f1">আপনি নির্বাচিত অ্যাপ খুলুন</string>
     <string name="tour_f2">Waqfah প্রথমে একটি আয়াত দেখায়</string>
     <string name="tour_f3">পড়ুন, অথবা না পড়েই এগিয়ে যান</string>

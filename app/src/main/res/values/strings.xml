@@ -249,7 +249,7 @@
     <string name="tour_r_trans_t">Translations</string>
     <string name="tour_r_trans_d">Download more translations</string>
     <string name="tour_flow_title">How Waqfah works</string>
-    <string name="tour_flow_hint">This is the whole flow — it plays out every time you open an app.</string>
+    <string name="tour_flow_hint">This flow plays out every time you open an app.</string>
     <string name="tour_f1">You open your selected apps</string>
     <string name="tour_f2">Waqfah shows an ayah first</string>
     <string name="tour_f3">Read it, or continue without reading</string>
