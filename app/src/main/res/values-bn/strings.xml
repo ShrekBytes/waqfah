@@ -236,7 +236,7 @@
     <string name="tour_t_move_title">আয়াতের মধ্যে যান</string>
     <string name="tour_t_move_body">আয়াতটি বাঁয়ে-ডানে সোয়াইপ করে বদলান (Mark Read-এর দুই পাশের তীর চিহ্নও ব্যবহার করতে পারেন)।</string>
     <string name="tour_t_trans_title">অনুবাদ বদলান</string>
-    <string name="tour_t_trans_body">একাধিক অনুবাদ থাকলে আয়াতের পাশের &lt; &gt; চিহ্নে ট্যাপ করে সেগুলোর মধ্যে বদলে দেখতে পারেন।</string>
+    <string name="tour_t_trans_body">অনুবাদে ট্যাপ করলে &lt; &gt; চিহ্নগুলো দেখা যাবে, সেগুলোতে চাপ দিয়ে অনুবাদ পরিবর্তন করতে পারবেন।</string>
     <string name="tour_t_trans_none">এখন আপনার কাছে মাত্র একটি অনুবাদ আছে</string>
     <string name="tour_set_title">তিলাওয়াত নিজের মতো সাজান</string>
     <string name="tour_set_hint">সবই Settings &gt; Reading &amp; display-এর অধীনে</string>

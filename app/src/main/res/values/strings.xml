@@ -236,7 +236,7 @@
     <string name="tour_t_move_title">Move between ayahs</string>
     <string name="tour_t_move_body">Swipe the ayah left or right to switch ayahs (you can also tap the &lt; &gt; arrows around Mark Read).</string>
     <string name="tour_t_trans_title">Switch translations</string>
-    <string name="tour_t_trans_body">When you have more than one translation you can switch them by tapping the &lt; &gt; chevrons beside the ayah.</string>
+    <string name="tour_t_trans_body">Tap on the translation text to reveal the &lt; &gt; chevrons, then tap them to switch between translations.</string>
     <string name="tour_t_trans_none">You have only one translation downloaded.</string>
     <string name="tour_set_title">Make reading yours</string>
     <string name="tour_set_hint">All under Settings &gt; Reading &amp; display</string>
