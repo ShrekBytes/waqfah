@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -26,6 +28,7 @@ import com.shrekbytes.waqfah.data.model.TranslationLanguage
 import com.shrekbytes.waqfah.ui.components.ChipGroup
 import com.shrekbytes.waqfah.ui.components.FieldLabel
 import com.shrekbytes.waqfah.ui.components.InlineField
+import com.shrekbytes.waqfah.ui.components.ReadingPreviewCard
 import com.shrekbytes.waqfah.ui.components.SectionTitle
 import com.shrekbytes.waqfah.ui.components.SettingsField
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
@@ -40,8 +43,20 @@ fun ReadingDisplayScreen(
     onBack: () -> Unit,
 ) {
     val prefs by viewModel.prefs.collectAsStateWithLifecycle()
+    val colors = WaqfahTheme.colors
 
     SettingsScaffold(title = stringResource(R.string.display_title), onBack = onBack) {
+        Text(
+            stringResource(R.string.preview_label),
+            color = colors.inkMuted,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.9.sp,
+            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+        )
+        ReadingPreviewCard(prefs)
+        Spacer(Modifier.height(8.dp))
+
         SectionTitle(stringResource(R.string.section_reading))
         SettingsField {
             FieldLabel(stringResource(R.string.mode_label))
