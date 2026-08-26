@@ -271,13 +271,15 @@ fun ReadingCard(
                                             Spacer(Modifier.height(10.dp))
                                         }
                                     }
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        AnimatedVisibility(
-                                            visible = translationSwitcherOpen,
-                                            enter = fadeIn() + expandHorizontally(),
-                                            exit = fadeOut() + shrinkHorizontally(),
-                                        ) {
-                                            TranslationSwitchArrow(direction = ChevronDirection.LEFT) { onCycleTranslation(false) }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center,
+                                    ) {
+                                        Box(Modifier.width(28.dp), contentAlignment = Alignment.Center) {
+                                            if (translationSwitcherOpen) {
+                                                TranslationSwitchArrow(direction = ChevronDirection.LEFT) { onCycleTranslation(false) }
+                                            }
                                         }
                                         AyahTranslationText(
                                             translationText,
@@ -294,12 +296,10 @@ fun ReadingCard(
                                                 if (!translationSwitcherOpen) onResetTranslation()
                                             },
                                         )
-                                        AnimatedVisibility(
-                                            visible = translationSwitcherOpen,
-                                            enter = fadeIn() + expandHorizontally(),
-                                            exit = fadeOut() + shrinkHorizontally(),
-                                        ) {
-                                            TranslationSwitchArrow(direction = ChevronDirection.RIGHT) { onCycleTranslation(true) }
+                                        Box(Modifier.width(28.dp), contentAlignment = Alignment.Center) {
+                                            if (translationSwitcherOpen) {
+                                                TranslationSwitchArrow(direction = ChevronDirection.RIGHT) { onCycleTranslation(true) }
+                                            }
                                         }
                                     }
                                 } else {
