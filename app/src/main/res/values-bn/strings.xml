@@ -221,4 +221,42 @@
     <string name="faq_a6">প্রতিটি নির্বাচিত অ্যাপের জন্য আলাদা টাইমার কাজ করে। উদাহরণস্বরূপ, Instagram-এর জন্য একবার Waqfah প্রদর্শিত হলে, নির্ধারিত বিরতি শেষ না হওয়া পর্যন্ত Instagram-এ আর কোনো বিরতি আসবে না — নোটিফিকেশন, বাবল বা আইকন যেভাবেই খুলুন না কেন। তবে এটি আপনার তালিকাভুক্ত TikTok বা অন্যান্য অ্যাপের ক্ষেত্রে কোনো প্রভাব ফেলবে না। আপনি এই বিরতির সময় নির্ধারণ করতে পারেন \'সেটিংস > নির্বাচিত অ্যাপসমূহ পরিচালনা\'র উপরে। বিরতি \"বন্ধ\" রাখা হলে প্রতিবার নতুন করে অ্যাপ খুললেই তিলাওয়াত স্ক্রিন আসবে — কেবল সম্প্রতি ব্যবহৃত কোনো অ্যাপে দ্রুত ফিরে এলে আর বিরতি দেখাবে না।</string>
     <string name="faq_q7">\'অনুমতি দিন\' চাপলেও Usage access চালু হচ্ছে না</string>
     <string name="faq_a7">Android 13 বা তার পরবর্তী সংস্করণে, অ্যাপ স্টোরের বাইরে থেকে ইনস্টল করা অ্যাপের ক্ষেত্রে (যেমন ব্রাউজার থেকে নামানো APK), নিরাপত্তা নিশ্চিত করতে সিস্টেম প্রাথমিকভাবে কিছু সংবেদনশীল পারমিশন ব্লক করে রাখে। এটি সমাধানের জন্য Waqfah-এর সিস্টেম \'App info\' পেজে যান (অ্যাপ আইকন চেপে ধরে > App info), উপরের ডান কোণের ⋮ মেনুতে ট্যাপ করে \"Allow restricted settings\" নির্বাচন করুন। এরপর Waqfah অ্যাপে ফিরে এসে খুব সহজেই Usage access অনুমতি দিতে পারবেন। Google Play বা F-Droid-এর মতো স্টোর থেকে ইনস্টল করা অ্যাপে এই বাড়তি ধাপের প্রয়োজন হয় না।</string>
+
+    <!-- Feature tour -->
+    <string name="tour_start_button">ট্যুর শুরু করুন</string>
+    <string name="tour_skip">এড়িয়ে যান</string>
+    <string name="tour_next">পরবর্তী</string>
+    <string name="tour_finish">শেষ করুন</string>
+    <string name="tour_step_fmt">%1$d / %2$d</string>
+    <string name="tour_p5_title">আপনি প্রস্তুত!</string>
+    <string name="tour_back">পেছনে</string>
+    <string name="tour_task_done">হয়ে গেছে!</string>
+    <string name="tour_t_mark_title">আয়াত পড়া হয়েছে হিসেবে চিহ্নিত করুন</string>
+    <string name="tour_t_mark_body">আয়াতের যেকোনো জায়গায় দুবার ট্যাপ করুন, অথবা Mark Read বোতামটি চাপুন। সংরক্ষিত হলে একটি চেকমার্ক দেখা যাবে।</string>
+    <string name="tour_t_move_title">আয়াতের মধ্যে যান</string>
+    <string name="tour_t_move_body">আয়াতটি বাঁয়ে-ডানে সোয়াইপ করে বদলান (Mark Read-এর দুই পাশের তীর চিহ্নও ব্যবহার করতে পারেন)।</string>
+    <string name="tour_t_trans_title">অনুবাদ বদলান</string>
+    <string name="tour_t_trans_body">একাধিক অনুবাদ থাকলে আয়াতের পাশের &lt; &gt; চিহ্নে ট্যাপ করে সেগুলোর মধ্যে বদলে দেখতে পারেন।</string>
+    <string name="tour_t_trans_none">এখন আপনার কাছে মাত্র একটি অনুবাদ আছে</string>
+    <string name="tour_set_title">তিলাওয়াত নিজের মতো সাজান</string>
+    <string name="tour_set_hint">সবই Settings &gt; Reading &amp; display-এর অধীনে</string>
+    <string name="tour_r_mode_t">মোড</string>
+    <string name="tour_r_mode_d">ধারাবাহিক বা এলোমেলো আয়াত</string>
+    <string name="tour_r_script_t">স্ক্রিপ্ট ও ফন্ট</string>
+    <string name="tour_r_script_d">IndoPak বা Uthmani আরবি স্ক্রিপ্ট</string>
+    <string name="tour_r_size_t">লেখার আকার</string>
+    <string name="tour_r_size_d">আরবি, উচ্চারণ ও অনুবাদের জন্য আলাদা আকার</string>
+    <string name="tour_r_trans_t">অনুবাদ</string>
+    <string name="tour_r_trans_d">আরও অনুবাদ ডাউনলোড করুন</string>
+    <string name="tour_flow_title">Waqfah কীভাবে কাজ করে</string>
+    <string name="tour_flow_hint">এটিই পুরো ধারা — আপনি প্রতিবার কোনো অ্যাপ খুললেই এটি ঘটে।</string>
+    <string name="tour_f1">আপনি নির্বাচিত অ্যাপ খুলুন</string>
+    <string name="tour_f2">Waqfah প্রথমে একটি আয়াত দেখায়</string>
+    <string name="tour_f3">পড়ুন, অথবা না পড়েই এগিয়ে যান</string>
+    <string name="tour_f4">কোনো ব্লকিং বা সীমাবদ্ধতা নেই</string>
+    <string name="tour_f5">পরের বার খুললে &gt; পরবর্তী অপঠিত আয়াত</string>
+    <string name="tour_t_trans_none_cta">এক বা একাধিক অনুবাদ ডাউনলোড</string>
+    <string name="tour_p5_body">আরও জানতে চান বা অন্য কোনো প্রশ্ন আছে? Settings &gt; More-এর অধীনে FAQ &amp; troubleshooting দেখুন।</string>
+    <string name="tour_t_trans_none_suffix">করলেই সেগুলোর মধ্যে সুইচ করা যাবে।</string>
+    <string name="tour_flow_label">Waqfah ট্যুর</string>
 </resources>

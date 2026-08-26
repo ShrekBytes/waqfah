@@ -221,4 +221,42 @@
     <string name="faq_a6">Each monitored app has its own timer. After Waqfah appears for Instagram, it won\'t appear again for Instagram until that wait passes — reopening via a notification, bubble or the icon makes no difference while the app stays in front. TikTok and your other monitored apps are unaffected. Set the wait at the top of Settings > Manage monitored apps. With the wait off, Waqfah appears for every fresh open — only quick switch-backs to an app you just left stay quiet.</string>
     <string name="faq_q7">Usage access won\'t turn on when I tap Grant</string>
     <string name="faq_a7">On Android 13 or newer, apps installed outside an app store (for example, an APK opened straight from your browser) are blocked from sensitive settings until you allow them once. Open Waqfah\'s system App info page (long-press its icon > App info), tap the ⋮ menu at the top right, and choose \"Allow restricted settings\". Then come back to Waqfah and grant Usage access normally. Apps installed from a store such as F-Droid or Google Play never see this extra step.</string>
+
+    <!-- Feature tour -->
+    <string name="tour_start_button">Start tour</string>
+    <string name="tour_skip">Skip</string>
+    <string name="tour_next">Next</string>
+    <string name="tour_finish">Finish</string>
+    <string name="tour_step_fmt">%1$d of %2$d</string>
+    <string name="tour_p5_title">You are all set!</string>
+    <string name="tour_back">Back</string>
+    <string name="tour_task_done">Done!</string>
+    <string name="tour_t_mark_title">Mark ayah as read</string>
+    <string name="tour_t_mark_body">Double-tap anywhere on the ayah, or tap the Mark Read pill. A check appears when it is saved.</string>
+    <string name="tour_t_move_title">Move between ayahs</string>
+    <string name="tour_t_move_body">Swipe the ayah left or right to switch ayahs (you can also tap the &lt; &gt; arrows around Mark Read).</string>
+    <string name="tour_t_trans_title">Switch translations</string>
+    <string name="tour_t_trans_body">When you have more than one translation you can switch them by tapping the &lt; &gt; chevrons beside the ayah.</string>
+    <string name="tour_t_trans_none">You have only one translation downloaded.</string>
+    <string name="tour_set_title">Make reading yours</string>
+    <string name="tour_set_hint">All under Settings &gt; Reading &amp; display</string>
+    <string name="tour_r_mode_t">Mode</string>
+    <string name="tour_r_mode_d">Sequential or random ayahs</string>
+    <string name="tour_r_script_t">Script &amp; font</string>
+    <string name="tour_r_script_d">IndoPak or Uthmani Arabic script</string>
+    <string name="tour_r_size_t">Text sizes</string>
+    <string name="tour_r_size_d">Separate sizes for Arabic, pronunciation and translation</string>
+    <string name="tour_r_trans_t">Translations</string>
+    <string name="tour_r_trans_d">Download more translations</string>
+    <string name="tour_flow_title">How Waqfah works</string>
+    <string name="tour_flow_hint">This is the whole flow — it plays out every time you open an app.</string>
+    <string name="tour_f1">You open your selected apps</string>
+    <string name="tour_f2">Waqfah shows an ayah first</string>
+    <string name="tour_f3">Read it, or continue without reading</string>
+    <string name="tour_f4">No blocking, no limit</string>
+    <string name="tour_f5">Next open &gt; the next unread ayah</string>
+    <string name="tour_t_trans_none_cta">Download one or more translations</string>
+    <string name="tour_p5_body">Want to know more or have any other questions? Check FAQ &amp; troubleshooting under Settings &gt; More.</string>
+    <string name="tour_t_trans_none_suffix">to switch.</string>
+    <string name="tour_flow_label">Waqfah tour</string>
 </resources>

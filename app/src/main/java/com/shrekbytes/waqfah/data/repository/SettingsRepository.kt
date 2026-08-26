@@ -46,6 +46,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setCooldownMinutes(minutes: Int) = edit { it[SettingsKeys.COOLDOWN_MINUTES] = minutes.coerceIn(PreferenceLimits.COOLDOWN_MIN_MINUTES, PreferenceLimits.COOLDOWN_MAX_MINUTES) }
     suspend fun setAppActive(active: Boolean) = edit { it[SettingsKeys.APP_ACTIVE] = active }
     suspend fun setOnboardingComplete(complete: Boolean) = edit { it[SettingsKeys.ONBOARDING_COMPLETE] = complete }
+    suspend fun setFeatureTourComplete(complete: Boolean) = edit { it[SettingsKeys.FEATURE_TOUR_COMPLETE] = complete }
 
     // APP_LANGUAGE is only a UI-facing mirror of the selection; applying it to
     // the system is AppCompatDelegate.setApplicationLocales' job (see
@@ -80,6 +81,7 @@ internal fun Preferences.toUserPreferences() = UserPreferences(
     cooldownMinutes = this[SettingsKeys.COOLDOWN_MINUTES] ?: 30,
     appActive = this[SettingsKeys.APP_ACTIVE] ?: true,
     hasCompletedOnboarding = this[SettingsKeys.ONBOARDING_COMPLETE] ?: false,
+    hasCompletedFeatureTour = this[SettingsKeys.FEATURE_TOUR_COMPLETE] ?: false,
 )
 
 // Falls back to the default instead of crashing when the stored string no

@@ -48,4 +48,8 @@ data class UserPreferences(
     val cooldownMinutes: Int = 30,
     val appActive: Boolean = true,
     val hasCompletedOnboarding: Boolean = false,
+
+    // False until the user finishes the Home-screen feature tour once. Skipped
+    // tours leave this untouched, so they're offered again next launch.
+    val hasCompletedFeatureTour: Boolean = false,
 )

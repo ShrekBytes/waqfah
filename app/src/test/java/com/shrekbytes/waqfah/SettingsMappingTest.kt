@@ -65,6 +65,7 @@ class SettingsMappingTest {
             it[SettingsKeys.ARABIC_FONT_SIZE] = 19
             it[SettingsKeys.APP_ACTIVE] = false
             it[SettingsKeys.ONBOARDING_COMPLETE] = true
+            it[SettingsKeys.FEATURE_TOUR_COMPLETE] = true
         }
         val prefs = store.data.first().toUserPreferences()
         assertEquals(AppTheme.DARK, prefs.theme)
@@ -73,5 +74,6 @@ class SettingsMappingTest {
         assertEquals(19, prefs.arabicFontSize)
         assertEquals(false, prefs.appActive)
         assertEquals(true, prefs.hasCompletedOnboarding)
+        assertEquals(true, prefs.hasCompletedFeatureTour)
     }
 }

@@ -22,4 +22,9 @@ object SettingsKeys {
     val COOLDOWN_MINUTES = intPreferencesKey("cooldown_minutes")
     val APP_ACTIVE = booleanPreferencesKey("app_active")
     val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
+
+    // Feature tour: defaults to false (auto-shows on Home after first install).
+    // Only finishing the tour flips it to true; skipping writes nothing, so a
+    // skipped tour re-offers on every future launch until it's completed.
+    val FEATURE_TOUR_COMPLETE = booleanPreferencesKey("feature_tour_complete")
 }
