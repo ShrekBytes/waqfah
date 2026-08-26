@@ -19,10 +19,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material3.Surface
 import com.shrekbytes.waqfah.ui.components.WaqfahTab
 import com.shrekbytes.waqfah.ui.components.WaqfahTabBar
 import com.shrekbytes.waqfah.ui.home.HomeScreen
 import com.shrekbytes.waqfah.ui.settings.SettingsScreen
+import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import com.shrekbytes.waqfah.ui.tour.FeatureTourOverlay
 import com.shrekbytes.waqfah.ui.tour.FeatureTourViewModel
 
@@ -54,65 +56,66 @@ fun MainScreen(
     var tourOpenedManually by rememberSaveable { mutableStateOf(false) }
     var tourDismissedThisSession by rememberSaveable { mutableStateOf(false) }
 
+    val colors = WaqfahTheme.colors
+
     BackHandler(enabled = selectedTab != WaqfahTab.HOME) { selectedTab = WaqfahTab.HOME }
 
-    Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
-            AnimatedContent(
-                targetState = selectedTab,
-                modifier = Modifier.weight(1f),
-                transitionSpec = {
-                    (fadeIn(tween(220)) + scaleIn(initialScale = 0.97f, animationSpec = tween(220)))
-                        .togetherWith(fadeOut(tween(140)) + scaleOut(targetScale = 1.03f, animationSpec = tween(140)))
-                },
-                label = "main_tab_content",
-            ) { tab ->
-                when (tab) {
-                    WaqfahTab.HOME -> HomeScreen(onStartTour = { tourOpenedManually = true })
-                    WaqfahTab.SETTINGS -> SettingsScreen(
-                        onOpenReadingDisplay = onOpenReadingDisplay,
-                        onOpenApps = onOpenApps,
-                        onOpenPermissions = onOpenPermissions,
-                        onOpenAbout = onOpenAbout,
-                        onOpenFaq = onOpenFaq,
-                        onOpenDonate = onOpenDonate,
-                    )
+    Surface(modifier = Modifier.fillMaxSize(), color = colors.background, contentColor = colors.ink) {
+        Box(Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize()) {
+                AnimatedContent(
+                    targetState = selectedTab,
+                    modifier = Modifier.weight(1f),
+                    transitionSpec = {
+                        (fadeIn(tween(220)) + scaleIn(initialScale = 0.97f, animationSpec = tween(220)))
+                            .togetherWith(fadeOut(tween(140)) + scaleOut(targetScale = 1.03f, animationSpec = tween(140)))
+                    },
+                    label = "main_tab_content",
+                ) { tab ->
+                    when (tab) {
+                        WaqfahTab.HOME -> HomeScreen(onStartTour = { tourOpenedManually = true })
+                        WaqfahTab.SETTINGS -> SettingsScreen(
+                            onOpenReadingDisplay = onOpenReadingDisplay,
+                            onOpenApps = onOpenApps,
+                            onOpenPermissions = onOpenPermissions,
+                            onOpenAbout = onOpenAbout,
+                            onOpenFaq = onOpenFaq,
+                            onOpenDonate = onOpenDonate,
+                        )
+                    }
                 }
+                WaqfahTabBar(
+                    selected = selectedTab,
+                    onHomeClick = { selectedTab = WaqfahTab.HOME },
+                    onSettingsClick = { selectedTab = WaqfahTab.SETTINGS },
+                )
             }
-            WaqfahTabBar(
-                selected = selectedTab,
-                onHomeClick = { selectedTab = WaqfahTab.HOME },
-                onSettingsClick = { selectedTab = WaqfahTab.SETTINGS },
-            )
-        }
 
-        // The feature tour lives ONLY over the Home tab of MainActivity. It can
-        // never appear over TriggerActivity's over-other-apps interstitial,
-        // which hosts ReadingScreen directly and never composes MainScreen.
-        val tourVisible = selectedTab == WaqfahTab.HOME &&
-            (tourOpenedManually || (hasCompletedTour == false && !tourDismissedThisSession))
-        if (tourVisible) {
-            FeatureTourOverlay(
-                onFinish = {
-                    // Persisted: never auto-shows again after finishing once.
-                    tourViewModel.completeTour()
-                    tourOpenedManually = false
-                    tourDismissedThisSession = true
-                },
-                onSkip = {
-                    // Nothing persisted: re-offered next launch.
-                    tourOpenedManually = false
-                    tourDismissedThisSession = true
-                },
-                onBrowseTranslations = {
-                    // Leave the tour quietly and jump straight to translation
-                    // downloads (Settings > Reading & display). Treated like a
-                    // skip so the tour doesn't nag again this session.
-                    tourOpenedManually = false
-                    tourDismissedThisSession = true
-                    onOpenReadingDisplay()
-                },
-            )
+            // The feature tour lives ONLY over the Home tab of MainActivity. It can
+            // never appear over TriggerActivity's over-other-apps interstitial,
+            // which hosts ReadingScreen directly and never composes MainScreen.
+            val tourVisible = selectedTab == WaqfahTab.HOME &&
+                (tourOpenedManually || (hasCompletedTour == false && !tourDismissedThisSession))
+            if (tourVisible) {
+                FeatureTourOverlay(
+                    onFinish = {
+                        // Persisted: never auto-shows again after finishing once.
+                        tourViewModel.completeTour()
+                        tourOpenedManually = false
+                        tourDismissedThisSession = true
+                    },
+                    onSkip = {
+                        // Nothing persisted: re-offered next launch.
+                        tourOpenedManually = false
+                        tourDismissedThisSession = true
+                    },
+                    onBrowseTranslations = {
+                        // Jump straight to translation downloads (Settings > Reading & display)
+                        // while keeping the tour active so returning brings the user back to step 4.
+                        onOpenReadingDisplay()
+                    },
+                )
+            }
         }
     }
 }
