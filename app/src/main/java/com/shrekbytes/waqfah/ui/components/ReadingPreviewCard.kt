@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -66,7 +67,7 @@ fun ReadingPreviewCard(prefs: UserPreferences, modifier: Modifier = Modifier) {
     Column(
         modifier
             .fillMaxWidth()
-            .height(270.dp)
+            .heightIn(min = 270.dp)
             .clip(RoundedCornerShape(16.dp))
             .border(1.dp, colors.line, RoundedCornerShape(16.dp))
             .background(colors.line.copy(alpha = 0.12f))
