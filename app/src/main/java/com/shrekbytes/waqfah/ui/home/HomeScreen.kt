@@ -51,7 +51,7 @@ fun HomeScreen(
                 // The Surface announces the tour label; the bare glyph adds
                 // nothing for TalkBack.
                 modifier = Modifier
-                    .padding(horizontal = 11.dp, vertical = 5.dp)
+                    .padding(horizontal = 9.dp, vertical = 1.dp)
                     .clearAndSetSemantics {},
             )
         }
