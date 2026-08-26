@@ -271,16 +271,10 @@ fun ReadingCard(
                                             Spacer(Modifier.height(10.dp))
                                         }
                                     }
-                                    Row(
+                                    Box(
                                         modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center,
+                                        contentAlignment = Alignment.Center,
                                     ) {
-                                        Box(Modifier.width(28.dp), contentAlignment = Alignment.Center) {
-                                            if (translationSwitcherOpen) {
-                                                TranslationSwitchArrow(direction = ChevronDirection.LEFT) { onCycleTranslation(false) }
-                                            }
-                                        }
                                         AyahTranslationText(
                                             translationText,
                                             state.translationFontSize,
@@ -288,18 +282,27 @@ fun ReadingCard(
                                             // closing reverts to the default. Claims single taps
                                             // landing on the text, so double-tapping here won't
                                             // also trigger mark-read.
-                                            modifier = Modifier.clickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null,
-                                            ) {
-                                                translationSwitcherOpen = !translationSwitcherOpen
-                                                if (!translationSwitcherOpen) onResetTranslation()
-                                            },
+                                            modifier = Modifier
+                                                .clickable(
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null,
+                                                ) {
+                                                    translationSwitcherOpen = !translationSwitcherOpen
+                                                    if (!translationSwitcherOpen) onResetTranslation()
+                                                }
+                                                .padding(horizontal = 28.dp),
                                         )
-                                        Box(Modifier.width(28.dp), contentAlignment = Alignment.Center) {
-                                            if (translationSwitcherOpen) {
-                                                TranslationSwitchArrow(direction = ChevronDirection.RIGHT) { onCycleTranslation(true) }
-                                            }
+                                        if (translationSwitcherOpen) {
+                                            TranslationSwitchArrow(
+                                                direction = ChevronDirection.LEFT,
+                                                onClick = { onCycleTranslation(false) },
+                                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 2.dp),
+                                            )
+                                            TranslationSwitchArrow(
+                                                direction = ChevronDirection.RIGHT,
+                                                onClick = { onCycleTranslation(true) },
+                                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 2.dp),
+                                            )
                                         }
                                     }
                                 } else {
@@ -541,9 +544,9 @@ private fun RemArrow(direction: ChevronDirection, onClick: suspend () -> Unit, c
 
 // Smaller, accent-tinted secondary affordance next to the translation text.
 @Composable
-private fun TranslationSwitchArrow(direction: ChevronDirection, onClick: () -> Unit) {
+private fun TranslationSwitchArrow(direction: ChevronDirection, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val contentDescription = if (direction == ChevronDirection.LEFT) stringResource(R.string.cd_prev_translation) else stringResource(R.string.cd_next_translation)
-    IconButton(onClick = onClick, modifier = Modifier.size(28.dp)) {
+    IconButton(onClick = onClick, modifier = modifier.size(28.dp)) {
         ChevronIcon(
             direction = direction,
             tint = WaqfahTheme.colors.accent,
