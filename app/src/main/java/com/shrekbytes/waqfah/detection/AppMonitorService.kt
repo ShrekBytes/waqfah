@@ -68,10 +68,31 @@ import javax.inject.Inject
 //    would make sharing/forwarding painful without adding value; notification
 //    taps and fully internal launches remain indistinguishable from real opens
 //    via public APIs and still trigger.
-//  - The interval stepper's 0 ("Off") keeps detection on: every fresh open
-//    triggers, but returning to an app that left the foreground less than
-//    OFF_SESSION_GAP_MS ago counts as the same session and stays quiet — so
-//    minimize/switch-back doesn't re-show.
+//  - Same-session gap: returning to an app that left the foreground less
+//    than OFF_SESSION_GAP_MS ago counts as the same session and stays
+//    quiet — so minimize/glance-away/switch-back doesn't re-show. This
+//    rule is independent of the interval setting; it sits underneath the
+//    cooldown as a tighter same-session window when interval is non-zero
+//    (the cooldown covers the long-gap case the 45s gap can't tell apart
+//    from a deliberate re-open, and the 45s gap covers the very-short-
+//    gap case the cooldown still allows through).
+//  - Cooldown (`interval > 0`): the per-app `last_shown_at` stamp
+//    separately gates whether a fresh open is allowed through at all.
+//    Stamped once at trigger time, regardless of how the interstitial is
+//    later dismissed. `interval = 0` (Off) makes this never match, so
+//    the same-session rule is the only thing keeping switch-backs quiet.
+//  - Phone calls never trigger, and the foreground change that happens
+//    when a call ends and the user is returned to their previous app is
+//    suppressed inside CALL_RETURN_GRACE_MS. Cellular/VoLTE/VoWiFi voice
+//    calls are detected via the PHONE_STATE broadcast (CallStateTracker);
+//    VoIP call screens (WhatsApp/Messenger/…) are spotted by simple
+//    class-name suffix matching — the same shape as the isSystemPicker
+//    rule for share-sheet / "Open with" entries, but using a hardcoded
+//    suffix allowlist because VoIP call screens are not declared in any
+//    intent-filter PackageManager would report. Both signals pause
+//    detection until the call ends; the resume of the previously-monitored
+//    app is then treated as a continuation of the same session, not a
+//    fresh open.
 @AndroidEntryPoint
 class AppMonitorService : Service() {
 
@@ -112,6 +133,23 @@ class AppMonitorService : Service() {
     // encounter; the monitored set is small so no eviction is needed.
     private val indirectEntryClassCache = HashMap<String, Set<String>>()
 
+    // Tracks cellular/VoLTE/VoWiFi call state via the protected PHONE_STATE
+    // broadcast — no runtime permission needed. VoIP call surfaces
+    // (WhatsApp/Messenger/…) are detected inline in evaluateForegroundChange
+    // because they don't fire that broadcast.
+    private val callStateTracker = CallStateTracker(this)
+
+    // When a call surface becomes the foreground (or PHONE_STATE goes
+    // OFFHOOK/RINGING), the package that was foreground immediately before
+    // is stashed here, keyed by package name with the timestamp. If the
+    // foreground returns to that same package within
+    // CALL_RETURN_GRACE_MS, the resume is treated as the OS bringing the
+    // user back from the call — not a fresh open — and is suppressed.
+    // Entries are removed when consumed (step 3) or swept by age on the
+    // next foreground change. Keyed by interrupted package so two
+    // monitored apps in a row still behave correctly.
+    private val interruptedByCall = HashMap<String, Long>()
+
     // Polling pauses whenever detection is impossible or pointless — screen
     // off, app paused via Settings, or no monitored apps selected. The loop
     // suspends on this combined gate instead of waking up each interval, so
@@ -141,6 +179,7 @@ class AppMonitorService : Service() {
             },
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
+        callStateTracker.register()
         startInForeground()
         serviceScope.launch { monitorLoop() }
     }
@@ -149,6 +188,7 @@ class AppMonitorService : Service() {
 
     override fun onDestroy() {
         unregisterReceiver(screenReceiver)
+        callStateTracker.unregister()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -197,8 +237,16 @@ class AppMonitorService : Service() {
             // chooser flash from before a pause (screen off, monitoring
             // toggled off) must never be paired against a post-wake resume.
             // The loop's window reset already drops old events; this drops
-            // their remembered counterpart.
-            .onEach { open -> if (!open) lastResumedActivity = null }
+            // their remembered counterpart. The call-interruption map is
+            // cleared for the same reason — a "resumed from a call" entry
+            // from before a screen-off would otherwise swallow a real fresh
+            // open on the next wake.
+            .onEach { open ->
+                if (!open) {
+                    lastResumedActivity = null
+                    interruptedByCall.clear()
+                }
+            }
 
         while (serviceScope.isActive) {
             monitorGate.first { it }
@@ -246,11 +294,22 @@ class AppMonitorService : Service() {
         val candidate = current.packageName
         if (candidate == currentForeground) return
 
+        // Diagnostic: log every distinct foreground change inside a
+        // monitored app so an `adb logcat -s AppMonitorService` run
+        // reveals the exact class name WhatsApp/Messenger/Signal/…
+        // actually use today. Cheap (one log line per resume, not per
+        // poll), gated on the app being monitored so logcat stays
+        // readable, and BuildConfig-gated so it stays out of release
+        // logs where it would be noise.
+        if (BuildConfig.DEBUG && monitoredSnapshot.any { it.packageName == candidate }) {
+            Log.d(TAG, "FG: $candidate / ${current.className} (was: ${previous?.packageName} / ${previous?.className})")
+        }
+
         // Note when the outgoing package left the foreground — used by the
-        // interval-Off rule below to tell a fresh open apart from a quick
-        // switch-back.
+        // same-session rule below to tell a fresh open apart from a quick
+        // switch-back / minimize / recents-resume.
+        val nowElapsed = SystemClock.elapsedRealtime()
         currentForeground?.let { left ->
-            val nowElapsed = SystemClock.elapsedRealtime()
             lastLeftForegroundAt[left] = nowElapsed
             // Bound memory: only exits within OFF_SESSION_GAP_MS matter, so
             // expired entries are swept BY AGE. A size-cap eviction here would
@@ -258,6 +317,14 @@ class AppMonitorService : Service() {
             // refreshing its LinkedHashMap position, so "oldest inserted"
             // isn't necessarily the oldest exit.
             lastLeftForegroundAt.entries.removeAll { (_, exitedAt) -> nowElapsed - exitedAt >= OFF_SESSION_GAP_MS }
+        }
+        // Same idea for the call-interruption map: any entry older than the
+        // grace window is no longer relevant and is swept in place. Without
+        // this a forgotten entry could absorb a real fresh open if the
+        // user happened to re-open the same package past the grace window
+        // but before some other foreground change cleared it.
+        interruptedByCall.entries.removeAll { (_, interruptedAt) ->
+            nowElapsed - interruptedAt >= CALL_RETURN_GRACE_MS
         }
         currentForeground = candidate
 
@@ -280,19 +347,83 @@ class AppMonitorService : Service() {
             return
         }
 
-        val prefs = settingsRepository.preferences.first()
-        if (!prefs.appActive) return
-        if (prefs.cooldownMinutes <= 0) {
-            // Interval Off: still detect every open, but treat returning to
-            // an app that left the foreground moments ago (minimize,
-            // glance-away, straight switch-back) as the SAME session — no
-            // trigger. Coming back after the session gap counts as a fresh
-            // open again.
-            val leftAt = lastLeftForegroundAt[candidate]
-            if (leftAt != null && SystemClock.elapsedRealtime() - leftAt < OFF_SESSION_GAP_MS) return
-        } else if (monitoredAppsRepository.isInCooldown(candidate, prefs.cooldownMinutes)) {
+        // Phone-call suppression (both legs).
+        //
+        // (1) The current resume IS a call surface (VoIP call screen, system
+        //     InCallUI, dialer during a call). Record the outgoing monitored
+        //     package so we can suppress its resume after the call ends, and
+        //     skip the trigger.
+        if (isCallSurface(candidate, current.className)) {
+            val outgoing = previous?.packageName
+            if (outgoing != null && monitoredSnapshot.any { it.packageName == outgoing }) {
+                interruptedByCall[outgoing] = SystemClock.elapsedRealtime()
+            }
+            Log.d(TAG, "Skipping $candidate — call surface (${current.className})")
             return
         }
+
+        // (2) A cellular/VoLTE/VoWiFi call is currently in progress (caught
+        //     via the PHONE_STATE broadcast, not visible in UsageEvents).
+        //     Suppress the trigger and remember the outgoing monitored
+        //     package for the call-end resume suppression.
+        if (callStateTracker.inCall.value) {
+            val outgoing = previous?.packageName
+            if (outgoing != null && monitoredSnapshot.any { it.packageName == outgoing }) {
+                interruptedByCall[outgoing] = SystemClock.elapsedRealtime()
+            }
+            Log.d(TAG, "Skipping $candidate — cellular call in progress")
+            return
+        }
+
+        // (3) Post-call return: if the user is being bounced back to a
+        //     monitored app that was interrupted by a call, suppress for
+        //     CALL_RETURN_GRACE_MS. The bounce is the OS doing a
+        //     task-switch-back, not a deliberate re-open.
+        //
+        //     This rule fires before the 45s same-session gap below. The
+        //     45s rule would also match (the app was last left less than
+        //     45s ago), but the tighter 15s window is what determines
+        //     suppression for this specific event; subsequent switch-backs
+        //     fall through to the 45s rule.
+        val interruptedAt = interruptedByCall.remove(candidate)
+        if (interruptedAt != null &&
+            SystemClock.elapsedRealtime() - interruptedAt < CALL_RETURN_GRACE_MS
+        ) {
+            Log.d(TAG, "Skipping $candidate — resumed within call-return grace window")
+            return
+        }
+
+        // (4) Final defensive check: if PHONE_STATE still reports an active
+        //     call (RINGING or OFFHOOK), suppress unconditionally. Catches
+        //     the case where the call UI is hosted by a package not on the
+        //     call-app list (e.g. a manufacturer dialer or a third-party
+        //     call-handler) so the call-surface branch above didn't fire,
+        //     but the call is still in progress.
+        if (callStateTracker.inCall.value) {
+            Log.d(TAG, "Skipping $candidate — call still active at trigger time")
+            return
+        }
+
+        val prefs = settingsRepository.preferences.first()
+        if (!prefs.appActive) return
+        // Same-session rule: a quick return to an app that just left the
+        // foreground (minimize, glance-away, switch-back, recents-resume)
+        // is treated as a continuation of the same session — no trigger.
+        // This rule applies INDEPENDENTLY of the cooldown setting: with
+        // cooldown=Off it directly gates the trigger, and with a long
+        // cooldown it sits underneath the cooldown as a tighter
+        // same-session window (the cooldown covers the long-gap case, the
+        // 45s gap covers the very-short-gap case the cooldown can't tell
+        // apart from a deliberate re-open).
+        val leftAt = lastLeftForegroundAt[candidate]
+        if (leftAt != null && SystemClock.elapsedRealtime() - leftAt < OFF_SESSION_GAP_MS) return
+
+        // Cooldown rule: when interval is non-zero, the per-app
+        // last_shown_at timestamp gates whether a fresh open is allowed
+        // through at all. With cooldownMinutes=0 this never matches
+        // (see isWithinCooldown), so the same-session rule above is the
+        // only thing keeping switch-backs quiet.
+        if (monitoredAppsRepository.isInCooldown(candidate, prefs.cooldownMinutes)) return
 
         Log.d(TAG, "Triggering reading screen for $candidate (${current.className})")
         monitoredAppsRepository.recordShown(candidate)
@@ -314,6 +445,34 @@ class AppMonitorService : Service() {
         return event.packageName == "android" ||
             className.endsWith("ResolverActivity") ||
             className.endsWith("ChooserActivity")
+    }
+
+    // True when [className] of [packageName] is a VoIP / dialer / system
+    // InCallUI call screen. VoIP call screens aren't declared in any
+    // intent-filter PackageManager would report, so the same
+    // queryIntentActivities trick used by isIndirectEntry doesn't help
+    // here. Suffix matching is the primary heuristic; the set is
+    // conservative (each entry is a real convention used by at least one
+    // shipping app) and tolerates Kotlin object classes (com.foo.Bar$Inner)
+    // by stripping everything after "$".
+    //
+    // For a small set of well-known call-app packages, a class-name
+    // substring match is added as a fallback. This catches apps that
+    // don't follow the conventional suffix pattern (e.g. Signal's
+    // WebRtcCallActivity, which doesn't end in a known suffix) without
+    // broadening the suffix list to false-positive-prone entries like
+    // "CallLogActivity".
+    private fun isCallSurface(packageName: String, className: String?): Boolean {
+        if (className.isNullOrBlank()) return false
+        val lastDot = className.lastIndexOf('.')
+        val base = if (lastDot >= 0) className.substring(lastDot + 1) else className
+        val simpleName = base.substringBefore('$')
+        if (simpleName in CALL_ACTIVITY_SUFFIXES) return true
+        if (packageName in KNOWN_CALL_APP_PACKAGES) {
+            val lower = simpleName.lowercase()
+            return CALL_CLASS_KEYWORDS.any { lower.contains(it) }
+        }
+        return false
     }
 
     private fun indirectEntryClasses(packageName: String): Set<String> =
@@ -374,14 +533,76 @@ class AppMonitorService : Service() {
         // How often the loop re-verifies usage access + overlay permission.
         private const val PERMISSION_CHECK_INTERVAL_MS = 30_000L
 
-        // Interval-Off session gap: returning to an app within this window of
-        // it leaving the foreground is treated as the same session (no
-        // re-trigger). Public usage APIs can't tell a launcher tap from a
-        // recents-resume, so this timing rule approximates "fresh open".
+        // Same-session gap: returning to an app within this window of it
+        // leaving the foreground is treated as the same session (no
+        // re-trigger), regardless of the interval setting. Public usage
+        // APIs can't tell a launcher tap from a recents-resume, so this
+        // timing rule approximates "fresh open". The call-return grace
+        // window (CALL_RETURN_GRACE_MS) is a tighter variant applied
+        // specifically to the post-call bounce, because the OS
+        // specifically brings the previous app back over a call surface
+        // and the user clearly did not deliberately re-open it.
         private const val OFF_SESSION_GAP_MS = 45_000L
 
         // Lookback for isLatestForeground().
         private const val RECENT_EVENT_WINDOW_MS = 3_000L
+
+        // Suffix allowlist for VoIP / system call screens, applied to the
+        // simple class name (com.foo.Bar$Inner → "Bar"). Each entry is a
+        // real convention used by at least one major app: WhatsApp uses
+        // VoipActivity, Messenger/Instagram use CallActivity, Signal uses
+        // its own class names that don't match — Signal falls through to
+        // the package-scoped substring fallback below.
+        private val CALL_ACTIVITY_SUFFIXES = setOf(
+            "CallActivity",
+            "CallScreenActivity",
+            "VoipActivity",
+            "VoiceCallActivity",
+            "VideoCallActivity",
+            "VideoCallScreenActivity",
+            "InCallActivity",
+            "InCallScreenActivity",
+            "ConversationCallActivity",
+            "CallLinkActivity",
+        )
+
+        // Substring fallback: for these well-known call-app packages, an
+        // activity is treated as a call surface if its simple class name
+        // contains any of the keywords below. Scoped to this list so
+        // unrelated apps whose class names happen to contain "call"
+        // (CallLogActivity, CallbackActivity, …) don't false-trigger.
+        // Each entry is a real shipping package known to host voice/video
+        // calls.
+        private val KNOWN_CALL_APP_PACKAGES = setOf(
+            "com.whatsapp",
+            "com.whatsapp.w4b",
+            "com.facebook.orca", // Messenger
+            "org.thoughtcrime.securesms", // Signal
+            "org.telegram.messenger",
+            "com.viber.voip",
+            "com.discord",
+            "com.instagram.android",
+            "com.snapchat.android",
+            "com.skype.raider",
+            "com.google.android.apps.tachyon", // Google Duo
+            "com.google.android.dialer", // Google's dialer
+            "com.android.dialer", // AOSP dialer
+            "com.android.phone", // Stock phone
+            "com.samsung.android.dialer",
+            "com.samsung.android.incallui",
+        )
+
+        private val CALL_CLASS_KEYWORDS = listOf("call", "voip", "incall")
+
+        // After a call ends, the OS often brings the previously-foreground
+        // app back via a short ACTIVITY_RESUMED burst. This window absorbs
+        // that resume so the reading screen doesn't re-fire on the same
+        // session. Picked to comfortably exceed the typical "Call ended"
+        // dialog lifetime on stock Android and OEM skins (WhatsApp keeps
+        // a "Tap to rate" / call-summary screen for 10+ seconds, Telegram
+        // up to 15s) while staying short enough that a real deliberate
+        // re-open is unaffected.
+        private const val CALL_RETURN_GRACE_MS = 15_000L
 
         // Pure core of the interstitial-return rule, extracted for unit
         // testing: did [previousPackage]/[previousClass] resume Waqfah's
