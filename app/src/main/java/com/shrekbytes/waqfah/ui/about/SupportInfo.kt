@@ -16,9 +16,9 @@ object SupportInfo {
     )
 
     val donations = listOf(
-        DonationAccount("bKash", "01725-000000", "Personal", R.drawable.ic_bkash),
-        DonationAccount("Rocket", "01725-000000", "Personal", R.drawable.ic_rocket),
-        DonationAccount("Nagad", "01725-000000", "Personal", R.drawable.ic_nagad),
+        DonationAccount("bKash", "01725-522837", "Personal", R.drawable.ic_bkash),
+        // DonationAccount("Rocket", "01725-000000", "Personal", R.drawable.ic_rocket),
+        // DonationAccount("Nagad", "01725-000000", "Personal", R.drawable.ic_nagad),
     )
 
     data class Contributor(val name: String, val role: String, val url: String? = null)
