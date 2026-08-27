@@ -18,12 +18,6 @@ over the target app when all trigger rules pass:
 4. cooldown (`interval > 0`) or Off-session gap (`interval = 0`) decides
    whether a fresh open is allowed through; `last_shown_at` is stamped once,
    at trigger time, regardless of how the interstitial is later dismissed.
-5. never during a phone call, and the foreground change that happens when a
-   call ends and the OS returns the user to their previous app is
-   suppressed inside `CALL_RETURN_GRACE_MS`; cellular calls are caught via
-   the protected `PHONE_STATE` broadcast (no `READ_PHONE_STATE` permission
-   needed), VoIP call surfaces (WhatsApp/Messenger/…) by simple class-name
-   suffix matching alongside the existing `isSystemPicker` heuristic.
 
 **TriggerActivity** is a translucent interstitial rendering **ReadingCard**;
 finishing it falls through to whatever was really underneath.
