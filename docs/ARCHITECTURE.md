@@ -14,10 +14,16 @@ over the target app when all trigger rules pass:
 
 1. one pause per continuous foreground-stay of an app,
 2. never on indirect entries (picker-mediated or worker activities),
-3. never when returning from Waqfah's own interstitial,
-4. cooldown (`interval > 0`) or Off-session gap (`interval = 0`) decides
-   whether a fresh open is allowed through; `last_shown_at` is stamped once,
-   at trigger time, regardless of how the interstitial is later dismissed.
+3. never on a call — a messaging app's own call screen, a system dialer/
+   incall-UI package, or audio routed into a call — nor within `CALL_GRACE_MS`
+   of one ending, on either the app it interrupted or the calling app's own
+   screen,
+4. never when returning from Waqfah's own interstitial,
+5. never on a quick switch-back within `SWITCH_BACK_GAP_MS`, regardless of the
+   per-app interval,
+6. otherwise the per-app interval decides (`0` = "Off" triggers on every fresh
+   open that gets this far); `last_shown_at` is stamped once, at trigger time,
+   regardless of how the interstitial is later dismissed.
 
 **TriggerActivity** is a translucent interstitial rendering **ReadingCard**;
 finishing it falls through to whatever was really underneath.

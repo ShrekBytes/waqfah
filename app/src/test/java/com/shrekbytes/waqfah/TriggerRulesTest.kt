@@ -8,7 +8,7 @@ import org.junit.Test
 // The interstitial-return rule: finishing TriggerActivity resumes the paused
 // app underneath — an event indistinguishable from a fresh open. Getting this
 // wrong in one direction traps users in interstitial loops (interval Off,
-// reading longer than OFF_SESSION_GAP_MS); getting it wrong the other way
+// reading longer than SWITCH_BACK_GAP_MS); getting it wrong the other way
 // swallows legitimate opens that come right after using Waqfah itself. That's
 // why the match is on the TriggerActivity CLASS, not just the package.
 class TriggerRulesTest {
