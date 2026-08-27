@@ -25,7 +25,6 @@ enum class ArabicScript { INDOPAK, UTHMANI }
 
 enum class ArabicFont(val script: ArabicScript) {
     DIGITAL_KHATT_INDOPAK(ArabicScript.INDOPAK),
-    DIGITAL_KHATT_V2(ArabicScript.INDOPAK),
     MEQURAN(ArabicScript.UTHMANI),
     AMIRI(ArabicScript.UTHMANI),
 }

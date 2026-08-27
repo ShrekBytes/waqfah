@@ -14,7 +14,7 @@ app opens, nothing more.
 
 - **Reading modes:** sequential (resume at the lowest unread ayah) or random
   (any unread ayah), with progress tracking across the whole Quran.
-- **Arabic display:** Indopak and Uthmani scripts, four bundled fonts,
+- **Arabic display:** Indopak and Uthmani scripts, several bundled fonts,
   adjustable sizes, plus optional transliteration and translations in English
   or Bengali — with more available as downloads.
 - **App language:** English or Bengali, or follow the system language.
