@@ -70,7 +70,7 @@ import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
 private const val TOUR_LINK_TAG = "tour_translation_link"
 
-private enum class TaskKind { MARK_READ, CHANGE_AYAH, SWITCH_TRANSLATION }
+private enum class TaskKind { MARK_READ, CHANGE_AYAH, SWITCH_TRANSLATION, GO_TO_AYAH }
 
 // One stop of the feature tour. Flow shows how Waqfah works as a
 // blockquote-style chain, TryIt asks the user to perform the real action on the live
@@ -123,6 +123,7 @@ private val TOUR_STEPS = listOf<TourStep>(
     TourStep.TryIt(TaskKind.MARK_READ, R.string.tour_t_mark_title, R.string.tour_t_mark_body),
     TourStep.TryIt(TaskKind.CHANGE_AYAH, R.string.tour_t_move_title, R.string.tour_t_move_body),
     TourStep.TryIt(TaskKind.SWITCH_TRANSLATION, R.string.tour_t_trans_title, R.string.tour_t_trans_body),
+    TourStep.TryIt(TaskKind.GO_TO_AYAH, R.string.tour_t_goto_title, R.string.tour_t_goto_body),
     TourStep.SettingRows(
         R.string.tour_set_title,
         R.string.tour_set_hint,
@@ -153,6 +154,7 @@ fun FeatureTourOverlay(
     onFinish: () -> Unit,
     onSkip: () -> Unit,
     onBrowseTranslations: () -> Unit = {},
+    onGoToSurah: () -> Unit = {},
     viewModel: ReadingViewModel = hiltViewModel(),
 ) {
     val colors = WaqfahTheme.colors
@@ -171,15 +173,26 @@ fun FeatureTourOverlay(
     // resolves, since the first snapshot would otherwise capture blank state).
     var anchorAyah by remember { mutableStateOf<String?>(null) }
     var anchorTranslation by remember { mutableStateOf<String?>(null) }
+    var goToHeaderTapped by remember { mutableStateOf(false) }
     LaunchedEffect(stepIndex, state.isLoading) {
         if (!state.isLoading && TOUR_STEPS[stepIndex] is TourStep.TryIt) {
             anchorAyah = state.ayahLabel
             anchorTranslation = state.translationSourceName ?: state.translationText
+            if ((TOUR_STEPS[stepIndex] as TourStep.TryIt).kind == TaskKind.GO_TO_AYAH) {
+                goToHeaderTapped = false
+            }
         }
+    }
+    // Wrapper for tour's header tap – marks that user actually tried Go-to, so
+    // swipe-only ayah change doesn't falsely complete the Go-to step.
+    val onGoToSurahForTour: () -> Unit = {
+        goToHeaderTapped = true
+        onGoToSurah()
     }
     val taskDone = when ((TOUR_STEPS[stepIndex] as? TourStep.TryIt)?.kind) {
         TaskKind.MARK_READ -> !state.isLoading && state.isMarkedRead
         TaskKind.CHANGE_AYAH -> anchorAyah != null && state.ayahLabel != anchorAyah
+        TaskKind.GO_TO_AYAH -> goToHeaderTapped && anchorAyah != null && state.ayahLabel != anchorAyah
         TaskKind.SWITCH_TRANSLATION ->
             anchorTranslation != null && (state.translationSourceName ?: state.translationText) != anchorTranslation
         null -> false
@@ -227,6 +240,7 @@ fun FeatureTourOverlay(
                             isTranslationDisabled = step.kind == TaskKind.SWITCH_TRANSLATION && state.translationText == null && !state.isLoading,
                             showTranslationFallback = step.kind == TaskKind.SWITCH_TRANSLATION && state.translationText != null && !state.translationHasAlternates,
                             onBrowseTranslations = onBrowseTranslations,
+                            onGoToSurah = onGoToSurahForTour,
                             viewModel = viewModel,
                         )
                     }
@@ -426,11 +440,14 @@ private fun TryItPage(
     isTranslationDisabled: Boolean,
     showTranslationFallback: Boolean,
     onBrowseTranslations: () -> Unit,
+    onGoToSurah: () -> Unit = {},
     viewModel: ReadingViewModel,
 ) {
     val colors = WaqfahTheme.colors
     Column(Modifier.fillMaxSize()) {
         // The live practice sandbox: the actual home reading card.
+        // For GO_TO_AYAH we wire the header tap so the tour step is truly interactive.
+        val isGoToStep = step.kind == TaskKind.GO_TO_AYAH
         Box(
             Modifier
                 .weight(1f)
@@ -438,7 +455,11 @@ private fun TryItPage(
                 .clip(RoundedCornerShape(18.dp))
                 .background(colors.line.copy(alpha = 0.3f)),
         ) {
-            WaqfahReadingContent(viewModel = viewModel, bottomBar = {})
+            WaqfahReadingContent(
+                viewModel = viewModel,
+                onGoToAyah = if (isGoToStep) onGoToSurah else null,
+                bottomBar = {},
+            )
         }
 
         // Translation switch hint: two distinct cases sharing the same link style.

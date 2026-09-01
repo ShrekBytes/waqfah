@@ -25,10 +25,11 @@ import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 @Composable
 fun HomeScreen(
     onStartTour: () -> Unit,
+    onGoToAyah: () -> Unit = {},
     viewModel: ReadingViewModel = hiltViewModel(),
 ) {
     Box(Modifier.fillMaxSize()) {
-        WaqfahReadingContent(viewModel = viewModel, bottomBar = {})
+        WaqfahReadingContent(viewModel = viewModel, onGoToAyah = onGoToAyah, bottomBar = {})
 
         // Subtle tour relauncher: a small "?" chip pinned to the top-right,
         // out of the reading flow's way. Only this screen composes it —

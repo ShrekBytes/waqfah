@@ -103,6 +103,7 @@ fun ReadingCard(
     onCompletionDismiss: () -> Unit,
     onStartOver: () -> Unit,
     onSwitchModeAndRestart: () -> Unit,
+    onGoToAyah: (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -139,13 +140,34 @@ fun ReadingCard(
             ReadingSkeleton(Modifier.weight(1f).fillMaxWidth())
         } else {
             CompositionLocalProvider(LocalLayoutDirection provides state.surahNameDirection) {
-                Column(
-                    Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp, bottom = 2.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .let { base ->
+                                if (onGoToAyah != null) base
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = onGoToAyah,
+                                    )
+                                else base
+                            }
+                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                            .semantics(mergeDescendants = true) {
+                                if (onGoToAyah != null) contentDescription = state.surahName + " " + state.totalLabel
+                            },
+                        horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(3.dp))
                     Text(state.totalLabel, color = colors.inkMuted, fontSize = 12.sp)
+                }
                 }
             }
 

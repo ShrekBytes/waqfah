@@ -12,7 +12,15 @@ class QuranRepository @Inject constructor(
 ) {
     suspend fun getSurah(surahNo: Int): SurahEntity? = quranDatabase.surahDao().getBySurahNo(surahNo)
 
+    suspend fun getAllSurahs(): List<SurahEntity> = quranDatabase.surahDao().getAll()
+
     suspend fun getVerseById(id: Int): VerseEntity? = quranDatabase.verseDao().getVerseById(id)
+
+    suspend fun getVerse(surahNo: Int, ayahNo: Int): VerseEntity? =
+        quranDatabase.verseDao().getBySurahAndAyah(surahNo, ayahNo)
+
+    suspend fun getVerseIdsForSurah(surahNo: Int): List<Int> =
+        quranDatabase.verseDao().getVerseIdsForSurah(surahNo)
     suspend fun getFirstVerse(): VerseEntity? = quranDatabase.verseDao().getFirstVerse()
     suspend fun getRandomVerse(): VerseEntity? = quranDatabase.verseDao().getRandomVerse()
 
@@ -31,6 +39,20 @@ class QuranRepository @Inject constructor(
         val dao = quranDatabase.verseDao()
         val unread = dao.getAllVerseIds().filterNot { it in readVerseIds }
         return unread.randomOrNull()?.let { dao.getVerseById(it) } ?: getRandomVerse()
+    }
+
+    // First unread within a specific surah — used by "Continue this surah".
+    // Falls back to the surah's first ayah when everything is already read or
+    // nothing has been read yet (caller wants always-enabled behavior).
+    suspend fun getFirstUnreadVerseInSurah(surahNo: Int, readVerseIds: Set<Int>): VerseEntity? {
+        val dao = quranDatabase.verseDao()
+        val ids = dao.getVerseIdsForSurah(surahNo)
+        val firstUnreadId = ids.firstOrNull { it !in readVerseIds }
+        return when {
+            firstUnreadId != null -> dao.getVerseById(firstUnreadId)
+            ids.isNotEmpty() -> dao.getVerseById(ids.first())
+            else -> null
+        }
     }
 
     suspend fun totalVerseCount(): Int = quranDatabase.verseDao().countAll()

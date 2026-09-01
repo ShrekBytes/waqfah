@@ -6,13 +6,16 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.shrekbytes.waqfah.ui.components.WaqfahTab
 import com.shrekbytes.waqfah.ui.about.AboutScreen
 import com.shrekbytes.waqfah.ui.about.DonateScreen
 import com.shrekbytes.waqfah.ui.about.FaqScreen
 import com.shrekbytes.waqfah.ui.about.GratitudeScreen
 import com.shrekbytes.waqfah.ui.about.PrivacyPolicyScreen
+import com.shrekbytes.waqfah.ui.ayahpicker.GoToSurahScreen
 import com.shrekbytes.waqfah.ui.main.MainScreen
+import com.shrekbytes.waqfah.ui.reading.ReadingViewModel
 import com.shrekbytes.waqfah.ui.onboarding.OnboardChooseAppsScreen
 import com.shrekbytes.waqfah.ui.onboarding.OnboardPermissionsScreen
 import com.shrekbytes.waqfah.ui.onboarding.OnboardReadingPrefsScreen
@@ -30,6 +33,10 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
     // without it, either would silently drop the user back to startDestination
     // no matter how deep into Settings they'd navigated. See Destinations.kt.
     val backStack = rememberWaqfahNavBackStack(startDestination)
+    // Home-only shared ReadingViewModel: hoisted to Activity scope so Home +
+    // GoTo screens (both inside MainActivity) see the same currentVerse.
+    // TriggerActivity keeps its own separate instance via its own Activity.
+    val sharedReadingViewModel: ReadingViewModel = hiltViewModel()
 
     // Guards against rapid double-taps pushing the same destination twice —
     // the second tap would otherwise stack an identical screen that only
@@ -90,6 +97,23 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                     onOpenAbout = { push(About) },
                     onOpenFaq = { push(Faq) },
                     onOpenDonate = { push(Donate) },
+                    onGoToSurah = { push(GoToSurahList) },
+                    readingViewModel = sharedReadingViewModel,
+                )
+            }
+            entry<GoToSurahList> {
+                GoToSurahScreen(
+                    readingViewModel = sharedReadingViewModel,
+                    onBack = { backStack.removeLastOrNull() },
+                    onJumped = { backStack.removeLastOrNull() },
+                )
+            }
+            // Back-compat for old two-page flow (GoToAyahOptions) – redirect to single-page list.
+            entry<GoToAyahOptions> {
+                GoToSurahScreen(
+                    readingViewModel = sharedReadingViewModel,
+                    onBack = { backStack.removeLastOrNull() },
+                    onJumped = { backStack.removeLastOrNull() },
                 )
             }
             entry<ReadingDisplaySettings> { key ->

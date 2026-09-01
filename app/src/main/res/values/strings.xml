@@ -235,6 +235,22 @@
     <string name="faq_q7">Usage access won\'t turn on when I tap Grant</string>
     <string name="faq_a7">On Android 13 or newer, apps installed outside an app store (for example, an APK opened straight from your browser) are blocked from sensitive settings until you allow them once. Open Waqfah\'s system App info page (long-press its icon > App info), tap the ⋮ menu at the top right, and choose \"Allow restricted settings\". Then come back to Waqfah and grant Usage access normally. Apps installed from a store such as F-Droid or Google Play never see this extra step.</string>
 
+    <!-- Go to Ayah -->
+    <string name="goto_surah_title">Go to ayah</string>
+    <string name="goto_surah_hint">Choose a surah, then jump to an ayah. Works whether the ayah is read or unread — your sequential/random position stays where it was.</string>
+    <string name="goto_search_hint">Search surah</string>
+    <string name="goto_no_results">No surah found</string>
+    <string name="goto_ayah_title_fmt">%1$s</string>
+    <string name="goto_ayah_hint">Enter an ayah number and jump, or continue where you left off in this surah.</string>
+    <string name="goto_ayah_field_label">Go to ayah</string>
+    <string name="goto_ayah_field_placeholder">Ayah number</string>
+    <string name="goto_ayah_go">Go</string>
+    <string name="goto_ayah_first">First ayah</string>
+    <string name="goto_ayah_continue">Continue</string>
+    <string name="goto_ayah_range_fmt">Enter 1–%1$s</string>
+    <string name="goto_ayah_progress_fmt">%1$s / %2$s</string>
+    <string name="cd_goto_header">Go to ayah</string>
+
     <!-- Feature tour -->
     <string name="tour_start_button">Start tour</string>
     <string name="tour_skip">Skip</string>
@@ -274,4 +290,6 @@
     <string name="tour_p5_body">Want to know more or have any other questions? Check FAQ &amp; troubleshooting under Settings &gt; More.</string>
     <string name="tour_t_trans_none_suffix">to switch.</string>
     <string name="tour_flow_label">Waqfah tour</string>
+    <string name="tour_t_goto_title">Jump to any ayah</string>
+    <string name="tour_t_goto_body">Tap the surah name at the top of the reading card to open Go to ayah. Try it now — the card above is live.</string>
 </resources>

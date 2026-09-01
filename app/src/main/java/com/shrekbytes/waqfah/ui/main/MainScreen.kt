@@ -40,6 +40,8 @@ fun MainScreen(
     onOpenAbout: () -> Unit,
     onOpenFaq: () -> Unit,
     onOpenDonate: () -> Unit,
+    onGoToSurah: () -> Unit = {},
+    readingViewModel: com.shrekbytes.waqfah.ui.reading.ReadingViewModel = hiltViewModel(),
 ) {
     val tourViewModel: FeatureTourViewModel = hiltViewModel()
     // null until DataStore resolves — the auto-show waits instead of flashing.
@@ -74,7 +76,11 @@ fun MainScreen(
                     label = "main_tab_content",
                 ) { tab ->
                     when (tab) {
-                        WaqfahTab.HOME -> HomeScreen(onStartTour = { tourOpenedManually = true })
+                        WaqfahTab.HOME -> HomeScreen(
+                            onStartTour = { tourOpenedManually = true },
+                            onGoToAyah = onGoToSurah,
+                            viewModel = readingViewModel,
+                        )
                         WaqfahTab.SETTINGS -> SettingsScreen(
                             onOpenReadingDisplay = onOpenReadingDisplay,
                             onOpenApps = onOpenApps,
@@ -99,6 +105,7 @@ fun MainScreen(
                 (tourOpenedManually || (hasCompletedTour == false && !tourDismissedThisSession))
             if (tourVisible) {
                 FeatureTourOverlay(
+                    viewModel = readingViewModel,
                     onFinish = {
                         // Persisted: never auto-shows again after finishing once.
                         tourViewModel.completeTour()
@@ -116,6 +123,7 @@ fun MainScreen(
                         // Keeps the tour active so returning brings the user back to step 4.
                         onOpenTranslationSection()
                     },
+                    onGoToSurah = onGoToSurah,
                 )
             }
         }

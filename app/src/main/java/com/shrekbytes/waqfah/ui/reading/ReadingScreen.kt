@@ -19,9 +19,14 @@ import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 
 // Shared wiring for ReadingCard's callbacks: both hosts (the Home tab and the
 // TriggerActivity interstitial) render the same card and differ only in their
-// bottom bar.
+// bottom bar. onGoToAyah is Home-only (null for TriggerActivity) so the
+// header is only tappable on the current Home page, not the trigger interstitial.
 @Composable
-fun WaqfahReadingContent(viewModel: ReadingViewModel, bottomBar: @Composable () -> Unit) {
+fun WaqfahReadingContent(
+    viewModel: ReadingViewModel,
+    onGoToAyah: (() -> Unit)? = null,
+    bottomBar: @Composable () -> Unit,
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ReadingCard(
         state = state,
@@ -33,6 +38,7 @@ fun WaqfahReadingContent(viewModel: ReadingViewModel, bottomBar: @Composable () 
         onCompletionDismiss = viewModel::dismissCompletion,
         onStartOver = viewModel::startOver,
         onSwitchModeAndRestart = viewModel::switchModeAndRestart,
+        onGoToAyah = onGoToAyah,
         bottomBar = bottomBar,
     )
 }
@@ -62,7 +68,7 @@ fun ReadingScreen(
 
     BackHandler(onBack = ::requestDismiss)
 
-    WaqfahReadingContent(viewModel = viewModel) {
+    WaqfahReadingContent(viewModel = viewModel, onGoToAyah = null) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
             WaqfahPrimaryButton(
                 text = stringResource(R.string.open_app_button, state.triggeredAppLabel ?: stringResource(R.string.app_name)),

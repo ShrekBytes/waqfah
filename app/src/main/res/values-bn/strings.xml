@@ -235,6 +235,22 @@
     <string name="faq_q7">\'অনুমতি দিন\' চাপলেও Usage access চালু হচ্ছে না</string>
     <string name="faq_a7">Android 13 বা তার পরবর্তী সংস্করণে, অ্যাপ স্টোরের বাইরে থেকে ইনস্টল করা অ্যাপের ক্ষেত্রে (যেমন ব্রাউজার থেকে নামানো APK), নিরাপত্তা নিশ্চিত করতে সিস্টেম প্রাথমিকভাবে কিছু সংবেদনশীল পারমিশন ব্লক করে রাখে। এটি সমাধানের জন্য Waqfah-এর সিস্টেম \'App info\' পেজে যান (অ্যাপ আইকন চেপে ধরে > App info), উপরের ডান কোণের ⋮ মেনুতে ট্যাপ করে \"Allow restricted settings\" নির্বাচন করুন। এরপর Waqfah অ্যাপে ফিরে এসে খুব সহজেই Usage access অনুমতি দিতে পারবেন। Google Play বা F-Droid-এর মতো স্টোর থেকে ইনস্টল করা অ্যাপে এই বাড়তি ধাপের প্রয়োজন হয় না।</string>
 
+    <!-- Go to Ayah -->
+    <string name="goto_surah_title">আয়াতে যান</string>
+    <string name="goto_surah_hint">একটি সূরা বেছে নিন, তারপর আয়াতে যান। আয়াতটি পড়া হোক বা না হোক উভয় ক্ষেত্রেই কাজ করে — আপনার ধারাবাহিক/র‍্যান্ডম অবস্থান অপরিবর্তিত থাকে।</string>
+    <string name="goto_search_hint">সূরা খুঁজুন</string>
+    <string name="goto_no_results">কোনো সূরা পাওয়া যায়নি</string>
+    <string name="goto_ayah_title_fmt">%1$s</string>
+    <string name="goto_ayah_hint">আয়াত নম্বর লিখে যান, অথবা এই সূরায় যেখানে থেমেছিলেন সেখান থেকে চালিয়ে যান।</string>
+    <string name="goto_ayah_field_label">আয়াতে যান</string>
+    <string name="goto_ayah_field_placeholder">আয়াত নম্বর</string>
+    <string name="goto_ayah_go">যান</string>
+    <string name="goto_ayah_first">প্রথম আয়াত</string>
+    <string name="goto_ayah_continue">চালিয়ে যান</string>
+    <string name="goto_ayah_range_fmt">১–%1$s এর মধ্যে লিখুন</string>
+    <string name="goto_ayah_progress_fmt">%1$s / %2$s</string>
+    <string name="cd_goto_header">আয়াতে যান</string>
+
     <!-- Feature tour -->
     <string name="tour_start_button">ট্যুর শুরু করুন</string>
     <string name="tour_skip">এড়িয়ে যান</string>
@@ -274,4 +290,6 @@
     <string name="tour_p5_body">আরও জানতে চান বা অন্য কোনো প্রশ্ন আছে? Settings &gt; More-এর অধীনে FAQ &amp; troubleshooting দেখুন।</string>
     <string name="tour_t_trans_none_suffix">করলেই সেগুলোর মধ্যে সুইচ করা যাবে।</string>
     <string name="tour_flow_label">Waqfah ট্যুর</string>
+    <string name="tour_t_goto_title">যেকোনো আয়াতে যান</string>
+    <string name="tour_t_goto_body">রিডিং কার্ডের ওপরের সূরার নামে ট্যাপ করে Go to ayah খুলুন। এখনই চেষ্টা করে দেখুন — ওপরের কার্ডটি লাইভ।</string>
 </resources>

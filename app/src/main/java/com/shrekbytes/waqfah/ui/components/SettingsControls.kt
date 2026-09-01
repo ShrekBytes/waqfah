@@ -151,6 +151,8 @@ fun Modifier.rowHighlight(onClick: () -> Unit): Modifier {
 }
 
 // Hairline pill search field rather than Material's floating-label text field.
+// Forced LTR so typing direction never flips with Surah name language (Arabic RTL)
+// – search should always behave like AppsScreen's field.
 @Composable
 fun WaqfahSearchField(
     value: String,
@@ -159,28 +161,36 @@ fun WaqfahSearchField(
     placeholder: String,
 ) {
     val colors = WaqfahTheme.colors
-    Row(
-        modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, colors.line, RoundedCornerShape(12.dp))
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
-        Icon(Icons.Default.Search, contentDescription = null, tint = colors.inkSoft, modifier = Modifier.size(15.dp))
-        Box(Modifier.weight(1f)) {
-            if (value.isEmpty()) {
-                Text(placeholder, color = colors.inkSoft, fontSize = 14.sp)
+        Row(
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.dp, colors.line, RoundedCornerShape(12.dp))
+                .padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(Icons.Default.Search, contentDescription = null, tint = colors.inkSoft, modifier = Modifier.size(15.dp))
+            Box(Modifier.weight(1f)) {
+                if (value.isEmpty()) {
+                    Text(placeholder, color = colors.inkSoft, fontSize = 14.sp)
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        color = colors.ink,
+                        fontSize = 14.sp,
+                        textDirection = androidx.compose.ui.text.style.TextDirection.Ltr,
+                    ),
+                    cursorBrush = SolidColor(colors.accent),
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = true,
-                textStyle = TextStyle(color = colors.ink, fontSize = 14.sp),
-                cursorBrush = SolidColor(colors.accent),
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
     }
 }
