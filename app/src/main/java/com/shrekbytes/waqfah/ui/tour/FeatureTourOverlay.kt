@@ -52,6 +52,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
@@ -440,8 +441,8 @@ private fun TryItPage(
     isTranslationDisabled: Boolean,
     showTranslationFallback: Boolean,
     onBrowseTranslations: () -> Unit,
-    onGoToSurah: () -> Unit = {},
     viewModel: ReadingViewModel,
+    onGoToSurah: () -> Unit = {},
 ) {
     val colors = WaqfahTheme.colors
     Column(Modifier.fillMaxSize()) {
@@ -515,7 +516,7 @@ private fun TryItPage(
 
 @Composable
 private fun TranslationTourHint(
-    hint: androidx.compose.ui.text.AnnotatedString,
+    hint: AnnotatedString,
     onBrowseTranslations: () -> Unit,
 ) {
     val colors = WaqfahTheme.colors

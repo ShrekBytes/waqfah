@@ -4,19 +4,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.local.core.SurahEntity
 import com.shrekbytes.waqfah.data.local.core.VerseEntity
+import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
+import com.shrekbytes.waqfah.data.model.UserPreferences
 import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SurahRow(
     val surah: SurahEntity,
     val readCount: Int,
-    val total: Int,
 )
 
 @HiltViewModel
@@ -31,26 +33,44 @@ class GoToSurahViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(GoToSurahUiState(isLoading = true))
     val uiState: StateFlow<GoToSurahUiState> = _uiState
 
-    // Cache unfiltered rows so typing only filters in memory, not 114 DB queries per keystroke.
+    // Cache unfiltered rows so typing only filters in memory, not in the DB.
     private var cachedUnfilteredRows: List<SurahRow> = emptyList()
-    private var cachedPrefs: com.shrekbytes.waqfah.data.model.UserPreferences? = null
+    private var cachedPrefs: UserPreferences? = null
+
+    // The bundled Quran database ships whole with every app update, so surahs
+    // and their verse ids never change at runtime — fetch each once per
+    // ViewModel (same pattern as ReadingViewModel's cachedTotalVerseCount).
+    // Only read progress is re-read per emission below.
+    private var cachedSurahs: List<SurahEntity>? = null
+    private var cachedVerseIdsBySurah: Map<Int, List<Int>>? = null
+
+    private suspend fun surahs(): List<SurahEntity> =
+        cachedSurahs ?: quranRepository.getAllSurahs().also { cachedSurahs = it }
+
+    private suspend fun verseIdsBySurah(): Map<Int, List<Int>> =
+        cachedVerseIdsBySurah ?: quranRepository.getAllVerseSurahPairs()
+            .groupBy({ it.surahNo }, { it.verseId })
+            .also { cachedVerseIdsBySurah = it }
+
+    private suspend fun buildSurahRows(): List<SurahRow> {
+        val readIds = readingProgressRepository.getReadVerseIds().toHashSet()
+        val idsBySurah = verseIdsBySurah()
+        return surahs().map { surah ->
+            val read = idsBySurah[surah.surahNo].orEmpty().count { it in readIds }
+            SurahRow(surah, read)
+        }
+    }
 
     init {
         viewModelScope.launch {
             // Base rows: refresh only when prefs or read progress changes (not on every keystroke).
-            kotlinx.coroutines.flow.combine(
+            combine(
                 settingsRepository.preferences,
                 readingProgressRepository.readCount,
-            ) { p, _ -> p }
+            ) { prefs, _ -> prefs }
                 .collect { prefs ->
                     cachedPrefs = prefs
-                    val surahs = quranRepository.getAllSurahs()
-                    val readIds = readingProgressRepository.getReadVerseIds().toHashSet()
-                    cachedUnfilteredRows = surahs.map { surah ->
-                        val ids = quranRepository.getVerseIdsForSurah(surah.surahNo)
-                        val read = ids.count { it in readIds }
-                        SurahRow(surah, read, surah.ayahCount)
-                    }
+                    cachedUnfilteredRows = buildSurahRows()
                     emitFiltered(searchQuery.value, prefs)
                 }
         }
@@ -63,17 +83,14 @@ class GoToSurahViewModel @Inject constructor(
         }
     }
 
-    private fun emitFiltered(query: String, prefs: com.shrekbytes.waqfah.data.model.UserPreferences) {
-        val filtered = if (query.isBlank()) cachedUnfilteredRows else cachedUnfilteredRows.filter { row ->
+    private fun emitFiltered(query: String, prefs: UserPreferences) {
+        val trimmed = query.trim()
+        val filtered = if (trimmed.isBlank()) cachedUnfilteredRows else cachedUnfilteredRows.filter { row ->
             val surah = row.surah
-            val nameEn = surah.nameEnglish ?: ""
-            val nameBn = surah.nameBengali ?: ""
-            val nameAr = surah.nameArabic ?: ""
-            val surahNoStr = surah.surahNo.toString()
-            nameEn.contains(query, ignoreCase = true) ||
-                nameBn.contains(query, ignoreCase = true) ||
-                nameAr.contains(query, ignoreCase = true) ||
-                surahNoStr == query.trim()
+            surah.nameEnglish?.contains(query, ignoreCase = true) == true ||
+                surah.nameBengali?.contains(query, ignoreCase = true) == true ||
+                surah.nameArabic?.contains(query, ignoreCase = true) == true ||
+                surah.surahNo.toString() == trimmed
         }
         _uiState.value = GoToSurahUiState(
             query = query,
@@ -85,9 +102,9 @@ class GoToSurahViewModel @Inject constructor(
 
     fun setQuery(q: String) { searchQuery.value = q }
 
-    // Actions for jumping to a verse — thin repos-wraps used straight from the
-    // screen's taps (no state, so they live on the same ViewModel rather than a
-    // separate facade).
+    // Actions for jumping to a verse — thin repo wrappers used straight from
+    // the screen's taps (no state, so they live on the same ViewModel rather
+    // than a separate facade).
     suspend fun getVerse(surahNo: Int, ayahNo: Int): VerseEntity? =
         quranRepository.getVerse(surahNo, ayahNo)
 
@@ -100,6 +117,6 @@ class GoToSurahViewModel @Inject constructor(
 data class GoToSurahUiState(
     val query: String = "",
     val rows: List<SurahRow> = emptyList(),
-    val surahNameLanguage: com.shrekbytes.waqfah.data.model.NameDisplayLanguage = com.shrekbytes.waqfah.data.model.NameDisplayLanguage.ENGLISH,
+    val surahNameLanguage: NameDisplayLanguage = NameDisplayLanguage.ENGLISH,
     val isLoading: Boolean = true,
 )

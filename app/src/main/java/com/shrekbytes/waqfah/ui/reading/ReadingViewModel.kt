@@ -172,8 +172,8 @@ class ReadingViewModel @Inject constructor(
     }
 
     // Jumps to an explicit verse without touching read history or sequential/
-    // random position — "Go to ayah" works for read or unread, and next/previous
-    // still step by global id after the jump. Mirrors beginFreshSession but
+    // random position — "Surahs & ayahs" works for read or unread, and
+    // next/previous still step by global id after the jump. Mirrors beginFreshSession but
     // with an explicit target and cleared translation peek. Home-only by design;
     // TriggerActivity keeps its own instance via a separate Activity.
     suspend fun jumpToVerse(verseId: Int) {

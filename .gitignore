@@ -4,6 +4,9 @@
 /*/build
 /*/*/build
 
+# Kotlin compiler session/error logs
+.kotlin/
+
 # Local configuration — machine-specific, never shared (contains sdk.dir)
 local.properties
 

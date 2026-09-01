@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -492,7 +493,7 @@ fun ProgressRing(percent: Int, modifier: Modifier = Modifier) {
 fun SettingsScaffold(
     title: String,
     onBack: () -> Unit,
-    scrollState: androidx.compose.foundation.ScrollState = rememberScrollState(),
+    scrollState: ScrollState = rememberScrollState(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = WaqfahTheme.colors

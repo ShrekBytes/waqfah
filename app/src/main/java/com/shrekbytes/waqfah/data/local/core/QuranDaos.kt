@@ -43,4 +43,14 @@ interface VerseDao {
 
     @Query("SELECT id FROM verses WHERE surah_no = :surahNo ORDER BY ayah_no")
     suspend fun getVerseIdsForSurah(surahNo: Int): List<Int>
+
+    // Single-pass projection of every (surah, verse-id) pair. Callers that need
+    // ids across many surahs (e.g. per-surah read counts for the Go-to list)
+    // use this ONE query instead of one query per surah — 114 full-table scans
+    // each emission vs one.
+    @Query("SELECT surah_no AS surahNo, id AS verseId FROM verses ORDER BY id")
+    suspend fun getAllVerseSurahPairs(): List<VerseSurahPair>
 }
+
+// Projection POJO for getAllVerseSurahPairs (column aliases must match fields).
+data class VerseSurahPair(val surahNo: Int, val verseId: Int)

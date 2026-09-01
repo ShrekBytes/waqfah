@@ -3,6 +3,7 @@ package com.shrekbytes.waqfah.data.repository
 import com.shrekbytes.waqfah.data.local.core.QuranDatabase
 import com.shrekbytes.waqfah.data.local.core.SurahEntity
 import com.shrekbytes.waqfah.data.local.core.VerseEntity
+import com.shrekbytes.waqfah.data.local.core.VerseSurahPair
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,6 +22,10 @@ class QuranRepository @Inject constructor(
 
     suspend fun getVerseIdsForSurah(surahNo: Int): List<Int> =
         quranDatabase.verseDao().getVerseIdsForSurah(surahNo)
+
+    suspend fun getAllVerseSurahPairs(): List<VerseSurahPair> =
+        quranDatabase.verseDao().getAllVerseSurahPairs()
+
     suspend fun getFirstVerse(): VerseEntity? = quranDatabase.verseDao().getFirstVerse()
     suspend fun getRandomVerse(): VerseEntity? = quranDatabase.verseDao().getRandomVerse()
 
@@ -42,8 +47,9 @@ class QuranRepository @Inject constructor(
     }
 
     // First unread within a specific surah — used by "Continue this surah".
-    // Falls back to the surah's first ayah when everything is already read or
-    // nothing has been read yet (caller wants always-enabled behavior).
+    // When every ayah in the surah is already read, falls back to the surah's
+    // first ayah (the caller wants always-enabled behavior; nothing read yet
+    // simply returns the first unread, i.e. the first ayah).
     suspend fun getFirstUnreadVerseInSurah(surahNo: Int, readVerseIds: Set<Int>): VerseEntity? {
         val dao = quranDatabase.verseDao()
         val ids = dao.getVerseIdsForSurah(surahNo)

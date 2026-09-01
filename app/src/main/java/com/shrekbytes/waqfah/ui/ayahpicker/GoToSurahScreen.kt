@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +50,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.LayoutDirection
@@ -64,6 +66,7 @@ import com.shrekbytes.waqfah.ui.components.EmptyListNote
 import com.shrekbytes.waqfah.ui.components.WaqfahBackButton
 import com.shrekbytes.waqfah.ui.components.WaqfahSearchField
 import com.shrekbytes.waqfah.ui.components.skeletonPulseAlpha
+import com.shrekbytes.waqfah.ui.reading.ReadingViewModel
 import com.shrekbytes.waqfah.ui.reading.ayahWord
 import com.shrekbytes.waqfah.ui.reading.localizeDigits
 import com.shrekbytes.waqfah.ui.reading.surahDisplayName
@@ -72,7 +75,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun GoToSurahScreen(
-    readingViewModel: com.shrekbytes.waqfah.ui.reading.ReadingViewModel,
+    readingViewModel: ReadingViewModel,
     onBack: () -> Unit,
     onJumped: () -> Unit = onBack,
     viewModel: GoToSurahViewModel = hiltViewModel(),
@@ -85,6 +88,17 @@ fun GoToSurahScreen(
     var ayahInput by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(expandedSurahNo) { ayahInput = "" }
+
+    // Every jump action (Go / First / Continue) funnels through these two so
+    // the "resolve verse → shared ReadingViewModel.jumpToVerse → pop screen"
+    // sequence exists exactly once.
+    val jumpToVerseId: suspend (Int) -> Unit = { verseId ->
+        readingViewModel.jumpToVerse(verseId)
+        onJumped()
+    }
+    val jumpToAyah: suspend (Int, Int) -> Unit = { surahNo, ayahNo ->
+        viewModel.getVerse(surahNo, ayahNo)?.let { jumpToVerseId(it.id) }
+    }
 
     Surface(modifier = Modifier.fillMaxSize(), color = colors.background, contentColor = colors.ink) {
         Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
@@ -122,14 +136,15 @@ fun GoToSurahScreen(
                         val isExpanded = row.surah.surahNo == expandedSurahNo
                         val lang = state.surahNameLanguage
                         val total = row.surah.ayahCount
-                        val parsed = ayahInput.toIntOrNull()
-                        val isOutOfRange = isExpanded && parsed != null && (parsed < 1 || parsed > total)
-                        val isValid = isExpanded && parsed != null && parsed in 1..total
-                        val rangeLabel = if (isExpanded && total > 0) stringResource(R.string.goto_ayah_range_fmt, localizeDigits(total, lang)) else ""
+                        // Expansion-only values: collapsed rows skip the input
+                        // parsing and string lookups on every recomposition.
+                        val parsed = if (isExpanded) ayahInput.toIntOrNull() else null
+                        val isOutOfRange = parsed != null && (parsed < 1 || parsed > total)
+                        val isValid = parsed != null && parsed in 1..total
+                        val rangeLabel = if (isExpanded) stringResource(R.string.goto_ayah_range_fmt, localizeDigits(total, lang)) else ""
                         val currentError: String? = when {
                             !isExpanded || ayahInput.isBlank() -> null
-                            parsed == null -> rangeLabel
-                            isOutOfRange -> rangeLabel
+                            parsed == null || isOutOfRange -> rangeLabel
                             else -> null
                         }
 
@@ -172,7 +187,7 @@ fun GoToSurahScreen(
                                         )
                                     }
                                     Text(
-                                        stringResource(R.string.goto_ayah_progress_fmt, localizeDigits(row.readCount, lang), localizeDigits(row.total, lang)),
+                                        stringResource(R.string.goto_ayah_progress_fmt, localizeDigits(row.readCount, lang), localizeDigits(total, lang)),
                                         color = colors.inkMuted,
                                         fontSize = 12.5.sp,
                                         fontWeight = FontWeight.Medium,
@@ -238,7 +253,15 @@ fun GoToSurahScreen(
                                                             textDirection = TextDirection.Ltr,
                                                         ),
                                                         cursorBrush = SolidColor(colors.accent),
-                                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Go),
+                                                        // The keyboard's Go acts like the Go pill —
+                                                        // same guarded jump, no separate code path.
+                                                        keyboardActions = KeyboardActions(
+                                                            onGo = {
+                                                                val targetAyah = parsed
+                                                                if (targetAyah != null && isValid) scope.launch { jumpToAyah(row.surah.surahNo, targetAyah) }
+                                                            },
+                                                        ),
                                                         modifier = Modifier.fillMaxWidth(),
                                                     )
                                                 }
@@ -255,14 +278,8 @@ fun GoToSurahScreen(
                                         Surface(
                                             onClick = {
                                                 val targetAyah = parsed
-                                                if (!isValid || targetAyah == null) return@Surface
-                                                scope.launch {
-                                                    val verse = viewModel.getVerse(row.surah.surahNo, targetAyah)
-                                                    if (verse != null) {
-                                                        readingViewModel.jumpToVerse(verse.id)
-                                                        onJumped()
-                                                    }
-                                                }
+                                                if (targetAyah == null || !isValid) return@Surface
+                                                scope.launch { jumpToAyah(row.surah.surahNo, targetAyah) }
                                             },
                                             enabled = isValid,
                                             shape = RoundedCornerShape(50),
@@ -285,13 +302,7 @@ fun GoToSurahScreen(
                                         // First ayah – quiet secondary pill
                                         Surface(
                                             onClick = {
-                                                scope.launch {
-                                                    val verse = viewModel.getVerse(row.surah.surahNo, 1)
-                                                    if (verse != null) {
-                                                        readingViewModel.jumpToVerse(verse.id)
-                                                        onJumped()
-                                                    }
-                                                }
+                                                scope.launch { jumpToAyah(row.surah.surahNo, 1) }
                                             },
                                             shape = RoundedCornerShape(50),
                                             color = colors.accentSoft,
@@ -309,10 +320,7 @@ fun GoToSurahScreen(
                                                     val readIds = viewModel.getReadIds()
                                                     val verse = viewModel.getFirstUnreadInSurah(row.surah.surahNo, readIds)
                                                         ?: viewModel.getVerse(row.surah.surahNo, 1)
-                                                    if (verse != null) {
-                                                        readingViewModel.jumpToVerse(verse.id)
-                                                        onJumped()
-                                                    }
+                                                    if (verse != null) jumpToVerseId(verse.id)
                                                 }
                                             },
                                             shape = RoundedCornerShape(50),

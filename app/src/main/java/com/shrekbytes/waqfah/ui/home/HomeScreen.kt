@@ -17,7 +17,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.reading.ReadingViewModel
 import com.shrekbytes.waqfah.ui.reading.WaqfahReadingContent
@@ -26,8 +25,8 @@ import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 @Composable
 fun HomeScreen(
     onStartTour: () -> Unit,
-    onGoToAyah: () -> Unit = {},
-    viewModel: ReadingViewModel = hiltViewModel(),
+    onGoToAyah: () -> Unit,
+    viewModel: ReadingViewModel,
 ) {
     Box(Modifier.fillMaxSize()) {
         WaqfahReadingContent(viewModel = viewModel, onGoToAyah = onGoToAyah, bottomBar = {})

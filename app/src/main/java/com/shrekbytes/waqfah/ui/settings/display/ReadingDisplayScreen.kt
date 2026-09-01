@@ -66,12 +66,10 @@ fun ReadingDisplayScreen(
 
     LaunchedEffect(scrollToSection) {
         if (scrollToSection == ReadingDisplaySettings.SECTION_TRANSLATION) {
+            // Small delay lets the first frame lay out before scrolling, so the
+            // anchor's bringIntoView request lands on a measured scrollable.
             delay(220)
-            try {
-                translationRequester.bringIntoView()
-            } catch (_: Exception) {
-                if (scrollState.maxValue > 0) scrollState.animateScrollTo(scrollState.maxValue)
-            }
+            translationRequester.bringIntoView()
             highlightTitle = true
             delay(1200)
             highlightTitle = false

@@ -189,23 +189,17 @@ fun ReadingCard(
                             .padding(horizontal = 64.dp, vertical = 3.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Row(
-                            Modifier,
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
-                                if (onGoToAyah != null) {
-                                    Spacer(Modifier.width(4.dp))
-                                    ChevronIcon(
-                                        direction = ChevronDirection.RIGHT,
-                                        tint = colors.inkMuted,
-                                        modifier = Modifier
-                                            .size(13.dp)
-                                            .rotate(90f),
-                                    )
-                                }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
+                            if (onGoToAyah != null) {
+                                Spacer(Modifier.width(4.dp))
+                                ChevronIcon(
+                                    direction = ChevronDirection.RIGHT,
+                                    tint = colors.inkMuted,
+                                    modifier = Modifier
+                                        .size(13.dp)
+                                        .rotate(90f),
+                                )
                             }
                         }
                         Spacer(Modifier.height(3.dp))
