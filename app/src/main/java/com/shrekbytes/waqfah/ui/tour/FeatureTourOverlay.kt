@@ -30,7 +30,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -135,7 +134,10 @@ private val TOUR_STEPS = listOf<TourStep>(
             SettingRow(R.string.tour_r_trans_t, R.string.tour_r_trans_d),
         ),
     ),
-    TourStep.Info(R.string.tour_p5_title, R.string.tour_p5_body, Icons.Filled.Favorite),
+    // Check (not a more "celebratory" icon): this closing step is really just
+    // pointing at where to find FAQ/troubleshooting, so it should read as
+    // "you're set up" rather than promise something more than that.
+    TourStep.Info(R.string.tour_p5_title, R.string.tour_p5_body, Icons.Filled.Check),
 )
 
 // Full-screen overlay hosting the guided tour. Rendered ONLY over the Home tab

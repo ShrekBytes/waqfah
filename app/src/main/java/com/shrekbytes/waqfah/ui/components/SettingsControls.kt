@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -114,12 +116,16 @@ fun ChevronIcon(direction: ChevronDirection, tint: Color, modifier: Modifier = M
 @Composable
 fun WaqfahBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors
+    val backLabel = stringResource(R.string.tour_back)
     Surface(
         onClick = onClick,
         shape = CircleShape,
         color = colors.background,
         contentColor = colors.inkMuted,
-        modifier = modifier.padding(top = 16.dp).size(34.dp),
+        modifier = modifier
+            .padding(top = 16.dp)
+            .size(34.dp)
+            .semantics { contentDescription = backLabel },
     ) {
         Box(contentAlignment = Alignment.Center) {
             ChevronIcon(ChevronDirection.LEFT, tint = colors.inkMuted, modifier = Modifier.size(16.dp))
@@ -275,7 +281,7 @@ fun SettingsNavRow(title: String, subtitle: String, onClick: () -> Unit, externa
                 modifier = Modifier.size(14.dp).rotate(-45f),
             )
         } else {
-            Text("›", color = colors.inkSoft, fontSize = 14.sp)
+            ChevronIcon(direction = ChevronDirection.RIGHT, tint = colors.inkSoft, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -384,14 +390,21 @@ fun WaqfahSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier:
 @Composable
 fun <T> ChipGroup(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit) {
     val colors = WaqfahTheme.colors
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(
+        modifier = Modifier.selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         options.forEach { (value, label) ->
             val isSelected = value == selected
             Surface(
-                onClick = { onSelect(value) },
                 shape = RoundedCornerShape(50),
                 color = if (isSelected) colors.accent else Color.Transparent,
                 contentColor = if (isSelected) colors.accentInk else colors.inkMuted,
+                // A radio-style selectable instead of a bare clickable: every
+                // picker built on ChipGroup (theme, script, mode, language…)
+                // gets a real selected state for TalkBack for free.
+                modifier = Modifier.selectable(selected = isSelected, onClick = { onSelect(value) }, role = Role.RadioButton),
             ) {
                 Text(
                     label,

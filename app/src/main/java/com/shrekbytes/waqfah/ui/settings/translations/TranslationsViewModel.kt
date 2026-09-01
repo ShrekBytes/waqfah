@@ -1,13 +1,16 @@
 package com.shrekbytes.waqfah.ui.settings.translations
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.data.model.TranslationCatalog
 import com.shrekbytes.waqfah.data.model.TranslationLanguage
 import com.shrekbytes.waqfah.data.model.TranslationMeta
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.repository.TranslationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +39,12 @@ data class TranslationRowState(
 class TranslationsViewModel @Inject constructor(
     private val translationRepository: TranslationRepository,
     private val settingsRepository: SettingsRepository,
+    @ApplicationContext context: Context,
 ) : ViewModel() {
+
+    // Resolved once: a plain ViewModel can't call stringResource(), and this
+    // text never changes while the ViewModel lives.
+    private val downloadFailedMessage = context.getString(R.string.download_failed_message)
 
     // Keyed by id — downloads for different translations run concurrently.
     private val downloadingIds = MutableStateFlow<Set<String>>(emptySet())
@@ -113,7 +121,11 @@ class TranslationsViewModel @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            downloadErrors.update { it + (meta.id to (e.message ?: "Download failed")) }
+            // A user-facing, localized message rather than e.message: exception
+            // text is developer-oriented and always in English regardless of
+            // the app's language. The detailed cause is still logged by
+            // TranslationRepository for debugging.
+            downloadErrors.update { it + (meta.id to downloadFailedMessage) }
         } finally {
             downloadingIds.update { it - meta.id }
             downloadProgress.update { it - meta.id }

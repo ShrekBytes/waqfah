@@ -1,27 +1,24 @@
 # Gradle
 .gradle/
-build/
-**/build/
+/build
+/*/build
+/*/*/build
 
-# Local configuration
+# Local configuration — machine-specific, never shared (contains sdk.dir)
 local.properties
 
-# IntelliJ / Android Studio
+# Android Studio / IntelliJ
 .idea/
 *.iml
-
-# Android Studio captures
+.DS_Store
 captures/
-
-# Native builds
 .externalNativeBuild/
 .cxx/
 
-# macOS
-.DS_Store
+# Generated Room schema history — real files here, once generated, should be
+# committed (they're the migration-testing safety net), just not build output.
+!/app/schemas/
 
-# Kotlin
-.kotlin/
-
-# Generated files
-*.hprof
+# Keystores — never commit signing material
+*.jks
+*.keystore

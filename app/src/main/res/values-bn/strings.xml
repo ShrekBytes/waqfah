@@ -92,6 +92,7 @@
     <string name="downloading">ডাউনলোড হচ্ছে…</string>
     <string name="downloading_percent">ডাউনলোড হচ্ছে… %1$d%%</string>
     <string name="failed_retry">ব্যর্থ হয়েছে — আবার চেষ্টা করুন</string>
+    <string name="download_failed_message">এই অনুবাদটি ডাউনলোড করা যায়নি। আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।</string>
     <string name="active_label">✓ সক্রিয়</string>
 
     <!-- Settings -->
@@ -112,6 +113,17 @@
     <string name="accent_unavailable">এই থিমে অ্যাকসেন্ট কালার পরিবর্তন করা যায় না।</string>
     <string name="app_language_label">অ্যাপের ভাষা</string>
     <string name="lang_system">সিস্টেম ডিফল্ট</string>
+    <string name="theme_light">লাইট</string>
+    <string name="theme_dark">ডার্ক</string>
+    <string name="theme_cream">ক্রিম</string>
+    <string name="theme_stone">স্টোন</string>
+    <string name="theme_midnight">মিডনাইট</string>
+    <string name="theme_indigo">ইন্ডিগো</string>
+    <string name="accent_sage">সেজ</string>
+    <string name="accent_clay">ক্লে</string>
+    <string name="accent_slate">স্লেট</string>
+    <string name="accent_plum">প্লাম</string>
+    <string name="accent_ochre">অকার</string>
     <string name="progress_section">অগ্রগতি</string>
     <string name="ayat_read">আয়াত তিলাওয়াত সম্পন্ন</string>
     <string name="reset_progress">অগ্রগতি রিসেট করুন</string>
@@ -169,6 +181,7 @@
     <string name="privacy_row_desc">আপনার তথ্যের সুরক্ষা ও বিবরণ</string>
     <string name="github_row">GitHub রিপোজিটরি</string>
     <string name="contact_row">যোগাযোগ</string>
+    <string name="no_app_found">এটি খোলার জন্য কোনো অ্যাপ পাওয়া যায়নি।</string>
 
     <!-- Donate -->
     <string name="donate_title">অনুদান</string>

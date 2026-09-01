@@ -1,6 +1,9 @@
 package com.shrekbytes.waqfah.ui.theme
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.shrekbytes.waqfah.R
 
 // accent / accentSoft / accentInk for one light-or-dark variant of an accent color.
 data class AccentVariant(val accent: Color, val soft: Color, val ink: Color)
@@ -42,7 +45,17 @@ enum class AccentColor(val swatch: Color, val light: AccentVariant, val dark: Ac
     ),
 }
 
-// Cream, Retro and Stone ship a fixed accent (no picker) — matches the prototype.
+@Composable
+fun AccentColor.displayName(): String = when (this) {
+    AccentColor.SAGE -> stringResource(R.string.accent_sage)
+    AccentColor.CLAY -> stringResource(R.string.accent_clay)
+    AccentColor.SLATE -> stringResource(R.string.accent_slate)
+    AccentColor.PLUM -> stringResource(R.string.accent_plum)
+    AccentColor.OCHRE -> stringResource(R.string.accent_ochre)
+}
+
+// Cream, Stone, Midnight and Indigo ship a fixed accent (no picker) — matches
+// the prototype.
 internal object BasePalettes {
     val Light = WaqfahColors(
         background = Color(0xFFF6F3EC), ink = Color(0xFF2A2823),
@@ -65,18 +78,31 @@ internal object BasePalettes {
         accentInk = Color(0xFFFBF5F1), accentSoft = Color(0xFFEDD9CE),
         danger = Color(0xFFA15C4B),
     )
-    val Retro = WaqfahColors(
-        background = Color(0xFF0F1512), ink = Color(0xFFD6E8D2),
-        inkMuted = Color(0xFF7F9779), inkSoft = Color(0xFF4C5C48),
-        line = Color(0xFF263029), accent = Color(0xFF6FCB6F),
-        accentInk = Color(0xFF0A0F0A), accentSoft = Color(0xFF1C2B1C),
-        danger = Color(0xFFD9776B),
-    )
     val Stone = WaqfahColors(
         background = Color(0xFFB0BAB0), ink = Color(0xFF363E35),
         inkMuted = Color(0xFF4E574E), inkSoft = Color(0xFF798279),
         line = Color(0xFF9EA79E), accent = Color(0xFF363E35),
         accentInk = Color(0xFFB0BAB0), accentSoft = Color(0xFFA4AEA4),
         danger = Color(0xFF363E35),
+    )
+    // Near-black, warm-neutral — an OLED-friendly "true dark" option distinct
+    // from Dark's warm charcoal. Accent is a soft lamplight gold: warm enough
+    // to read as "ink and paper by low light" rather than a cold terminal glow.
+    val Midnight = WaqfahColors(
+        background = Color(0xFF0C0B09), ink = Color(0xFFECE6D6),
+        inkMuted = Color(0xFF8F8674), inkSoft = Color(0xFF433D32),
+        line = Color(0xFF241F18), accent = Color(0xFFC9A96B),
+        accentInk = Color(0xFF1A1610), accentSoft = Color(0xFF2E2717),
+        danger = Color(0xFFC9776B),
+    )
+    // Deep indigo night sky instead of Midnight's neutral black — same warm
+    // ink-on-page contrast, cooler backdrop. A second, genuinely different
+    // dark mood rather than a re-tint of Midnight.
+    val Indigo = WaqfahColors(
+        background = Color(0xFF161A2E), ink = Color(0xFFE8E2D0),
+        inkMuted = Color(0xFF8890A8), inkSoft = Color(0xFF3D4358),
+        line = Color(0xFF262C42), accent = Color(0xFFD4A15C),
+        accentInk = Color(0xFF1C1710), accentSoft = Color(0xFF3A311F),
+        danger = Color(0xFFCB7B6C),
     )
 }

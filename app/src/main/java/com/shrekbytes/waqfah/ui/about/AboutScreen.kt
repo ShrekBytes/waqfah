@@ -25,6 +25,7 @@ import com.shrekbytes.waqfah.BuildConfig
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.ui.components.SettingsNavRow
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
+import com.shrekbytes.waqfah.ui.components.launchExternal
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
 @Composable
@@ -78,13 +79,13 @@ fun AboutScreen(
             stringResource(R.string.github_row),
             SupportInfo.REPO_URL.removePrefix("https://"),
             external = true,
-            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, SupportInfo.REPO_URL.toUri())) },
+            onClick = { context.launchExternal(Intent(Intent.ACTION_VIEW, SupportInfo.REPO_URL.toUri())) },
         )
         SettingsNavRow(
             stringResource(R.string.contact_row),
             SupportInfo.CONTACT_EMAIL,
             external = true,
-            onClick = { context.startActivity(Intent(Intent.ACTION_SENDTO, "mailto:${SupportInfo.CONTACT_EMAIL}".toUri())) },
+            onClick = { context.launchExternal(Intent(Intent.ACTION_SENDTO, "mailto:${SupportInfo.CONTACT_EMAIL}".toUri())) },
         )
         Spacer(Modifier.height(16.dp))
     }

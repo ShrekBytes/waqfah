@@ -35,11 +35,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -218,6 +220,11 @@ class AppMonitorService : Service() {
         var lastPermissionCheckAt = SystemClock.elapsedRealtime()
 
         // True only when a foreground change could actually produce a trigger.
+        // Shared as one long-lived StateFlow instead of left as a plain
+        // combine(): the while loop below checks this roughly once a second
+        // for as long as the service runs, and a plain cold Flow would
+        // re-subscribe — re-querying Room and DataStore from scratch — on
+        // every single check instead of once for the service's lifetime.
         val monitorGate = combine(
             settingsRepository.preferences.map { it.appActive }.distinctUntilChanged(),
             monitoredAppsRepository.monitoredApps,
@@ -240,6 +247,7 @@ class AppMonitorService : Service() {
                     callGraceEndsAt = null
                 }
             }
+            .stateIn(serviceScope, SharingStarted.Eagerly, initialValue = false)
 
         while (serviceScope.isActive) {
             monitorGate.first { it }
@@ -267,7 +275,6 @@ class AppMonitorService : Service() {
             // previous app and the target, and pairing consecutive events is
             // what spots picker-mediated entries.
             processResumedEvents(usageStatsManager, windowStart, windowEnd)
-            windowStart = windowEnd
         }
     }
 

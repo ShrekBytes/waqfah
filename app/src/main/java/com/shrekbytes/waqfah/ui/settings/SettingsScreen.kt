@@ -1,7 +1,6 @@
 package com.shrekbytes.waqfah.ui.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,11 +8,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -31,6 +31,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,6 +50,7 @@ import com.shrekbytes.waqfah.ui.components.SettingsToggleRow
 import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
+import com.shrekbytes.waqfah.ui.theme.displayName
 
 @Composable
 fun SettingsScreen(
@@ -95,17 +99,18 @@ fun SettingsScreen(
         SectionTitle(stringResource(R.string.section_appearance))
         FieldLabel(stringResource(R.string.theme_label))
         ChipGroup(
-            options = AppTheme.entries.map { it to it.name.lowercase().replaceFirstChar(Char::uppercase) },
+            options = AppTheme.entries.map { it to it.displayName() },
             selected = state.theme,
             onSelect = viewModel::setTheme,
         )
         Spacer(Modifier.height(16.dp))
         FieldLabel(stringResource(R.string.accent_color_label))
         if (state.showAccentPicker) {
-            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.selectableGroup()) {
                 AccentColor.entries.forEach { accent ->
                     AccentSwatch(
                         color = accent.swatch,
+                        label = accent.displayName(),
                         isSelected = accent == state.accentColor,
                         onClick = { viewModel.setAccentColor(accent) },
                     )
@@ -184,7 +189,7 @@ fun SettingsScreen(
 // Fixed outer size whether selected or not so the row doesn't jitter as the
 // selection halo appears/disappears.
 @Composable
-private fun AccentSwatch(color: Color, isSelected: Boolean, onClick: () -> Unit) {
+private fun AccentSwatch(color: Color, label: String, isSelected: Boolean, onClick: () -> Unit) {
     val colors = WaqfahTheme.colors
     Box(
         Modifier.size(42.dp).clip(CircleShape).background(if (isSelected) colors.ink else Color.Transparent),
@@ -194,7 +199,16 @@ private fun AccentSwatch(color: Color, isSelected: Boolean, onClick: () -> Unit)
             Modifier.size(38.dp).clip(CircleShape).background(if (isSelected) colors.background else Color.Transparent),
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.size(32.dp).clip(CircleShape).background(color).clickable(onClick = onClick))
+            Box(
+                Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(color)
+                    // Color alone can't carry this to TalkBack or colorblind users —
+                    // name it and expose it as one option in a single-choice group.
+                    .selectable(selected = isSelected, onClick = onClick, role = Role.RadioButton)
+                    .semantics { contentDescription = label },
+            )
         }
     }
 }

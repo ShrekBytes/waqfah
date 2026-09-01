@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
@@ -21,9 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,10 +28,12 @@ import com.shrekbytes.waqfah.data.model.AidLanguage
 import com.shrekbytes.waqfah.data.model.ArabicScript
 import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
 import com.shrekbytes.waqfah.data.model.UserPreferences
+import com.shrekbytes.waqfah.ui.reading.AyahArabicText
+import com.shrekbytes.waqfah.ui.reading.AyahTranslationText
+import com.shrekbytes.waqfah.ui.reading.AyahTranslitText
 import com.shrekbytes.waqfah.ui.reading.ayahWord
 import com.shrekbytes.waqfah.ui.reading.localizeDigits
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
-import com.shrekbytes.waqfah.ui.theme.toFontFamily
 
 @Composable
 fun ReadingPreviewCard(prefs: UserPreferences, modifier: Modifier = Modifier) {
@@ -107,38 +106,16 @@ fun ReadingPreviewCard(prefs: UserPreferences, modifier: Modifier = Modifier) {
             HorizontalDivider(modifier = Modifier.width(18.dp), color = colors.line)
         }
         Spacer(Modifier.height(10.dp))
-        Text(
-            text = arabicText,
-            color = colors.ink,
-            textAlign = TextAlign.Center,
-            fontFamily = prefs.arabicFont.toFontFamily(),
-            fontSize = prefs.arabicFontSize.sp,
-            lineHeight = (prefs.arabicFontSize * 2f).sp,
-        )
+        AyahArabicText(arabicText, prefs.arabicFont, prefs.arabicFontSize)
         if (translit != null) {
             Spacer(Modifier.height(8.dp))
-            Text(
-                text = translit,
-                color = colors.inkMuted,
-                textAlign = TextAlign.Center,
-                fontSize = prefs.translitFontSize.sp,
-                fontStyle = FontStyle.Italic,
-                lineHeight = (prefs.translitFontSize * 1.7f).sp,
-                modifier = Modifier.widthIn(max = 280.dp),
-            )
+            AyahTranslitText(translit, prefs.translitFontSize)
         }
         if (translation != null) {
             Spacer(Modifier.height(10.dp))
             HorizontalDivider(modifier = Modifier.width(28.dp), color = colors.line)
             Spacer(Modifier.height(10.dp))
-            Text(
-                text = translation,
-                color = colors.inkMuted,
-                textAlign = TextAlign.Center,
-                fontSize = prefs.translationFontSize.sp,
-                lineHeight = (prefs.translationFontSize * 1.7f).sp,
-                modifier = Modifier.widthIn(max = 280.dp),
-            )
+            AyahTranslationText(translation, prefs.translationFontSize)
         }
     }
 }

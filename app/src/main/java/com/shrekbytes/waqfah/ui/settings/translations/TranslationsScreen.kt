@@ -77,7 +77,7 @@ private fun TranslationRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(row.meta.name, color = colors.ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(row.meta.name, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.Medium)
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
                 when {
                     row.isDownloading -> Text(

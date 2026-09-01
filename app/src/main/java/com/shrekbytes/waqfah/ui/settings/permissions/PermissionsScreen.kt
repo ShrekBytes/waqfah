@@ -1,12 +1,6 @@
 package com.shrekbytes.waqfah.ui.settings.permissions
 
-import android.Manifest
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,17 +35,9 @@ fun PermissionsScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
-    // Runtime request for the OPTIONAL notification permission. The three
-    // required rows above are settings-page grants and never go through this.
-    val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        viewModel.onNotificationRequestResult(
-            granted = granted,
-            canAskAgain = ActivityCompat.shouldShowRequestPermissionRationale(
-                context as Activity,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ),
-        )
-    }
+    // The three required rows above are settings-page grants and never go
+    // through this — only the optional notification row below does.
+    val notifLauncher = rememberNotificationPermissionLauncher(viewModel)
 
     SettingsScaffold(title = stringResource(R.string.permissions_title), onBack = onBack) {
         Text(

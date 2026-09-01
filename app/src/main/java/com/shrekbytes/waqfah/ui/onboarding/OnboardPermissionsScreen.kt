@@ -1,12 +1,6 @@
 package com.shrekbytes.waqfah.ui.onboarding
 
-import android.Manifest
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +22,7 @@ import com.shrekbytes.waqfah.ui.components.OnboardPermissionRow
 import com.shrekbytes.waqfah.ui.components.SectionTitle
 import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 import com.shrekbytes.waqfah.ui.settings.permissions.PermissionsViewModel
+import com.shrekbytes.waqfah.ui.settings.permissions.rememberNotificationPermissionLauncher
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
 @Composable
@@ -48,18 +43,7 @@ fun OnboardPermissionsScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
-    // Runtime request for the OPTIONAL notification permission — deliberately
-    // outside allGranted below: denying it never blocks onboarding, it just
-    // keeps the silent monitor notification hidden on Android 13+.
-    val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        viewModel.onNotificationRequestResult(
-            granted = granted,
-            canAskAgain = ActivityCompat.shouldShowRequestPermissionRationale(
-                context as Activity,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ),
-        )
-    }
+    val notifLauncher = rememberNotificationPermissionLauncher(viewModel)
 
     OnboardingScaffold(
         step = 3,

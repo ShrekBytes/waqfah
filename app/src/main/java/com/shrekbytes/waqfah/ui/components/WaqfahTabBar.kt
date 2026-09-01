@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,7 +68,7 @@ fun WaqfahTabBar(selected: WaqfahTab, onHomeClick: () -> Unit, onSettingsClick: 
             .background(barColor)
             .then(if (isLight) Modifier.border(1.dp, colors.line.copy(alpha = 0.6f), shape) else Modifier),
     ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.SpaceEvenly) {
             TabItem(stringResource(R.string.tab_home), Icons.Default.Home, selected == WaqfahTab.HOME, onHomeClick, colors)
             TabItem(stringResource(R.string.tab_settings), Icons.Default.Settings, selected == WaqfahTab.SETTINGS, onSettingsClick, colors)
         }
@@ -99,7 +101,13 @@ private fun TabItem(label: String, icon: ImageVector, isSelected: Boolean, onCli
         Modifier
             .scale(itemScale)
             .clip(RoundedCornerShape(16.dp))
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .selectable(
+                selected = isSelected,
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Tab,
+                onClick = onClick,
+            )
             .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -107,7 +115,10 @@ private fun TabItem(label: String, icon: ImageVector, isSelected: Boolean, onCli
             Modifier.width(42.dp).height(27.dp).scale(pillScale).clip(RoundedCornerShape(50)).background(pillColor),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = label, tint = contentColor, modifier = Modifier.size(22.dp))
+            // null: the tab is clickable as one merged unit, and the visible
+            // label Text below already supplies its accessible name — setting
+            // it here too would make TalkBack announce the label twice.
+            Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(22.dp))
         }
         Text(
             label,

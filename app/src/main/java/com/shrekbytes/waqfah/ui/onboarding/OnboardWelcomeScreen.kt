@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -82,12 +84,13 @@ fun OnboardWelcomeScreen(onGetStarted: () -> Unit) {
 @Composable
 private fun GetStartedButton(onClick: () -> Unit) {
     val colors = WaqfahTheme.colors
+    val continueLabel = stringResource(R.string.continue_btn)
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(50),
         color = colors.accent,
         contentColor = colors.accentInk,
-        modifier = Modifier.height(48.dp),
+        modifier = Modifier.height(48.dp).semantics { contentDescription = continueLabel },
     ) {
         Box(Modifier.padding(horizontal = 26.dp), contentAlignment = Alignment.Center) {
             ChevronIcon(ChevronDirection.RIGHT, tint = colors.accentInk, modifier = Modifier.size(20.dp))

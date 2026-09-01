@@ -17,14 +17,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
+import com.shrekbytes.waqfah.R
 
-enum class AppTheme { SYSTEM, LIGHT, DARK, CREAM, RETRO, STONE }
+enum class AppTheme { SYSTEM, LIGHT, DARK, CREAM, STONE, MIDNIGHT, INDIGO }
 
-// CREAM/RETRO/STONE ship a hand-tuned fixed accent (see BasePalettes), so the
-// accent picker only makes sense for the three base themes.
+// CREAM/STONE/MIDNIGHT/INDIGO ship a hand-tuned fixed accent (see
+// BasePalettes), so the accent picker only makes sense for the three base
+// themes.
 val AppTheme.hasAccentPicker: Boolean
     get() = this == AppTheme.SYSTEM || this == AppTheme.LIGHT || this == AppTheme.DARK
+
+@Composable
+fun AppTheme.displayName(): String = when (this) {
+    AppTheme.SYSTEM -> stringResource(R.string.lang_system)
+    AppTheme.LIGHT -> stringResource(R.string.theme_light)
+    AppTheme.DARK -> stringResource(R.string.theme_dark)
+    AppTheme.CREAM -> stringResource(R.string.theme_cream)
+    AppTheme.STONE -> stringResource(R.string.theme_stone)
+    AppTheme.MIDNIGHT -> stringResource(R.string.theme_midnight)
+    AppTheme.INDIGO -> stringResource(R.string.theme_indigo)
+}
 
 data class WaqfahColors(
     val background: Color,
@@ -50,8 +64,9 @@ private fun resolveColors(theme: AppTheme, isSystemDark: Boolean, accentColor: A
         AppTheme.LIGHT -> BasePalettes.Light.withAccent(accentColor, isDark = false)
         AppTheme.DARK -> BasePalettes.Dark.withAccent(accentColor, isDark = true)
         AppTheme.CREAM -> BasePalettes.Cream
-        AppTheme.RETRO -> BasePalettes.Retro
         AppTheme.STONE -> BasePalettes.Stone
+        AppTheme.MIDNIGHT -> BasePalettes.Midnight
+        AppTheme.INDIGO -> BasePalettes.Indigo
     }
 
 val LocalWaqfahColors = staticCompositionLocalOf { BasePalettes.Light }

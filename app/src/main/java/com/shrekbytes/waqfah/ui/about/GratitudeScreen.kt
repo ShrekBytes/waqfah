@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shrekbytes.waqfah.R
+import com.shrekbytes.waqfah.ui.components.launchExternal
 import com.shrekbytes.waqfah.ui.components.ChevronDirection
 import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.components.SectionTitle
@@ -44,13 +45,14 @@ fun GratitudeScreen(onBack: () -> Unit) {
         Spacer(Modifier.height(18.dp))
         SupportInfo.contributors.forEachIndexed { index, contributor ->
             if (index > 0) HorizontalDivider(color = colors.line)
+            val url = contributor.url
             Row(
                 Modifier
                     .fillMaxWidth()
                     .let {
-                        if (contributor.url != null) {
+                        if (url != null) {
                             it.clickable {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, contributor.url!!.toUri()))
+                                context.launchExternal(Intent(Intent.ACTION_VIEW, url.toUri()))
                             }
                         } else {
                             it
@@ -63,7 +65,7 @@ fun GratitudeScreen(onBack: () -> Unit) {
                     Text(contributor.name, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
                     Text(contributor.role, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
                 }
-                if (contributor.url != null) {
+                if (url != null) {
                     // Outward-tilted chevron signals "opens a link".
                     ChevronIcon(
                         direction = ChevronDirection.RIGHT,
@@ -112,17 +114,17 @@ private fun SourceCredit(title: String, subtitle: String, url: String) {
     Row(
         Modifier
             .fillMaxWidth()
-            .clickable { context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) }
+            .clickable { context.launchExternal(Intent(Intent.ACTION_VIEW, url.toUri())) }
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, color = colors.ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 stringResource(R.string.credit_url_suffix_format, subtitle, url.removePrefix("https://").removeSuffix("/")),
                 color = colors.inkMuted,
-                fontSize = 11.5.sp,
-                modifier = Modifier.padding(top = 1.dp),
+                fontSize = 12.5.sp,
+                modifier = Modifier.padding(top = 2.dp),
             )
         }
         ChevronIcon(

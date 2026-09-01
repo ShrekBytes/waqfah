@@ -92,6 +92,7 @@
     <string name="downloading">Downloading…</string>
     <string name="downloading_percent">Downloading… %1$d%%</string>
     <string name="failed_retry">Failed — Retry</string>
+    <string name="download_failed_message">Couldn\'t download this translation. Check your connection and try again.</string>
     <string name="active_label">✓ Active</string>
 
     <!-- Settings -->
@@ -112,6 +113,17 @@
     <string name="accent_unavailable">Accent color isn\'t available in this theme.</string>
     <string name="app_language_label">App language</string>
     <string name="lang_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_cream">Cream</string>
+    <string name="theme_stone">Stone</string>
+    <string name="theme_midnight">Midnight</string>
+    <string name="theme_indigo">Indigo</string>
+    <string name="accent_sage">Sage</string>
+    <string name="accent_clay">Clay</string>
+    <string name="accent_slate">Slate</string>
+    <string name="accent_plum">Plum</string>
+    <string name="accent_ochre">Ochre</string>
     <string name="progress_section">Progress</string>
     <string name="ayat_read">ayat read</string>
     <string name="reset_progress">Reset progress</string>
@@ -169,6 +181,7 @@
     <string name="privacy_row_desc">What data stays on your device</string>
     <string name="github_row">GitHub repository</string>
     <string name="contact_row">Contact</string>
+    <string name="no_app_found">Couldn\'t find an app to open this.</string>
 
     <!-- Donate -->
     <string name="donate_title">Donate</string>

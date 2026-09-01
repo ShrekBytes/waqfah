@@ -4,8 +4,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.shrekbytes.waqfah.ui.components.WaqfahTab
@@ -27,7 +25,11 @@ import com.shrekbytes.waqfah.ui.settings.translations.TranslationsScreen
 
 @Composable
 fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
-    val backStack = remember { mutableStateListOf<WaqfahDestination>(startDestination) }
+    // rememberWaqfahNavBackStack (rather than remember { mutableStateListOf(...) })
+    // saves and restores the whole stack across rotation and process death —
+    // without it, either would silently drop the user back to startDestination
+    // no matter how deep into Settings they'd navigated. See Destinations.kt.
+    val backStack = rememberWaqfahNavBackStack(startDestination)
 
     // Guards against rapid double-taps pushing the same destination twice —
     // the second tap would otherwise stack an identical screen that only

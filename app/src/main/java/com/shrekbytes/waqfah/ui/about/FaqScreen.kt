@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shrekbytes.waqfah.R
+import com.shrekbytes.waqfah.ui.components.ChevronDirection
+import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
 import com.shrekbytes.waqfah.ui.components.rowHighlight
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
@@ -85,13 +88,12 @@ private fun ExpandableRow(item: FaqItem) {
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f).padding(end = 8.dp),
             )
-            // Same thin › glyph as the settings rows; rotates to point down
-            // while the answer is open.
-            Text(
-                "\u203a",
-                color = if (expanded) colors.accent else colors.inkSoft,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(start = 4.dp).rotate(if (expanded) 90f else 0f),
+            // Same chevron as the settings rows; rotates to point down while
+            // the answer is open.
+            ChevronIcon(
+                direction = ChevronDirection.RIGHT,
+                tint = if (expanded) colors.accent else colors.inkSoft,
+                modifier = Modifier.padding(start = 4.dp).size(14.dp).rotate(if (expanded) 90f else 0f),
             )
         }
         AnimatedVisibility(visible = expanded) {

@@ -105,6 +105,16 @@ class ReadingViewModel @Inject constructor(
                 }
             }
         }
+        // Same idea for "Reset progress" in Settings: if this screen is
+        // already showing an ayah, jump to a fresh starting verse instead of
+        // leaving stale read/completion state on screen until a restart.
+        // startOver()/switchModeAndRestart() also land here as a harmless
+        // extra reload since they trigger this same signal themselves.
+        viewModelScope.launch {
+            readingProgressRepository.progressReset.drop(1).collect {
+                if (currentVerse != null) beginFreshSession()
+            }
+        }
     }
 
     // Suspend so ReadingCard can await these mid-gesture to sequence the swipe

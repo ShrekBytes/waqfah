@@ -1,6 +1,5 @@
 package com.shrekbytes.waqfah
 
-import android.database.sqlite.SQLiteDatabaseCorruptException
 import android.database.sqlite.SQLiteException
 import com.shrekbytes.waqfah.data.repository.TranslationRepository
 import androidx.test.ext.junit.runners.AndroidJUnit4

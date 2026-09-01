@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +26,8 @@ import com.shrekbytes.waqfah.data.model.PreferenceLimits
 import com.shrekbytes.waqfah.data.model.ReadingMode
 import com.shrekbytes.waqfah.data.model.TranslationCatalog
 import com.shrekbytes.waqfah.data.model.TranslationLanguage
+import com.shrekbytes.waqfah.ui.components.ChevronDirection
+import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.components.ChipGroup
 import com.shrekbytes.waqfah.ui.components.FieldLabel
 import com.shrekbytes.waqfah.ui.components.InlineField
@@ -70,9 +73,9 @@ fun ReadingDisplayScreen(
             FieldLabel(stringResource(R.string.surah_names_label))
             ChipGroup(
                 options = listOf(
-                    NameDisplayLanguage.ENGLISH to "English",
-                    NameDisplayLanguage.BENGALI to "Bengali",
-                    NameDisplayLanguage.ARABIC to "Arabic",
+                    NameDisplayLanguage.ENGLISH to stringResource(R.string.aid_english),
+                    NameDisplayLanguage.BENGALI to stringResource(R.string.aid_bengali),
+                    NameDisplayLanguage.ARABIC to stringResource(R.string.section_arabic),
                 ),
                 selected = prefs.surahNameLanguage,
                 onSelect = viewModel::setSurahNameLanguage,
@@ -178,7 +181,7 @@ private fun TranslationLinkField(
     InlineField(label, showDivider = showDivider, onClick = { onClick(language) }) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(name, color = colors.inkMuted, fontSize = 13.sp)
-            Text("›", color = colors.inkSoft, fontSize = 14.sp)
+            ChevronIcon(direction = ChevronDirection.RIGHT, tint = colors.inkSoft, modifier = Modifier.size(10.dp))
         }
     }
 }

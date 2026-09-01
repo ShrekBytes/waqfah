@@ -42,6 +42,14 @@ android {
     }
 }
 
+ksp {
+    // Room migration tests need a real "before" schema to diff against — this
+    // writes each version's schema to JSON on every build. WaqfahAppDatabase
+    // holds real user progress and its own docs call for hand-written
+    // Migrations if it ever changes, so this is the safety net for those.
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     // Compose
     implementation(platform(libs.androidx.compose.bom))
@@ -74,10 +82,8 @@ dependencies {
     // Navigation 3
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
-    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
-    // Material 3 Adaptive Navigation
-    implementation(libs.androidx.material3.adaptive.navigation3)
+    // Compose icon set (Icons.Default.*)
     implementation(libs.androidx.compose.material.icons.core)
 
     // Kotlin Serialization
