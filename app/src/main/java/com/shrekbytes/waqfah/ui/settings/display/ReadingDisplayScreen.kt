@@ -1,14 +1,24 @@
 package com.shrekbytes.waqfah.ui.settings.display
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -36,19 +46,44 @@ import com.shrekbytes.waqfah.ui.components.SectionTitle
 import com.shrekbytes.waqfah.ui.components.SettingsField
 import com.shrekbytes.waqfah.ui.components.SettingsScaffold
 import com.shrekbytes.waqfah.ui.components.Stepper
+import com.shrekbytes.waqfah.ui.navigation.ReadingDisplaySettings
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import com.shrekbytes.waqfah.ui.theme.displayName
+import kotlinx.coroutines.delay
 
 @Composable
 fun ReadingDisplayScreen(
     viewModel: ReadingDisplayViewModel = hiltViewModel(),
     onOpenTranslations: (TranslationLanguage) -> Unit,
     onBack: () -> Unit,
+    scrollToSection: String? = null,
 ) {
     val prefs by viewModel.prefs.collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
+    val scrollState = rememberScrollState()
+    val translationRequester = remember { BringIntoViewRequester() }
+    var highlightTitle by remember { mutableStateOf(false) }
 
-    SettingsScaffold(title = stringResource(R.string.display_title), onBack = onBack) {
+    LaunchedEffect(scrollToSection) {
+        if (scrollToSection == ReadingDisplaySettings.SECTION_TRANSLATION) {
+            delay(220)
+            try {
+                translationRequester.bringIntoView()
+            } catch (_: Exception) {
+                if (scrollState.maxValue > 0) scrollState.animateScrollTo(scrollState.maxValue)
+            }
+            highlightTitle = true
+            delay(1200)
+            highlightTitle = false
+        }
+    }
+    val translationTitleColor by animateColorAsState(
+        targetValue = if (highlightTitle) colors.accent else colors.inkMuted,
+        animationSpec = tween(durationMillis = if (highlightTitle) 220 else 600),
+        label = "translation_title_highlight",
+    )
+
+    SettingsScaffold(title = stringResource(R.string.display_title), onBack = onBack, scrollState = scrollState) {
         Text(
             stringResource(R.string.preview_label),
             color = colors.inkMuted,
@@ -121,28 +156,35 @@ fun ReadingDisplayScreen(
                 onSelect = viewModel::setPronunciation,
             )
         }
-        if (prefs.pronunciation != AidLanguage.NONE) {
-            InlineField(stringResource(R.string.text_size_label), showDivider = false) {
-                Stepper(
-                    value = prefs.translitFontSize,
-                    suffix = "px",
-                    min = PreferenceLimits.FONT_SIZE_MIN,
-                    max = PreferenceLimits.FONT_SIZE_MAX,
-                    onChange = viewModel::setTranslitFontSize,
-                )
-            }
-        }
-
-        SectionTitle(stringResource(R.string.translation_label))
-        SettingsField {
-            FieldLabel(stringResource(R.string.translation_label_display))
-            ChipGroup(
-                options = listOf(AidLanguage.NONE to stringResource(R.string.aid_none), AidLanguage.ENGLISH to stringResource(R.string.aid_english), AidLanguage.BENGALI to stringResource(R.string.aid_bengali)),
-                selected = prefs.translationDisplay,
-                onSelect = viewModel::setTranslationDisplay,
+        InlineField(stringResource(R.string.text_size_label), showDivider = false) {
+            Stepper(
+                value = prefs.translitFontSize,
+                suffix = "px",
+                min = PreferenceLimits.FONT_SIZE_MIN,
+                max = PreferenceLimits.FONT_SIZE_MAX,
+                onChange = viewModel::setTranslitFontSize,
             )
         }
-        if (prefs.translationDisplay != AidLanguage.NONE) {
+
+        // Anchor for readinganddisplay#translation — whole section scrolls into view,
+        // but only the title text is highlighted (like web :target).
+        Column(Modifier.bringIntoViewRequester(translationRequester)) {
+            Text(
+                stringResource(R.string.translation_label).uppercase(),
+                color = translationTitleColor,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.9.sp,
+                modifier = Modifier.padding(top = 26.dp, bottom = 4.dp),
+            )
+            SettingsField {
+                FieldLabel(stringResource(R.string.translation_label_display))
+                ChipGroup(
+                    options = listOf(AidLanguage.NONE to stringResource(R.string.aid_none), AidLanguage.ENGLISH to stringResource(R.string.aid_english), AidLanguage.BENGALI to stringResource(R.string.aid_bengali)),
+                    selected = prefs.translationDisplay,
+                    onSelect = viewModel::setTranslationDisplay,
+                )
+            }
             InlineField(stringResource(R.string.text_size_label)) {
                 Stepper(
                     value = prefs.translationFontSize,
@@ -152,15 +194,15 @@ fun ReadingDisplayScreen(
                     onChange = viewModel::setTranslationFontSize,
                 )
             }
+            TranslationLinkField(stringResource(R.string.english_translation_row), prefs.activeTranslationEnglish, TranslationLanguage.ENGLISH, onOpenTranslations)
+            TranslationLinkField(
+                stringResource(R.string.bengali_translation_row),
+                prefs.activeTranslationBengali,
+                TranslationLanguage.BENGALI,
+                onOpenTranslations,
+                showDivider = false,
+            )
         }
-        TranslationLinkField(stringResource(R.string.english_translation_row), prefs.activeTranslationEnglish, TranslationLanguage.ENGLISH, onOpenTranslations)
-        TranslationLinkField(
-            stringResource(R.string.bengali_translation_row),
-            prefs.activeTranslationBengali,
-            TranslationLanguage.BENGALI,
-            onOpenTranslations,
-            showDivider = false,
-        )
         Spacer(Modifier.height(8.dp))
     }
 }

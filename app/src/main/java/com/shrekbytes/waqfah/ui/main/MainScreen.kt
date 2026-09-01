@@ -34,6 +34,7 @@ import com.shrekbytes.waqfah.ui.tour.FeatureTourViewModel
 fun MainScreen(
     initialTab: WaqfahTab,
     onOpenReadingDisplay: () -> Unit,
+    onOpenTranslationSection: () -> Unit = onOpenReadingDisplay,
     onOpenApps: () -> Unit,
     onOpenPermissions: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -110,9 +111,10 @@ fun MainScreen(
                         tourDismissedThisSession = true
                     },
                     onBrowseTranslations = {
-                        // Jump straight to translation downloads (Settings > Reading & display)
-                        // while keeping the tour active so returning brings the user back to step 4.
-                        onOpenReadingDisplay()
+                        // Deep-link to Reading & display#translation (like a web hash fragment):
+                        // scrolls straight to the Translation section with a soft highlight.
+                        // Keeps the tour active so returning brings the user back to step 4.
+                        onOpenTranslationSection()
                     },
                 )
             }

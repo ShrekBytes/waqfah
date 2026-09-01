@@ -81,7 +81,10 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
             entry<Main> { key ->
                 MainScreen(
                     initialTab = key.initialTab,
-                    onOpenReadingDisplay = { push(ReadingDisplaySettings) },
+                    onOpenReadingDisplay = { push(ReadingDisplaySettings()) },
+                    onOpenTranslationSection = {
+                        push(ReadingDisplaySettings(scrollToSection = ReadingDisplaySettings.SECTION_TRANSLATION))
+                    },
                     onOpenApps = { push(AppsSettings) },
                     onOpenPermissions = { push(PermissionsSettings) },
                     onOpenAbout = { push(About) },
@@ -89,8 +92,9 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                     onOpenDonate = { push(Donate) },
                 )
             }
-            entry<ReadingDisplaySettings> {
+            entry<ReadingDisplaySettings> { key ->
                 ReadingDisplayScreen(
+                    scrollToSection = key.scrollToSection,
                     onOpenTranslations = { language -> push(TranslationsSettings(language.code)) },
                     onBack = { backStack.removeLastOrNull() },
                 )

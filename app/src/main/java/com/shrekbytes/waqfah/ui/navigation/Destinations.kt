@@ -22,7 +22,11 @@ sealed interface WaqfahDestination : NavKey
 // Home and Settings are tabs within this one destination (see MainScreen).
 @Serializable data class Main(val initialTab: WaqfahTab = WaqfahTab.HOME) : WaqfahDestination
 
-@Serializable data object ReadingDisplaySettings : WaqfahDestination
+@Serializable data class ReadingDisplaySettings(val scrollToSection: String? = null) : WaqfahDestination {
+    companion object {
+        const val SECTION_TRANSLATION = "translation"
+    }
+}
 // languageCode is TranslationLanguage.code ("en" / "bn").
 @Serializable data class TranslationsSettings(val languageCode: String) : WaqfahDestination
 @Serializable data object PermissionsSettings : WaqfahDestination

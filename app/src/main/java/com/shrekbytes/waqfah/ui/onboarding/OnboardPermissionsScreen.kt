@@ -1,5 +1,6 @@
 package com.shrekbytes.waqfah.ui.onboarding
 
+import android.Manifest
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text

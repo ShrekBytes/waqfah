@@ -479,7 +479,12 @@ fun ProgressRing(percent: Int, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun SettingsScaffold(title: String, onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun SettingsScaffold(
+    title: String,
+    onBack: () -> Unit,
+    scrollState: androidx.compose.foundation.ScrollState = rememberScrollState(),
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val colors = WaqfahTheme.colors
     Surface(modifier = Modifier.fillMaxSize(), color = colors.background, contentColor = colors.ink) {
         Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
@@ -490,7 +495,7 @@ fun SettingsScaffold(title: String, onBack: () -> Unit, content: @Composable Col
                 color = colors.ink,
                 modifier = Modifier.padding(top = 8.dp, bottom = 10.dp),
             )
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), content = content)
+            Column(Modifier.weight(1f).verticalScroll(scrollState), content = content)
         }
     }
 }

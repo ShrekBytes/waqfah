@@ -251,6 +251,8 @@
     <string name="tour_t_trans_title">Switch translations</string>
     <string name="tour_t_trans_body">Tap on the translation text to reveal the &lt; &gt; chevrons, then tap them to switch between translations.</string>
     <string name="tour_t_trans_none">You have only one translation downloaded.</string>
+    <string name="tour_t_trans_disabled">Translation is off.</string>
+    <string name="tour_t_trans_disabled_cta">Select a language to enable translations</string>
     <string name="tour_set_title">Make reading yours</string>
     <string name="tour_set_hint">All under Settings &gt; Reading &amp; display</string>
     <string name="tour_r_mode_t">Mode</string>

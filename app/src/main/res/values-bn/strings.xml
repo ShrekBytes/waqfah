@@ -251,6 +251,8 @@
     <string name="tour_t_trans_title">অনুবাদ বদলান</string>
     <string name="tour_t_trans_body">অনুবাদে ট্যাপ করলে &lt; &gt; চিহ্নগুলো দেখা যাবে, সেগুলোতে চাপ দিয়ে অনুবাদ পরিবর্তন করতে পারবেন।</string>
     <string name="tour_t_trans_none">এখন আপনার কাছে মাত্র একটি অনুবাদ আছে</string>
+    <string name="tour_t_trans_disabled">অনুবাদ বন্ধ আছে।</string>
+    <string name="tour_t_trans_disabled_cta">অনুবাদ চালু করতে একটি ভাষা নির্বাচন করুন</string>
     <string name="tour_set_title">তিলাওয়াত নিজের মতো সাজান</string>
     <string name="tour_set_hint">সবই Settings &gt; Reading &amp; display-এর অধীনে</string>
     <string name="tour_r_mode_t">মোড</string>

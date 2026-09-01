@@ -224,7 +224,8 @@ fun FeatureTourOverlay(
                         is TourStep.TryIt -> TryItPage(
                             step = step,
                             done = index == stepIndex && taskDone,
-                            showTranslationFallback = step.kind == TaskKind.SWITCH_TRANSLATION && !state.translationHasAlternates,
+                            isTranslationDisabled = step.kind == TaskKind.SWITCH_TRANSLATION && state.translationText == null && !state.isLoading,
+                            showTranslationFallback = step.kind == TaskKind.SWITCH_TRANSLATION && state.translationText != null && !state.translationHasAlternates,
                             onBrowseTranslations = onBrowseTranslations,
                             viewModel = viewModel,
                         )
@@ -422,6 +423,7 @@ private fun SettingsPage(step: TourStep.SettingRows) {
 private fun TryItPage(
     step: TourStep.TryIt,
     done: Boolean,
+    isTranslationDisabled: Boolean,
     showTranslationFallback: Boolean,
     onBrowseTranslations: () -> Unit,
     viewModel: ReadingViewModel,
@@ -439,14 +441,23 @@ private fun TryItPage(
             WaqfahReadingContent(viewModel = viewModel, bottomBar = {})
         }
 
-        // Bundled-install case: the translation chevrons have nothing extra to
-        // cycle yet. No separate button — the hint's highlighted tail IS the
-        // link, keeping the UI uncluttered.
-        if (showTranslationFallback) {
-            Spacer(Modifier.height(6.dp))
+        // Translation switch hint: two distinct cases sharing the same link style.
+        // - Disabled (translationText == null): prompt to enable translations.
+        // - Single translation: prompt to download more to switch.
+        if (isTranslationDisabled) {
+            val hint = buildAnnotatedString {
+                append(stringResource(R.string.tour_t_trans_disabled))
+                append(' ')
+                pushStringAnnotation(TOUR_LINK_TAG, TOUR_LINK_TAG)
+                withStyle(SpanStyle(color = colors.accent, fontWeight = FontWeight.SemiBold)) {
+                    append(stringResource(R.string.tour_t_trans_disabled_cta))
+                }
+                pop()
+            }
+            TranslationTourHint(hint = hint, onBrowseTranslations = onBrowseTranslations)
+        } else if (showTranslationFallback) {
             // Only the highlighted middle span opens Settings — the leading
-            // words and the trailing "to switch." stay inert. Taps are mapped
-            // to character offsets and matched against the link's range.
+            // words and the trailing "to switch." stay inert.
             val hint = buildAnnotatedString {
                 append(stringResource(R.string.tour_t_trans_none))
                 append(' ')
@@ -458,28 +469,7 @@ private fun TryItPage(
                 append(' ')
                 append(stringResource(R.string.tour_t_trans_none_suffix))
             }
-            var hintLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
-            Text(
-                hint,
-                color = colors.inkMuted,
-                fontSize = 11.5.sp,
-                lineHeight = 15.sp,
-                textAlign = TextAlign.Center,
-                onTextLayout = { hintLayout = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pointerInput(onBrowseTranslations) {
-                        detectTapGestures { position ->
-                            hintLayout?.let { layout ->
-                                val offset = layout.getOffsetForPosition(position)
-                                if (hint.getStringAnnotations(TOUR_LINK_TAG, offset, offset).isNotEmpty()) {
-                                    onBrowseTranslations()
-                                }
-                            }
-                        }
-                    }
-                    .padding(vertical = 2.dp),
-            )
+            TranslationTourHint(hint = hint, onBrowseTranslations = onBrowseTranslations)
         }
 
         Spacer(Modifier.height(10.dp))
@@ -500,6 +490,37 @@ private fun TryItPage(
             }
         }
     }
+}
+
+@Composable
+private fun TranslationTourHint(
+    hint: androidx.compose.ui.text.AnnotatedString,
+    onBrowseTranslations: () -> Unit,
+) {
+    val colors = WaqfahTheme.colors
+    var hintLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    Spacer(Modifier.height(6.dp))
+    Text(
+        hint,
+        color = colors.inkMuted,
+        fontSize = 11.5.sp,
+        lineHeight = 15.sp,
+        textAlign = TextAlign.Center,
+        onTextLayout = { hintLayout = it },
+        modifier = Modifier
+            .fillMaxWidth()
+            .pointerInput(onBrowseTranslations) {
+                detectTapGestures { position ->
+                    hintLayout?.let { layout ->
+                        val offset = layout.getOffsetForPosition(position)
+                        if (hint.getStringAnnotations(TOUR_LINK_TAG, offset, offset).isNotEmpty()) {
+                            onBrowseTranslations()
+                        }
+                    }
+                }
+            }
+            .padding(vertical = 2.dp),
+    )
 }
 
 // The one container shared by EVERY tour stop: a rounded soft-accent card
