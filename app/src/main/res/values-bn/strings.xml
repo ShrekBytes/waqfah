@@ -31,7 +31,6 @@
     <string name="welcome_body">আপনার পছন্দের অ্যাপগুলো খোলার আগে Waqfah একটি করে আয়াত প্রদর্শন করে। কোনো স্ট্রিক বজায় রাখার তাড়া নেই, নেই কোনো চাপ বা বিধিনিষেধ — শুধু এক মুহূর্তের বিরতি, তারপর আপনি নিজের কাজে চলে যাবেন।</string>
     <string name="onboard_prefs_title">আপনার তিলাওয়াতের\nপছন্দ সেট করুন</string>
     <string name="preview_label">প্রিভিউ</string>
-    <string name="preview_surah_name">সূরা আল-ইখলাস</string>
     <string name="pronunciation_label">উচ্চারণ</string>
     <string name="translation_label">অনুবাদ</string>
     <string name="translation_label_display">প্রদর্শন</string>
@@ -240,9 +239,6 @@
     <string name="goto_surah_hint">একটি সূরা বেছে নিন, তারপর আয়াতে যান। আয়াতটি পড়া হোক বা না হোক উভয় ক্ষেত্রেই কাজ করে — আপনার ধারাবাহিক/র‍্যান্ডম অবস্থান অপরিবর্তিত থাকে।</string>
     <string name="goto_search_hint">সূরা খুঁজুন</string>
     <string name="goto_no_results">কোনো সূরা পাওয়া যায়নি</string>
-    <string name="goto_ayah_title_fmt">%1$s</string>
-    <string name="goto_ayah_hint">আয়াত নম্বর লিখে যান, অথবা এই সূরায় যেখানে থেমেছিলেন সেখান থেকে চালিয়ে যান।</string>
-    <string name="goto_ayah_field_label">আয়াতে যান</string>
     <string name="goto_ayah_field_placeholder">আয়াত নম্বর</string>
     <string name="goto_ayah_go">যান</string>
     <string name="goto_ayah_first">প্রথম আয়াত</string>
@@ -256,7 +252,6 @@
     <string name="tour_skip">এড়িয়ে যান</string>
     <string name="tour_next">পরবর্তী</string>
     <string name="tour_finish">শেষ করুন</string>
-    <string name="tour_step_fmt">%1$d / %2$d</string>
     <string name="tour_p5_title">আপনি প্রস্তুত!</string>
     <string name="tour_back">পেছনে</string>
     <string name="tour_task_done">হয়ে গেছে!</string>
@@ -289,7 +284,6 @@
     <string name="tour_t_trans_none_cta">এক বা একাধিক অনুবাদ ডাউনলোড</string>
     <string name="tour_p5_body">আরও জানতে চান বা অন্য কোনো প্রশ্ন আছে? Settings &gt; More-এর অধীনে FAQ &amp; troubleshooting দেখুন।</string>
     <string name="tour_t_trans_none_suffix">করলেই সেগুলোর মধ্যে সুইচ করা যাবে।</string>
-    <string name="tour_flow_label">Waqfah ট্যুর</string>
     <string name="tour_t_goto_title">যেকোনো আয়াতে যান</string>
     <string name="tour_t_goto_body">রিডিং কার্ডের ওপরের সূরার নামে ট্যাপ করে Go to ayah খুলুন। এখনই চেষ্টা করে দেখুন — ওপরের কার্ডটি লাইভ।</string>
 </resources>

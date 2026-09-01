@@ -3,6 +3,7 @@ package com.shrekbytes.waqfah.ui.ayahpicker
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.local.core.SurahEntity
+import com.shrekbytes.waqfah.data.local.core.VerseEntity
 import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
@@ -83,6 +84,17 @@ class GoToSurahViewModel @Inject constructor(
     }
 
     fun setQuery(q: String) { searchQuery.value = q }
+
+    // Actions for jumping to a verse — thin repos-wraps used straight from the
+    // screen's taps (no state, so they live on the same ViewModel rather than a
+    // separate facade).
+    suspend fun getVerse(surahNo: Int, ayahNo: Int): VerseEntity? =
+        quranRepository.getVerse(surahNo, ayahNo)
+
+    suspend fun getReadIds(): Set<Int> = readingProgressRepository.getReadVerseIds().toHashSet()
+
+    suspend fun getFirstUnreadInSurah(surahNo: Int, readIds: Set<Int>): VerseEntity? =
+        quranRepository.getFirstUnreadVerseInSurah(surahNo, readIds)
 }
 
 data class GoToSurahUiState(
@@ -91,15 +103,3 @@ data class GoToSurahUiState(
     val surahNameLanguage: com.shrekbytes.waqfah.data.model.NameDisplayLanguage = com.shrekbytes.waqfah.data.model.NameDisplayLanguage.ENGLISH,
     val isLoading: Boolean = true,
 )
-
-@HiltViewModel
-class GoToAyahViewModel @Inject constructor(
-    private val quranRepository: QuranRepository,
-    private val readingProgressRepository: ReadingProgressRepository,
-) : ViewModel() {
-    suspend fun getSurah(surahNo: Int) = quranRepository.getSurah(surahNo)
-    suspend fun getVerse(surahNo: Int, ayahNo: Int) = quranRepository.getVerse(surahNo, ayahNo)
-    suspend fun getFirstUnreadInSurah(surahNo: Int, readIds: Set<Int>) =
-        quranRepository.getFirstUnreadVerseInSurah(surahNo, readIds)
-    suspend fun getReadIds(): Set<Int> = readingProgressRepository.getReadVerseIds().toHashSet()
-}

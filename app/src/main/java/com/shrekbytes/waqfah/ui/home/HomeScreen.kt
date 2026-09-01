@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -31,14 +32,14 @@ fun HomeScreen(
     Box(Modifier.fillMaxSize()) {
         WaqfahReadingContent(viewModel = viewModel, onGoToAyah = onGoToAyah, bottomBar = {})
 
-        // Subtle tour relauncher: a small "?" chip pinned to the top-right,
-        // out of the reading flow's way. Only this screen composes it —
-        // TriggerActivity's interstitial never shows a tour entry point.
+        // Subtle tour relauncher: a bare "?" pinned to the top-right, with no
+        // chip fill (minimal). Only this screen composes it — TriggerActivity's
+        // interstitial never shows a tour entry point.
         val tourLabel = stringResource(R.string.tour_start_button)
         Surface(
             onClick = onStartTour,
             shape = CircleShape,
-            color = WaqfahTheme.colors.line.copy(alpha = 0.35f),
+            color = Color.Transparent,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 14.dp, end = 16.dp)

@@ -34,7 +34,6 @@ sealed interface WaqfahDestination : NavKey
 @Serializable data object PermissionsRationale : WaqfahDestination
 
 @Serializable data object GoToSurahList : WaqfahDestination
-@Serializable data class GoToAyahOptions(val surahNo: Int) : WaqfahDestination
 
 @Serializable data object About : WaqfahDestination
 @Serializable data object PrivacyPolicy : WaqfahDestination

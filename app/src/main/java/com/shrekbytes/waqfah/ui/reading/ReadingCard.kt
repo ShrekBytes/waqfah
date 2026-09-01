@@ -16,10 +16,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -62,8 +64,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -140,6 +145,23 @@ fun ReadingCard(
             ReadingSkeleton(Modifier.weight(1f).fillMaxWidth())
         } else {
             CompositionLocalProvider(LocalLayoutDirection provides state.surahNameDirection) {
+                val gotoAyahLabel = if (onGoToAyah != null) stringResource(R.string.cd_goto_header) else null
+                // Header tap affordance: the surah block is a floating pill mirroring
+                // WaqfahTabBar's capsule (barColor + hairline outline + spring press
+                // scale), so the tappable header at the top reads as a sibling of the
+                // bottom nav tab bar — symmetrical and on-idiom, no icon or text hint.
+                val headerInteractionSource = remember { MutableInteractionSource() }
+                val isHeaderPressed by headerInteractionSource.collectIsPressedAsState()
+                val headerPressed = onGoToAyah != null && isHeaderPressed
+                val isLight = colors.background.luminance() > 0.5f
+                val barColor = remember(colors.background) {
+                    lerp(colors.background, Color.White, if (isLight) 0.82f else 0.07f)
+                }
+                val headerScale by animateFloatAsState(
+                    targetValue = if (headerPressed) 0.97f else 1f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+                    label = "reading_header_scale",
+                )
                 Box(
                     Modifier
                         .fillMaxWidth()
@@ -148,26 +170,47 @@ fun ReadingCard(
                 ) {
                     Column(
                         Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .let { base ->
-                                if (onGoToAyah != null) base
+                            .then(
+                                if (onGoToAyah != null) Modifier
+                                    .scale(headerScale)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(barColor)
+                                    .then(if (isLight) Modifier.border(1.dp, colors.line.copy(alpha = 0.6f), RoundedCornerShape(50)) else Modifier)
                                     .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
+                                        interactionSource = headerInteractionSource,
                                         indication = null,
                                         onClick = onGoToAyah,
                                     )
-                                else base
-                            }
-                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                                else Modifier
+                            )
                             .semantics(mergeDescendants = true) {
-                                if (onGoToAyah != null) contentDescription = state.surahName + " " + state.totalLabel
-                            },
+                                if (gotoAyahLabel != null) contentDescription = gotoAyahLabel + ", " + state.surahName + ", " + state.totalLabel
+                            }
+                            .padding(horizontal = 64.dp, vertical = 3.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(3.dp))
-                    Text(state.totalLabel, color = colors.inkMuted, fontSize = 12.sp)
-                }
+                    ) {
+                        Row(
+                            Modifier,
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
+                                if (onGoToAyah != null) {
+                                    Spacer(Modifier.width(4.dp))
+                                    ChevronIcon(
+                                        direction = ChevronDirection.RIGHT,
+                                        tint = colors.inkMuted,
+                                        modifier = Modifier
+                                            .size(13.dp)
+                                            .rotate(90f),
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(3.dp))
+                        Text(state.totalLabel, color = colors.inkMuted, fontSize = 12.sp)
+                    }
                 }
             }
 

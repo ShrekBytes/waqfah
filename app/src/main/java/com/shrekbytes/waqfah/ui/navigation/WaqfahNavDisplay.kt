@@ -108,14 +108,6 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                     onJumped = { backStack.removeLastOrNull() },
                 )
             }
-            // Back-compat for old two-page flow (GoToAyahOptions) – redirect to single-page list.
-            entry<GoToAyahOptions> {
-                GoToSurahScreen(
-                    readingViewModel = sharedReadingViewModel,
-                    onBack = { backStack.removeLastOrNull() },
-                    onJumped = { backStack.removeLastOrNull() },
-                )
-            }
             entry<ReadingDisplaySettings> { key ->
                 ReadingDisplayScreen(
                     scrollToSection = key.scrollToSection,

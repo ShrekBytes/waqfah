@@ -31,7 +31,6 @@
     <string name="welcome_body">Waqfah shows an ayah before the apps you choose. No streaks, no pressure, no restrictions — just a moment, then you continue.</string>
     <string name="onboard_prefs_title">Set your reading\npreferences</string>
     <string name="preview_label">PREVIEW</string>
-    <string name="preview_surah_name">Surah Al-Ikhlas</string>
     <string name="pronunciation_label">Pronunciation</string>
     <string name="translation_label">Translation</string>
     <string name="translation_label_display">Display</string>
@@ -240,9 +239,6 @@
     <string name="goto_surah_hint">Choose a surah, then jump to an ayah. Works whether the ayah is read or unread — your sequential/random position stays where it was.</string>
     <string name="goto_search_hint">Search surah</string>
     <string name="goto_no_results">No surah found</string>
-    <string name="goto_ayah_title_fmt">%1$s</string>
-    <string name="goto_ayah_hint">Enter an ayah number and jump, or continue where you left off in this surah.</string>
-    <string name="goto_ayah_field_label">Go to ayah</string>
     <string name="goto_ayah_field_placeholder">Ayah number</string>
     <string name="goto_ayah_go">Go</string>
     <string name="goto_ayah_first">First ayah</string>
@@ -256,7 +252,6 @@
     <string name="tour_skip">Skip</string>
     <string name="tour_next">Next</string>
     <string name="tour_finish">Finish</string>
-    <string name="tour_step_fmt">%1$d of %2$d</string>
     <string name="tour_p5_title">You are all set!</string>
     <string name="tour_back">Back</string>
     <string name="tour_task_done">Done!</string>
@@ -289,7 +284,6 @@
     <string name="tour_t_trans_none_cta">Download one or more translations</string>
     <string name="tour_p5_body">Want to know more or have any other questions? Check FAQ &amp; troubleshooting under Settings &gt; More.</string>
     <string name="tour_t_trans_none_suffix">to switch.</string>
-    <string name="tour_flow_label">Waqfah tour</string>
     <string name="tour_t_goto_title">Jump to any ayah</string>
     <string name="tour_t_goto_body">Tap the surah name at the top of the reading card to open Go to ayah. Try it now — the card above is live.</string>
 </resources>

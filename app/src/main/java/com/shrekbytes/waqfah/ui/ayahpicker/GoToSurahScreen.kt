@@ -9,8 +9,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,11 +22,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,9 +57,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.R
+import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
+import com.shrekbytes.waqfah.ui.components.ChevronDirection
+import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.components.EmptyListNote
 import com.shrekbytes.waqfah.ui.components.WaqfahBackButton
 import com.shrekbytes.waqfah.ui.components.WaqfahSearchField
+import com.shrekbytes.waqfah.ui.components.skeletonPulseAlpha
+import com.shrekbytes.waqfah.ui.reading.ayahWord
 import com.shrekbytes.waqfah.ui.reading.localizeDigits
 import com.shrekbytes.waqfah.ui.reading.surahDisplayName
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
@@ -68,7 +76,6 @@ fun GoToSurahScreen(
     onBack: () -> Unit,
     onJumped: () -> Unit = onBack,
     viewModel: GoToSurahViewModel = hiltViewModel(),
-    ayahViewModel: GoToAyahViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
@@ -84,7 +91,7 @@ fun GoToSurahScreen(
             WaqfahBackButton(onClick = onBack)
             Text(
                 stringResource(R.string.goto_surah_title),
-                style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge,
                 color = colors.ink,
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
             )
@@ -104,16 +111,14 @@ fun GoToSurahScreen(
             Spacer(Modifier.height(12.dp))
 
             when {
-                state.isLoading -> {
-                    Spacer(Modifier.height(24.dp))
-                    Text(stringResource(R.string.goto_search_hint), color = colors.inkSoft, fontSize = 13.sp)
-                }
+                state.isLoading -> SurahListSkeleton(Modifier.weight(1f).padding(top = 4.dp))
                 state.rows.isEmpty() -> EmptyListNote(stringResource(R.string.goto_no_results))
                 else -> LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 28.dp),
+                    contentPadding = PaddingValues(bottom = 28.dp),
                 ) {
-                    items(state.rows, key = { it.surah.surahNo }) { row ->
+                    itemsIndexed(state.rows, key = { _, row -> row.surah.surahNo }) { index, row ->
+                        val isLast = index == state.rows.lastIndex
                         val isExpanded = row.surah.surahNo == expandedSurahNo
                         val lang = state.surahNameLanguage
                         val total = row.surah.ayahCount
@@ -157,11 +162,11 @@ fun GoToSurahScreen(
                                         modifier = Modifier.width(30.dp),
                                     )
                                     Column(Modifier.weight(1f)) {
-                                        CompositionLocalProvider(LocalLayoutDirection provides if (lang == com.shrekbytes.waqfah.data.model.NameDisplayLanguage.ARABIC) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+                                        CompositionLocalProvider(LocalLayoutDirection provides if (lang == NameDisplayLanguage.ARABIC) LayoutDirection.Rtl else LayoutDirection.Ltr) {
                                             Text(surahDisplayName(row.surah, lang), color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.Medium)
                                         }
                                         Text(
-                                            "${localizeDigits(total, lang)} ${com.shrekbytes.waqfah.ui.reading.ayahWord(lang)}",
+                                            "${localizeDigits(total, lang)} ${ayahWord(lang)}",
                                             color = colors.inkMuted,
                                             fontSize = 12.sp,
                                         )
@@ -177,8 +182,8 @@ fun GoToSurahScreen(
                                         Modifier.size(20.dp),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        com.shrekbytes.waqfah.ui.components.ChevronIcon(
-                                            direction = com.shrekbytes.waqfah.ui.components.ChevronDirection.RIGHT,
+                                        ChevronIcon(
+                                            direction = ChevronDirection.RIGHT,
                                             tint = colors.inkSoft,
                                             modifier = Modifier
                                                 .size(12.dp)
@@ -246,12 +251,13 @@ fun GoToSurahScreen(
                                             }
                                         }
                                         Spacer(Modifier.width(10.dp))
-                                        // Go – side to box, compact primary pill (matches WaqfahPrimaryButton but smaller)
+                                        // Go – compact pill, matches the app's rounded action idiom
                                         Surface(
                                             onClick = {
-                                                if (!isValid || parsed == null) return@Surface
+                                                val targetAyah = parsed
+                                                if (!isValid || targetAyah == null) return@Surface
                                                 scope.launch {
-                                                    val verse = ayahViewModel.getVerse(row.surah.surahNo, parsed)
+                                                    val verse = viewModel.getVerse(row.surah.surahNo, targetAyah)
                                                     if (verse != null) {
                                                         readingViewModel.jumpToVerse(verse.id)
                                                         onJumped()
@@ -259,7 +265,7 @@ fun GoToSurahScreen(
                                                 }
                                             },
                                             enabled = isValid,
-                                            shape = RoundedCornerShape(12.dp),
+                                            shape = RoundedCornerShape(50),
                                             color = if (isValid) colors.accent else colors.accent.copy(alpha = 0.35f),
                                             contentColor = if (isValid) colors.accentInk else colors.accentInk.copy(alpha = 0.7f),
                                             modifier = Modifier.height(42.dp).width(64.dp),
@@ -273,13 +279,14 @@ fun GoToSurahScreen(
                                         Text(currentError, color = colors.accent, fontSize = 11.5.sp, modifier = Modifier.padding(top = 6.dp, start = 2.dp))
                                     }
                                     Spacer(Modifier.height(12.dp))
-                                    // Two secondary actions – First ayah + Continue (last read)
+                                    // Two equal quiet pills (matches the app's Grant/chip idiom)
+                                    // instead of a clashing two-tone button pair.
                                     Row(Modifier.fillMaxWidth()) {
-                                        // First ayah – secondary (accentSoft) to stay subtle, matches onboarding Grant style
+                                        // First ayah – quiet secondary pill
                                         Surface(
                                             onClick = {
                                                 scope.launch {
-                                                    val verse = ayahViewModel.getVerse(row.surah.surahNo, 1)
+                                                    val verse = viewModel.getVerse(row.surah.surahNo, 1)
                                                     if (verse != null) {
                                                         readingViewModel.jumpToVerse(verse.id)
                                                         onJumped()
@@ -289,7 +296,7 @@ fun GoToSurahScreen(
                                             shape = RoundedCornerShape(50),
                                             color = colors.accentSoft,
                                             contentColor = colors.accent,
-                                            modifier = Modifier.weight(1f).height(44.dp),
+                                            modifier = Modifier.weight(1f).height(42.dp),
                                         ) {
                                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                                 Text(stringResource(R.string.goto_ayah_first), fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
@@ -299,9 +306,9 @@ fun GoToSurahScreen(
                                         Surface(
                                             onClick = {
                                                 scope.launch {
-                                                    val readIds = ayahViewModel.getReadIds()
-                                                    val verse = ayahViewModel.getFirstUnreadInSurah(row.surah.surahNo, readIds)
-                                                        ?: ayahViewModel.getVerse(row.surah.surahNo, 1)
+                                                    val readIds = viewModel.getReadIds()
+                                                    val verse = viewModel.getFirstUnreadInSurah(row.surah.surahNo, readIds)
+                                                        ?: viewModel.getVerse(row.surah.surahNo, 1)
                                                     if (verse != null) {
                                                         readingViewModel.jumpToVerse(verse.id)
                                                         onJumped()
@@ -309,9 +316,9 @@ fun GoToSurahScreen(
                                                 }
                                             },
                                             shape = RoundedCornerShape(50),
-                                            color = colors.accent,
-                                            contentColor = colors.accentInk,
-                                            modifier = Modifier.weight(1f).height(44.dp),
+                                            color = colors.accentSoft,
+                                            contentColor = colors.accent,
+                                            modifier = Modifier.weight(1f).height(42.dp),
                                         ) {
                                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                                 Text(stringResource(R.string.goto_ayah_continue), fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
@@ -320,10 +327,33 @@ fun GoToSurahScreen(
                                     }
                                 }
                             }
-                            HorizontalDivider(color = colors.line.copy(alpha = 0.5f))
+                            if (!isLast) HorizontalDivider(color = colors.line.copy(alpha = 0.5f))
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+// Loading skeleton sized to match a compact row so nothing visibly jumps when
+// real rows swap in. Shares the app-wide pulsing rhythm (see SkeletonPulse.kt).
+@Composable
+private fun SurahListSkeleton(modifier: Modifier = Modifier) {
+    val colors = WaqfahTheme.colors
+    val pulseAlpha = skeletonPulseAlpha()
+    val barColor = colors.line.copy(alpha = pulseAlpha)
+
+    Column(modifier) {
+        repeat(10) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 15.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(13.dp),
+            ) {
+                Box(Modifier.width(26.dp).height(13.dp).clip(RoundedCornerShape(4.dp)).background(barColor))
+                Box(Modifier.weight(1f).height(14.dp).clip(RoundedCornerShape(4.dp)).background(barColor))
+                Box(Modifier.width(36.dp).height(12.dp).clip(RoundedCornerShape(4.dp)).background(barColor))
             }
         }
     }
