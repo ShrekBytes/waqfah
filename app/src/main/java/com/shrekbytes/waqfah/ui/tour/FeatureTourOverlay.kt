@@ -174,26 +174,41 @@ fun FeatureTourOverlay(
     // resolves, since the first snapshot would otherwise capture blank state).
     var anchorAyah by remember { mutableStateOf<String?>(null) }
     var anchorTranslation by remember { mutableStateOf<String?>(null) }
-    var goToHeaderTapped by remember { mutableStateOf(false) }
+    // GO_TO_AYAH trackers must survive the MainScreen disposal that happens
+    // while the Go-to screen is pushed over it (Navigation3 disposes covered
+    // entries — see MainScreen's rememberSaveable note): plain remember{}
+    // silently reset mid-task, so a real jump could never mark the step done.
+    var goToHeaderTapped by rememberSaveable { mutableStateOf(false) }
+    var goToAnchorAyah by rememberSaveable { mutableStateOf<String?>(null) }
+    var goToResetStep by rememberSaveable { mutableIntStateOf(-1) }
     LaunchedEffect(stepIndex, state.isLoading) {
         if (!state.isLoading && TOUR_STEPS[stepIndex] is TourStep.TryIt) {
             anchorAyah = state.ayahLabel
             anchorTranslation = state.translationSourceName ?: state.translationText
-            if ((TOUR_STEPS[stepIndex] as TourStep.TryIt).kind == TaskKind.GO_TO_AYAH) {
-                goToHeaderTapped = false
-            }
         }
     }
+    // Reset the GO_TO_AYAH trackers only when the step genuinely becomes
+    // current. The LaunchedEffect above re-runs on the fresh recomposition
+    // after returning from the Go-to screen too (same stepIndex), so the reset
+    // can't live there — it would wipe the trackers right after a jump.
+    if (goToResetStep != stepIndex) {
+        goToResetStep = stepIndex
+        goToHeaderTapped = false
+        goToAnchorAyah = null
+    }
     // Wrapper for tour's header tap – marks that user actually tried Go-to, so
-    // swipe-only ayah change doesn't falsely complete the Go-to step.
+    // swipe-only ayah change doesn't falsely complete the Go-to step. The ayah
+    // baseline is captured HERE (pre-jump, pre-disposal); snapshotting it after
+    // return would record the already-jumped ayah and defeat the comparison.
     val onGoToSurahForTour: () -> Unit = {
+        goToAnchorAyah = state.ayahLabel
         goToHeaderTapped = true
         onGoToSurah()
     }
     val taskDone = when ((TOUR_STEPS[stepIndex] as? TourStep.TryIt)?.kind) {
         TaskKind.MARK_READ -> !state.isLoading && state.isMarkedRead
         TaskKind.CHANGE_AYAH -> anchorAyah != null && state.ayahLabel != anchorAyah
-        TaskKind.GO_TO_AYAH -> goToHeaderTapped && anchorAyah != null && state.ayahLabel != anchorAyah
+        TaskKind.GO_TO_AYAH -> goToHeaderTapped && goToAnchorAyah != null && state.ayahLabel != goToAnchorAyah
         TaskKind.SWITCH_TRANSLATION ->
             anchorTranslation != null && (state.translationSourceName ?: state.translationText) != anchorTranslation
         null -> false
