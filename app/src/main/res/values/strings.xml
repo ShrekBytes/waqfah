@@ -27,18 +27,18 @@
 
     <!-- Onboarding -->
     <string name="welcome_tagline">A quiet pause,\nbefore you continue.</string>
-    <string name="welcome_subtitle">Read an ayah, every time you open an app.</string>
-    <string name="welcome_body">Waqfah shows an ayah before the apps you choose. No streaks, no pressure, no restrictions — just a moment, then you continue.</string>
+    <string name="welcome_subtitle">Read an ayah every time you open an app.</string>
+    <string name="welcome_body">Waqfah shows an ayah before your selected apps open. No streaks, no pressure, no restrictions — just a moment of reflection before you continue.</string>
     <string name="onboard_prefs_title">Set your reading\npreferences</string>
     <string name="preview_label">PREVIEW</string>
     <string name="pronunciation_label">Pronunciation</string>
     <string name="translation_label">Translation</string>
     <string name="translation_label_display">Display</string>
     <string name="onboard_apps_title">Choose the apps you\'d\nlike a pause for</string>
-    <string name="onboard_apps_body">Waqfah gently appears before these open. You can change this anytime.</string>
-    <string name="onboard_perms_title">A few permissions to\nmake this work</string>
-    <string name="onboard_perms_body">Android needs these so Waqfah can show the reading screen at the right moment and keep working reliably. None of them let it read screen content or send anything off your device. Grant all three to continue.</string>
-    <string name="why_permissions_link">Why Waqfah needs these?</string>
+    <string name="onboard_apps_body">Waqfah gently appears before these apps open. You can change this anytime.</string>
+    <string name="onboard_perms_title">Permissions needed to\nget started</string>
+    <string name="onboard_perms_body">Android requires these permissions so Waqfah can show the reading screen at the right moment and run reliably. None of them access screen content or send data off your device. Grant all permissions to continue.</string>
+    <string name="why_permissions_link">Why does Waqfah need these?</string>
 
     <!-- Language / aid options -->
     <string name="aid_none">None</string>
@@ -47,27 +47,27 @@
 
     <!-- Permissions -->
     <string name="perm_usage_name">Usage access</string>
-    <string name="perm_usage_desc">Notices when a selected app opens</string>
+    <string name="perm_usage_desc">Detects when a selected app opens</string>
     <string name="perm_overlay_name">Display over other apps</string>
-    <string name="perm_overlay_desc">Lets the reading screen appear over that app</string>
+    <string name="perm_overlay_desc">Allows the reading screen to appear over opened apps</string>
     <string name="perm_battery_name">Unrestricted battery</string>
-    <string name="perm_battery_desc">Keeps Waqfah running reliably (on the next screen, open Battery and select Unrestricted)</string>
+    <string name="perm_battery_desc">Keeps Waqfah running reliably (on the next screen, select Battery &gt; Unrestricted)</string>
     <string name="perm_notifications_name">Notifications</string>
-    <string name="perm_notifications_desc">Shows Waqfah\'s silent monitoring notification</string>
+    <string name="perm_notifications_desc">Shows Waqfah\'s silent background notification</string>
     <string name="perm_section_required">Required</string>
     <string name="perm_section_optional">Recommended</string>
     <string name="permissions_title">Permissions</string>
-    <string name="permissions_body">Waqfah needs these to notice app launches and keep running. Review or change them anytime.</string>
+    <string name="permissions_body">Waqfah needs these permissions to detect app launches and run reliably. Review or change them anytime.</string>
     <string name="rationale_title">Why Waqfah needs these</string>
-    <string name="rationale_intro">Each permission maps to one thing Waqfah does. None of them let it read screen content or send anything off your device.</string>
+    <string name="rationale_intro">Each permission is used for a single, specific purpose. None of them allow Waqfah to read screen content or send any data off your device.</string>
     <string name="rationale_allows_fmt">What it lets Waqfah do: %1$s</string>
     <string name="rationale_never_fmt">What it never does: %1$s</string>
-    <string name="rationale_usage_allows">Lets Waqfah ask Android which app just moved to the foreground, so it knows when one of your selected apps opens and the reading screen should appear first.</string>
-    <string name="rationale_usage_never">It never reads what\'s inside those apps — no screen content, no messages, no browsing history. The foreground app\'s name stays on your device and goes nowhere.</string>
-    <string name="rationale_overlay_allows">Lets the reading screen appear while another app is opening. Without it, Android would block Waqfah from showing anything outside its own window.</string>
-    <string name="rationale_overlay_never">It draws only Waqfah\'s own reading screen, only at the moment a monitored app opens — never ads, overlays, or anything on top of other apps at any other time.</string>
-    <string name="rationale_battery_allows">Stops Android from shutting down Waqfah\'s background monitor to save power, so triggers keep working hours after you last opened the app.</string>
-    <string name="rationale_battery_never">It doesn\'t change how much battery Waqfah uses — the monitor checks about once per second while your screen is on (and sleeps when it\'s off), and otherwise rests. This only removes the system\'s permission to kill it early.</string>
+    <string name="rationale_usage_allows">Lets Waqfah check which app is opening so the reading screen can appear first.</string>
+    <string name="rationale_usage_never">It never reads content inside apps — no messages, screen content, or browsing history. App usage data stays entirely on your device.</string>
+    <string name="rationale_overlay_allows">Lets the reading screen appear over the opening app. Without it, Android blocks Waqfah from displaying outside its own app.</string>
+    <string name="rationale_overlay_never">It shows only Waqfah\'s reading screen when a monitored app opens — never ads or unexpected overlays.</string>
+    <string name="rationale_battery_allows">Prevents Android from stopping Waqfah\'s background monitor to save power, ensuring it continues to work reliably.</string>
+    <string name="rationale_battery_never">It does not increase battery drain — the monitor checks active apps once per second only while the screen is on and sleeps when the screen is off.</string>
 
     <!-- App identity -->
     <string name="app_name">Waqfah</string>
@@ -79,7 +79,7 @@
     <string name="cooldown_field">Wait before showing again</string>
     <string name="cooldown_value">%1$d min</string>
     <string name="cooldown_off">Off</string>
-    <string name="cooldown_explanation">Applies per app — after appearing for Instagram it won\'t appear again until this wait passes. \"Off\" shows it for every fresh open, but switching straight back to an app you just left stays quiet.</string>
+    <string name="cooldown_explanation">Applies per app — after appearing for an app like Instagram, Waqfah won\'t appear again until this cooldown ends. When Off, Waqfah appears every fresh open, but quickly switching back to a recent app stays quiet.</string>
     <plurals name="selected_count">
         <item quantity="one">%1$d selected</item>
         <item quantity="other">%1$d selected</item>
@@ -87,7 +87,7 @@
 
     <!-- Translations screen -->
     <string name="translations_title">%1$s translations</string>
-    <string name="translations_body">One is active at a time. Download others to switch, or remove ones you don\'t need.</string>
+    <string name="translations_body">Only one translation is active at a time. Download others to switch, or delete ones you don\'t need.</string>
     <string name="downloading">Downloading…</string>
     <string name="downloading_percent">Downloading… %1$d%%</string>
     <string name="failed_retry">Failed — Retry</string>
@@ -97,7 +97,7 @@
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="active_on_title">Waqfah is active</string>
-    <string name="active_on_sub">Shows an ayah before your chosen apps</string>
+    <string name="active_on_sub">Shows an ayah before your selected apps open</string>
     <string name="active_off_title">Waqfah is off</string>
     <string name="active_off_sub">It won\'t appear again until you turn it back on</string>
     <string name="section_reading">Reading</string>
@@ -111,7 +111,7 @@
     <string name="accent_color_label">Accent color</string>
     <string name="accent_unavailable">Accent color isn\'t available in this theme.</string>
     <string name="app_language_label">App language</string>
-    <string name="lang_system">System</string>
+    <string name="lang_system">System default</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_cream">Cream</string>
@@ -124,7 +124,7 @@
     <string name="accent_plum">Plum</string>
     <string name="accent_ochre">Ochre</string>
     <string name="progress_section">Progress</string>
-    <string name="ayat_read">ayat read</string>
+    <string name="ayat_read">ayahs read</string>
     <string name="reset_progress">Reset progress</string>
     <string name="reset_question">Reset all progress?</string>
     <string name="yes_reset">Yes, reset</string>
@@ -144,7 +144,7 @@
     <string name="mode_label">Mode</string>
     <string name="mode_sequential">Sequential</string>
     <string name="mode_random">Random</string>
-    <string name="surah_names_label">Surah name &amp; numbers</string>
+    <string name="surah_names_label">Surah names &amp; numbers</string>
     <string name="script_label">Script</string>
     <string name="script_indopak">IndoPak</string>
     <string name="script_uthmani">Uthmani</string>
@@ -167,7 +167,7 @@
     <string name="switch_to_random_mode">Switch to Random Mode</string>
     <string name="switch_to_sequential_mode">Switch to Sequential Mode</string>
     <string name="reset_dialog_title">Reset progress?</string>
-    <string name="reset_dialog_body">This will clear every ayah you have marked as read and start from the beginning.</string>
+    <string name="reset_dialog_body">This will clear every ayah marked as read and restart from the beginning.</string>
     <string name="reset_mode_note"> Reading mode will also switch.</string>
 
     <!-- About -->
@@ -191,7 +191,7 @@
     <!-- Gratitude -->
     <string name="gratitude_intro">Waqfah is made by people, for people. JazakumAllahu khairan to everyone who gave their time to test, critique, and carry it along.</string>
     <string name="credits_section">Credits</string>
-    <string name="credits_body">Quran text, translations and Arabic fonts belong to their respective publishers, translators and authors — Waqfah does not own them. They are sourced via the projects below and used under those platforms\' terms of use, with gratitude.</string>
+    <string name="credits_body">Quran text, translations, and Arabic fonts belong to their respective publishers, translators, and authors — Waqfah does not own them. They are sourced via the projects below and used under those platforms\' terms of use, with gratitude.</string>
     <string name="credit_qul_title">Quranic Universal Library</string>
     <string name="credit_qul_sub">Translations, scripts &amp; fonts</string>
     <string name="credit_tanzil_title">Tanzil Project</string>
@@ -203,7 +203,7 @@
     <string name="privacy_title">Privacy policy</string>
     <string name="privacy_short">The short version: Waqfah has nothing to send anyone — your data stays on your phone.</string>
     <string name="privacy_overview_title">Overview</string>
-    <string name="privacy_overview_body">Waqfah shows you a Quran verse before the apps you choose open. It is built to work entirely on your device. We do not collect, store, or share any personal data — there are no accounts, no analytics, no advertising, and no tracking of any kind.</string>
+    <string name="privacy_overview_body">Waqfah shows you a Quran verse before your selected apps open. It is built to work entirely on your device. We do not collect, store, or share any personal data — there are no accounts, no analytics, no advertising, and no tracking of any kind.</string>
     <string name="privacy_local_data_title">Data kept on your device</string>
     <string name="privacy_local_data_body">Everything Waqfah knows lives in its own local storage on your phone: which apps you chose to monitor, your reading progress, your display preferences, and your translation downloads. Deleting the app deletes all of it. None of it ever leaves your device.</string>
     <string name="privacy_usage_title">Usage access permission</string>
@@ -220,9 +220,9 @@
     <string name="faq_intro">Fixes for the things that most often go wrong, and answers to fair questions.</string>
     <string name="faq_still_stuck">Still stuck? Reach us at %1$s</string>
     <string name="faq_q1">The reading screen doesn\'t appear when I open an app</string>
-    <string name="faq_a1">Check four things:\n\n1. Usage access and Display over other apps are granted (Settings > App permissions).\n2. Waqfah is active (the toggle on Settings).\n3. The app you opened is in your monitored list (Settings > Manage monitored apps).\n4. That app isn\'t in its cooldown window yet.</string>
+    <string name="faq_a1">Check four things:\n\n1. Usage access and Display over other apps are granted (Settings &gt; App permissions).\n2. Waqfah is active (the toggle on Settings).\n3. The app you opened is in your monitored list (Settings &gt; Manage monitored apps).\n4. That app isn\'t in its cooldown window yet.</string>
     <string name="faq_q2">Waqfah stops working after a while</string>
-    <string name="faq_a2">Battery optimization is the usual culprit — grant \"Unrestricted battery\" in Settings > App permissions. On aggressive OEMs (Xiaomi/MIUI, Huawei, Oppo/Realme), also exclude Waqfah from the system\'s battery saver / auto-start manager, or background services get killed no matter what Android settings say.</string>
+    <string name="faq_a2">Battery optimization is the usual culprit — grant \"Unrestricted battery\" in Settings &gt; App permissions. On aggressive OEMs (Xiaomi/MIUI, Huawei, Oppo/Realme), also exclude Waqfah from the system\'s battery saver / auto-start manager, or background services get killed no matter what Android settings say.</string>
     <string name="faq_q3">Why is there a permanent notification?</string>
     <string name="faq_a3">Android requires any app running a continuous background service to show a notification saying so. Waqfah\'s is silent and sits at the lowest priority — it exists because the system demands transparency, not because it\'s doing anything worth interrupting you for.</string>
     <string name="faq_q4">Can Waqfah read my screen or my messages?</string>
@@ -230,9 +230,9 @@
     <string name="faq_q5">The reading screen appears a moment late</string>
     <string name="faq_a5">Waqfah checks which app is foregrounded about once per second rather than watching every window event — a deliberate trade-off that keeps battery use tiny. A sub-second delay before the pause appears is normal.</string>
     <string name="faq_q6">How does the cooldown work?</string>
-    <string name="faq_a6">Each monitored app has its own timer. After Waqfah appears for Instagram, it won\'t appear again for Instagram until that wait passes — reopening via a notification, bubble or the icon makes no difference while the app stays in front. TikTok and your other monitored apps are unaffected. Set the wait at the top of Settings > Manage monitored apps. With the wait off, Waqfah appears for every fresh open — only quick switch-backs to an app you just left stay quiet.</string>
+    <string name="faq_a6">Each monitored app has its own timer. After Waqfah appears for Instagram, it won\'t appear again for Instagram until that wait passes — reopening via a notification, bubble, or the icon makes no difference while the app stays in front. TikTok and your other monitored apps are unaffected. Set the wait at the top of Settings &gt; Manage monitored apps. With the wait off, Waqfah appears for every fresh open — only quick switch-backs to an app you just left stay quiet.</string>
     <string name="faq_q7">Usage access won\'t turn on when I tap Grant</string>
-    <string name="faq_a7">On Android 13 or newer, apps installed outside an app store (for example, an APK opened straight from your browser) are blocked from sensitive settings until you allow them once. Open Waqfah\'s system App info page (long-press its icon > App info), tap the ⋮ menu at the top right, and choose \"Allow restricted settings\". Then come back to Waqfah and grant Usage access normally. Apps installed from a store such as F-Droid or Google Play never see this extra step.</string>
+    <string name="faq_a7">On Android 13 or newer, apps installed outside an app store (for example, an APK opened straight from your browser) are blocked from sensitive settings until you allow them once. Open Waqfah\'s system App info page (long-press its icon &gt; App info), tap the ⋮ menu at the top right, and choose \"Allow restricted settings\". Then come back to Waqfah and grant Usage access normally. Apps installed from a store such as F-Droid or Google Play never see this extra step.</string>
 
     <!-- Go to Ayah -->
     <string name="goto_surah_title">Go to ayah</string>
