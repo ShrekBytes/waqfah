@@ -285,5 +285,5 @@
     <string name="tour_p5_body">আরও জানতে চান বা অন্য কোনো প্রশ্ন আছে? Settings &gt; More-এর অধীনে FAQ &amp; troubleshooting দেখুন।</string>
     <string name="tour_t_trans_none_suffix">করলেই সেগুলোর মধ্যে সুইচ করা যাবে।</string>
     <string name="tour_t_goto_title">যেকোনো আয়াতে যান</string>
-    <string name="tour_t_goto_body">রিডিং কার্ডের ওপরের সূরার নামে ট্যাপ করে সূরা ও আয়াত খুলুন। এখনই চেষ্টা করে দেখুন — ওপরের কার্ডটি লাইভ।</string>
+    <string name="tour_t_goto_body">রিডিং কার্ডের ওপরের সূরার নামে ট্যাপ করে সূরা ও আয়াত খুলুন।</string>
 </resources>

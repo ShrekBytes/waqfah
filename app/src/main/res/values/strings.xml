@@ -285,5 +285,5 @@
     <string name="tour_p5_body">Want to know more or have any other questions? Check FAQ &amp; troubleshooting under Settings &gt; More.</string>
     <string name="tour_t_trans_none_suffix">to switch.</string>
     <string name="tour_t_goto_title">Jump to any ayah</string>
-    <string name="tour_t_goto_body">Tap the surah name at the top of the reading card to open Surahs &amp; ayahs. Try it now — the card above is live.</string>
+    <string name="tour_t_goto_body">Tap the surah name at the top of the reading card to open Surahs &amp; ayahs.</string>
 </resources>
