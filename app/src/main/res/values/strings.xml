@@ -37,7 +37,7 @@
     <string name="onboard_apps_title">Choose the apps you\'d\nlike a pause for</string>
     <string name="onboard_apps_body">Waqfah gently appears before these apps open. You can change this anytime.</string>
     <string name="onboard_perms_title">Permissions needed to\nget started</string>
-    <string name="onboard_perms_body">Android requires these permissions so Waqfah can show the reading screen at the right moment and run reliably. None of them access screen content or send data off your device. Grant all permissions to continue.</string>
+    <string name="onboard_perms_body">Android requires these permissions so Waqfah can show the reading screen at the right moment and run reliably. None of them access screen content or send data off your device. Grant the required permissions to continue.</string>
     <string name="why_permissions_link">Why does Waqfah need these?</string>
 
     <!-- Language / aid options -->

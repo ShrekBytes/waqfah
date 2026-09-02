@@ -1,6 +1,6 @@
 <resources>
     <!-- Generic -->
-    <string name="continue_btn">পরবর্তী</string>
+    <string name="continue_btn">এগিয়ে যান</string>
     <string name="cancel">বাতিল</string>
     <string name="close">বন্ধ করুন</string>
     <string name="delete_label">মুছে ফেলুন</string>
