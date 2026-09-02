@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.R
+import com.shrekbytes.waqfah.ui.ayahpicker.GoToSurahScreen
 import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 import com.shrekbytes.waqfah.ui.reading.ReadingViewModel
 import com.shrekbytes.waqfah.ui.reading.WaqfahReadingContent
@@ -145,28 +146,37 @@ private val TOUR_STEPS = listOf<TourStep>(
 // Full-screen overlay hosting the guided tour. Rendered ONLY over the Home tab
 // of MainActivity (see MainScreen) — never over TriggerActivity's interstitial.
 // The TryIt steps embed the REAL home reading card (same ReadingViewModel as
-// the Home tab), so what the user practices here is the actual thing. Steps
-// navigate via AnimatedContent rather than HorizontalPager on purpose: the
-// pager's own horizontal drag would steal the card's swipe-to-change-ayah
-// gesture. onFinish marks the tour completed so it never auto-shows again;
-// onSkip keeps it incomplete so it re-offers next launch.
+// the Home tab), so what the user practices here is the actual thing; the
+// Go-to step opens the REAL surah/ayah picker (GoToSurahScreen) INSIDE the
+// sandbox instead of pushing a full screen over the tour, so the tour never
+// gets disposed mid-step. Steps navigate via AnimatedContent rather than
+// HorizontalPager on purpose: the pager's own horizontal drag would steal the
+// card's swipe-to-change-ayah gesture. onFinish marks the tour completed so it
+// never auto-shows again; onSkip keeps it incomplete so it re-offers next launch.
 @Composable
 fun FeatureTourOverlay(
     onFinish: () -> Unit,
     onSkip: () -> Unit,
     onBrowseTranslations: () -> Unit = {},
-    onGoToSurah: () -> Unit = {},
     viewModel: ReadingViewModel = hiltViewModel(),
 ) {
     val colors = WaqfahTheme.colors
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     var stepIndex by rememberSaveable { mutableIntStateOf(0) }
+    // True while the surah/ayah picker is embedded in the Go-to step's sandbox.
+    var goToPickerOpen by rememberSaveable { mutableStateOf(false) }
     val isLast = stepIndex == TOUR_STEPS.lastIndex
 
-    // Back goes a step back; from the first step it dismisses early (a skip).
+    // Back closes the in-sandbox Go-to picker first, then goes a step back;
+    // from the first step it dismisses early (a skip). GoToSurahScreen has no
+    // BackHandler of its own, so this one catches back while the picker shows.
     BackHandler {
-        if (stepIndex > 0) stepIndex-- else onSkip()
+        when {
+            goToPickerOpen -> goToPickerOpen = false
+            stepIndex > 0 -> stepIndex--
+            else -> onSkip()
+        }
     }
 
     // Baselines for detecting a completed hands-on task, snapshotted whenever
@@ -174,12 +184,14 @@ fun FeatureTourOverlay(
     // resolves, since the first snapshot would otherwise capture blank state).
     var anchorAyah by remember { mutableStateOf<String?>(null) }
     var anchorTranslation by remember { mutableStateOf<String?>(null) }
-    // GO_TO_AYAH trackers must survive the MainScreen disposal that happens
-    // while the Go-to screen is pushed over it (Navigation3 disposes covered
-    // entries — see MainScreen's rememberSaveable note): plain remember{}
-    // silently reset mid-task, so a real jump could never mark the step done.
-    var goToHeaderTapped by rememberSaveable { mutableStateOf(false) }
-    var goToAnchorAyah by rememberSaveable { mutableStateOf<String?>(null) }
+    // GO_TO_AYAH completion flag lives here (not inside TryItPage) so
+    // AnimatedContent's page switches don't reset it; rememberSaveable
+    // additionally carries it across rotation/process death. Only a jump
+    // performed INSIDE the embedded picker sets it — tapping the header or
+    // swiping the card can never falsely complete the step. The picker itself
+    // is embedded in the sandbox (no navigation happens, so there is no
+    // Navigation3 disposal mid-task to survive anymore).
+    var goToJumpedFromPicker by rememberSaveable { mutableStateOf(false) }
     var goToResetStep by rememberSaveable { mutableIntStateOf(-1) }
     LaunchedEffect(stepIndex, state.isLoading) {
         if (!state.isLoading && TOUR_STEPS[stepIndex] is TourStep.TryIt) {
@@ -187,28 +199,27 @@ fun FeatureTourOverlay(
             anchorTranslation = state.translationSourceName ?: state.translationText
         }
     }
-    // Reset the GO_TO_AYAH trackers only when the step genuinely becomes
-    // current. The LaunchedEffect above re-runs on the fresh recomposition
-    // after returning from the Go-to screen too (same stepIndex), so the reset
-    // can't live there — it would wipe the trackers right after a jump.
+    // Reset the GO_TO_AYAH completion flag only when the step genuinely becomes
+    // current (not on every recomposition) — opening/closing the picker or a
+    // jump recomposes without a step change, and a reset there would wipe the
+    // flag right after a jump. Leaving the step also collapses the embedded
+    // picker, so coming back lands on the reading card again instead of a
+    // stale open picker.
     if (goToResetStep != stepIndex) {
         goToResetStep = stepIndex
-        goToHeaderTapped = false
-        goToAnchorAyah = null
+        goToJumpedFromPicker = false
+        goToPickerOpen = false
     }
-    // Wrapper for tour's header tap – marks that user actually tried Go-to, so
-    // swipe-only ayah change doesn't falsely complete the Go-to step. The ayah
-    // baseline is captured HERE (pre-jump, pre-disposal); snapshotting it after
-    // return would record the already-jumped ayah and defeat the comparison.
-    val onGoToSurahForTour: () -> Unit = {
-        goToAnchorAyah = state.ayahLabel
-        goToHeaderTapped = true
-        onGoToSurah()
+    // Opens the surah/ayah picker INSIDE the sandbox. Completion is decided by
+    // the jump itself (onJumped), never by the tap — so a swipe-only ayah
+    // change can't falsely complete the step.
+    val onOpenGoToPickerForTour: () -> Unit = {
+        goToPickerOpen = true
     }
     val taskDone = when ((TOUR_STEPS[stepIndex] as? TourStep.TryIt)?.kind) {
         TaskKind.MARK_READ -> !state.isLoading && state.isMarkedRead
         TaskKind.CHANGE_AYAH -> anchorAyah != null && state.ayahLabel != anchorAyah
-        TaskKind.GO_TO_AYAH -> goToHeaderTapped && goToAnchorAyah != null && state.ayahLabel != goToAnchorAyah
+        TaskKind.GO_TO_AYAH -> goToJumpedFromPicker
         TaskKind.SWITCH_TRANSLATION ->
             anchorTranslation != null && (state.translationSourceName ?: state.translationText) != anchorTranslation
         null -> false
@@ -256,7 +267,13 @@ fun FeatureTourOverlay(
                             isTranslationDisabled = step.kind == TaskKind.SWITCH_TRANSLATION && state.translationText == null && !state.isLoading,
                             showTranslationFallback = step.kind == TaskKind.SWITCH_TRANSLATION && state.translationText != null && !state.translationHasAlternates,
                             onBrowseTranslations = onBrowseTranslations,
-                            onGoToSurah = onGoToSurahForTour,
+                            showGoToPicker = goToPickerOpen,
+                            onOpenPicker = onOpenGoToPickerForTour,
+                            onClosePicker = { goToPickerOpen = false },
+                            onJumpedInPicker = {
+                                goToJumpedFromPicker = true
+                                goToPickerOpen = false
+                            },
                             viewModel = viewModel,
                         )
                     }
@@ -449,6 +466,13 @@ private fun SettingsPage(step: TourStep.SettingRows) {
 // right next to the Next button, and its trailing slot is fixed-size: the
 // completion tick appears inside a reserved box, so nothing shifts when it
 // pops (and a bare tick can't be mistaken for a pressable Done button).
+// For GO_TO_AYAH with the picker open, the REAL GoToSurahScreen replaces the
+// whole step content (same screen the Home header pushes, sharing the same
+// ReadingViewModel): its back button and a successful jump both close it back
+// onto the reading card, which immediately shows the jumped-to ayah. The
+// instruction card is intentionally hidden while the picker is open — it
+// already did its job (told the user to tap the header) and the picker needs
+// the room.
 @Composable
 private fun TryItPage(
     step: TourStep.TryIt,
@@ -457,13 +481,26 @@ private fun TryItPage(
     showTranslationFallback: Boolean,
     onBrowseTranslations: () -> Unit,
     viewModel: ReadingViewModel,
-    onGoToSurah: () -> Unit = {},
+    showGoToPicker: Boolean = false,
+    onOpenPicker: () -> Unit = {},
+    onClosePicker: () -> Unit = {},
+    onJumpedInPicker: () -> Unit = {},
 ) {
     val colors = WaqfahTheme.colors
+    val isGoToStep = step.kind == TaskKind.GO_TO_AYAH
+
+    if (isGoToStep && showGoToPicker) {
+        GoToSurahScreen(
+            readingViewModel = viewModel,
+            onBack = onClosePicker,
+            onJumped = onJumpedInPicker,
+        )
+        return
+    }
+
     Column(Modifier.fillMaxSize()) {
         // The live practice sandbox: the actual home reading card.
         // For GO_TO_AYAH we wire the header tap so the tour step is truly interactive.
-        val isGoToStep = step.kind == TaskKind.GO_TO_AYAH
         Box(
             Modifier
                 .weight(1f)
@@ -473,7 +510,7 @@ private fun TryItPage(
         ) {
             WaqfahReadingContent(
                 viewModel = viewModel,
-                onGoToAyah = if (isGoToStep) onGoToSurah else null,
+                onGoToAyah = if (isGoToStep) onOpenPicker else null,
                 bottomBar = {},
             )
         }

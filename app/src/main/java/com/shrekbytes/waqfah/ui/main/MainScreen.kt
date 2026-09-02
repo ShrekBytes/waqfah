@@ -123,7 +123,6 @@ fun MainScreen(
                         // Keeps the tour active so returning brings the user back to step 4.
                         onOpenTranslationSection()
                     },
-                    onGoToSurah = onGoToSurah,
                 )
             }
         }
