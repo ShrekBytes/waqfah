@@ -14,16 +14,19 @@ rule state; each event gets a verdict — trigger, or ignore with a reason — a
 Android adapter for both modules, launches **TriggerActivity** on a Trigger.
 The rules, in the order the decision applies them:
 
-1. one pause per continuous foreground-stay of an app,
-2. never on indirect entries (picker-mediated or worker activities),
-3. never on a call — a messaging app's own call screen, a system dialer/
-   incall-UI package, or audio routed into a call — nor within `CALL_GRACE_MS`
-   of one ending, on either the app it interrupted or the calling app's own
-   screen,
-4. never when returning from Waqfah's own interstitial,
-5. never on a quick switch-back within `SWITCH_BACK_GAP_MS`, regardless of the
+1. never on a call — a messaging app's own call screen, a system dialer/
+   incall-UI package, or audio routed into a call — the call check runs
+   before every other rule, and a call never even counts as leaving the
+   foreground,
+2. one pause per continuous foreground-stay of an app,
+3. never when returning from Waqfah's own interstitial,
+4. never within `CALL_GRACE_MS` of a call ending, on either the app it
+   interrupted or the calling app's own screen, however many hops the
+   return takes,
+5. never on indirect entries (picker-mediated or worker activities),
+6. never on a quick switch-back within `SWITCH_BACK_GAP_MS`, regardless of the
    cooldown,
-6. otherwise the cooldown decides (`0` = "Off" triggers on every fresh
+7. otherwise the cooldown decides (`0` = "Off" triggers on every fresh
    open that gets this far); the `last_shown_at` anchor is stamped inside the
    module, exactly at trigger time, regardless of how the interstitial is
    later dismissed.

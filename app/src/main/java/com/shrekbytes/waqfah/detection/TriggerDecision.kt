@@ -4,8 +4,8 @@ import com.shrekbytes.waqfah.BuildConfig
 import com.shrekbytes.waqfah.TriggerActivity
 
 // One foreground observation from UsageStatsManager. The activity class is
-// what tells a real open apart from an indirect entry (share target, file
-// viewer, link grabber) — see TriggerDecision.isIndirectEntry.
+// what tells a fresh open apart from an indirect entry (a picker, a share
+// sheet, a file viewer, a link grabber) — see TriggerDecision.isIndirectEntry.
 data class ResumedActivity(val packageName: String, val className: String?)
 
 // The only preference facts the trigger decision reads. A snapshot instead of
@@ -53,7 +53,7 @@ sealed interface Verdict {
 //  - Calls are never paused, and never even count as leaving the foreground:
 //    a messaging app's own call screen, a system dialer/incall-UI package, or
 //    audio routed into a call (see isCallForeground) all count. Call screens
-//    aren't launched through a public intent-filter the way share targets
+//    aren't launched through a public intent-filter the way indirect entries
 //    are, so this can't be discovered by probing like indirectEntryClasses —
 //    it's a maintained heuristic instead (see isKnownCallUi). currentForeground
 //    is left untouched for the whole call so whatever it interrupted is still
@@ -295,7 +295,7 @@ class TriggerDecision(
 
         // Stock + common OEM in-call UI / dialer packages. A call routed
         // through any of these briefly owns the foreground on top of, or
-        // instead of, the app the user was actually in — never a real "open"
+        // instead of, the app the user was actually in — never a fresh open
         // of anything. Add more here if a specific OEM's incall package is
         // reported to slip through.
         private val SYSTEM_CALL_PACKAGES = setOf(
