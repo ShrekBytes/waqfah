@@ -6,12 +6,12 @@ explains — those are the source of truth; this file is just the index.
 
 ## The core loop
 
-**AppMonitorService** (foreground service, `specialUse` FGS) polls
-UsageStatsManager every second while the screen is on and detection is armed,
-and feeds each `ACTIVITY_RESUMED` event to **TriggerDecision**
-(`detection/TriggerDecision.kt`). That module owns every trigger rule and all
-rule state; each event gets a verdict — trigger, or ignore with a reason — and
-the service, its Android adapter, launches **TriggerActivity** on a Trigger.
+**MonitorSession** (`detection/MonitorSession.kt`), hosted by the **AppMonitorService** foreground
+service (`specialUse` FGS), polls UsageStatsManager every second while the monitor gate is open —
+screen on, Waqfah active, at least one monitored app — and feeds each `ACTIVITY_RESUMED` event to
+**TriggerDecision** (`detection/TriggerDecision.kt`). That module owns every trigger rule and all
+rule state; each event gets a verdict — trigger, or ignore with a reason — and the service, the
+Android adapter for both modules, launches **TriggerActivity** on a Trigger.
 The rules, in the order the decision applies them:
 
 1. one pause per continuous foreground-stay of an app,
@@ -30,8 +30,11 @@ The rules, in the order the decision applies them:
 
 The decision is tested on the JVM through scripted resumed-activity sequences
 with fake clocks (`TriggerDecisionTest`) — the three regression loops that
-used to be fixed blind in the service are pinned there. When the monitor gate
-closes (screen off, monitoring off), the service resets the decision, severing
+used to be fixed blind in the service are pinned there. The watching rhythm
+itself — gate suspension, fresh windows, the 30s permission heartbeat — lives
+in **MonitorSession** and is tested with virtual time (`MonitorSessionTest`).
+When the monitor gate
+closes (screen off, monitoring off), the session resets the decision, severing
 the picker pairing and call context so nothing from before the pause pairs
 into a post-wake resume. The reset deliberately spares the foreground tracker
 and switch-back map: switch-back entries expire by age, so a stale one can't
@@ -71,10 +74,10 @@ finishing it falls through to whatever was really underneath.
   starts it (permissions permitting) or stops it outright; MainActivity.onResume
   restarts it when permissions were just granted (but never resurrects a
   toggled-off monitor); BootReceiver restarts it after reboot only when
-  permissions are present AND Waqfah is toggled on. The service also self-stops
-  if permissions are revoked mid-run (re-checked every 30s). While running, the
-  polling loop suspends whenever the screen is off, monitoring is off, or no
-  apps are monitored.
+  permissions are present AND Waqfah is toggled on. The session asks the
+  service to self-stop if permissions are revoked mid-run (re-checked every
+  30s). While the monitor gate is closed — screen off, monitoring off, no
+  monitored apps — the session's loop suspends.
 - **The toggle governs DETECTION only.** Home-tab reading (`ReadingViewModel` /
   `ReadingCard`) never reads `appActive` and runs entirely off Room + DataStore;
   stopping the service must never affect it. Keep these decoupled.

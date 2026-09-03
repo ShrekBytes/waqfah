@@ -53,9 +53,15 @@ screens showed.
 _Avoid_: usage event
 
 **Monitor gate**:
-The conditions — screen on, Waqfah active, at least one monitored app — under
-which detection runs at all.
+The conditions — screen on, Waqfah active, at least one monitored app — under which
+detection runs at all.
 _Avoid_: polling gate
+
+**MonitorSession**:
+The watching session that runs while detection is live — it holds the monitor gate open
+and feeds every resumed activity to the trigger decision, ending when permissions are
+revoked or Waqfah stops watching.
+_Avoid_: poller, monitor loop, foreground watcher
 
 ### The trigger decision
 
