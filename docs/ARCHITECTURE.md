@@ -66,8 +66,9 @@ finishing it falls through to whatever was really underneath.
 
 ## Concurrency notes
 
-- ReadingViewModel serializes verse mutation + render behind `mutationMutex`;
-  mark-read decisions are made under that lock against DB truth.
+- ReadingSession serializes verse mutation, render, and the preference state
+  they read behind `mutationMutex`; mark-read decisions are made under that
+  lock against DB truth. ReadingViewModel is only its Android adapter.
 - TranslationRepository guards downloads with per-id mutexes and Room handles
   with a double-checked open cache.
 

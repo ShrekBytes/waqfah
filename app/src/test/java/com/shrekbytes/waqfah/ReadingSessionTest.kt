@@ -288,6 +288,7 @@ class ReadingSessionTest {
         assertTrue(session.uiState.value.isCompleted)
 
         session.dismissCompletion()
+        runCurrent() // the dismissal applies under the lock
         assertFalse(session.uiState.value.isCompleted)
 
         // Close is latched for the rest of the session: even unmarking and

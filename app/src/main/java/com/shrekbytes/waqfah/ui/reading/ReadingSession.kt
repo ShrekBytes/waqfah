@@ -5,6 +5,7 @@ import com.shrekbytes.waqfah.data.local.core.VerseEntity
 import com.shrekbytes.waqfah.data.model.AidLanguage
 import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
 import com.shrekbytes.waqfah.data.model.ReadingMode
+import com.shrekbytes.waqfah.data.model.TranslationLanguage
 import com.shrekbytes.waqfah.data.model.TranslationLibrary
 import com.shrekbytes.waqfah.data.model.TranslationMeta
 import com.shrekbytes.waqfah.data.model.UserPreferences
@@ -28,9 +29,9 @@ import kotlinx.coroutines.sync.withLock
 // rendering the current one, marking verses read, the compare-translations
 // peek, and the completion state — plus the ordering that keeps all of it
 // consistent: every read and write of currentVerse, latestPrefs,
-// translationOverrideId and the render-signature bookkeeping happens behind
-// one mutex — this module's internal invariant, not a convention callers must
-// know about.
+// translationOverrideId, completionDismissed and the render-signature
+// bookkeeping happens behind one mutex — this module's internal invariant,
+// not a convention callers must know about.
 //
 // Everything impure arrives through the constructor as a flow or a function:
 // the three input signals (preferences, downloaded translation ids, the
@@ -178,9 +179,12 @@ class ReadingSession(
         }
     }
 
-    fun dismissCompletion() {
-        completionDismissed = true
-        _uiState.update { it.copy(isCompleted = false) }
+    // Launched so the flag flips under the same mutex render() reads it from.
+    fun dismissCompletion() = scope.launch {
+        mutationMutex.withLock {
+            completionDismissed = true
+            _uiState.update { it.copy(isCompleted = false) }
+        }
     }
 
     // Both completion-popup reset paths wipe read history and land on a fresh
@@ -264,7 +268,7 @@ class ReadingSession(
             val available = TranslationLibrary.available(lang, downloaded)
             if (available.size < 2) return@withLock
             val currentId = translationOverrideId
-                ?: TranslationLibrary.resolveActive(lang, latestPrefs.storedTranslationId(lang), downloaded).id
+                ?: activeTranslation(lang, latestPrefs, downloaded).id
             val currentIndex = available.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
             val stepDir = if (forward) 1 else -1
             translationOverrideId = available[(currentIndex + stepDir + available.size) % available.size].id
@@ -304,6 +308,24 @@ class ReadingSession(
         }
     }
 
+    // Pronunciation aid for a verse, or null when the user turned it off.
+    private fun translitFor(verse: VerseEntity, prefs: UserPreferences): String? =
+        when (prefs.pronunciation) {
+            AidLanguage.NONE -> null
+            AidLanguage.ENGLISH -> verse.enTransliteration
+            AidLanguage.BENGALI -> verse.bnTransliteration
+        }
+
+    // The card's active translation for the display language — the stored
+    // default when available, otherwise the language's bundled one (the one
+    // question TranslationLibrary answers). Never null for a real language;
+    // callers pair it with toTranslationLanguage()'s null for "no aid text".
+    private fun activeTranslation(
+        language: TranslationLanguage,
+        prefs: UserPreferences,
+        downloaded: Set<String>,
+    ): TranslationMeta = TranslationLibrary.resolveActive(language, prefs.storedTranslationId(language), downloaded)
+
     // Caller must hold mutationMutex.
     private suspend fun render(prefs: UserPreferences) {
         val verse = currentVerse ?: return
@@ -328,16 +350,10 @@ class ReadingSession(
             val availableTranslations = translationLanguage
                 ?.let { TranslationLibrary.available(it, downloaded) }
                 .orEmpty()
-            val defaultMeta = translationLanguage?.let {
-                TranslationLibrary.resolveActive(it, prefs.storedTranslationId(it), downloaded)
-            }
+            val defaultMeta = translationLanguage?.let { activeTranslation(it, prefs, downloaded) }
             val shownMeta = availableTranslations.find { it.id == translationOverrideId } ?: defaultMeta
             val translation = shownMeta?.let { translationText(it, verse.id) }
-            val translitText = when (prefs.pronunciation) {
-                AidLanguage.NONE -> null
-                AidLanguage.ENGLISH -> verse.enTransliteration
-                AidLanguage.BENGALI -> verse.bnTransliteration
-            }
+            val translitText = translitFor(verse, prefs)
 
             _uiState.update { current ->
                 current.copy(
@@ -376,15 +392,9 @@ class ReadingSession(
         downloaded: Set<String>,
     ): AyahPreview {
         val translationLanguage = prefs.translationDisplay.toTranslationLanguage()
-        val meta = translationLanguage?.let {
-            TranslationLibrary.resolveActive(it, prefs.storedTranslationId(it), downloaded)
-        }
+        val meta = translationLanguage?.let { activeTranslation(it, prefs, downloaded) }
         val translation = meta?.let { translationText(it, verse.id) }
-        val translitText = when (prefs.pronunciation) {
-            AidLanguage.NONE -> null
-            AidLanguage.ENGLISH -> verse.enTransliteration
-            AidLanguage.BENGALI -> verse.bnTransliteration
-        }
+        val translitText = translitFor(verse, prefs)
         return AyahPreview(
             ayahLabel = ayahLabel(verse, prefs.surahNameLanguage),
             arabicText = verse.arabicTextFor(prefs.arabicScript),
