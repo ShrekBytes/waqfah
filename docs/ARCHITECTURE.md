@@ -7,10 +7,12 @@ explains — those are the source of truth; this file is just the index.
 ## The core loop
 
 **AppMonitorService** (foreground service, `specialUse` FGS) polls
-UsageStatsManager every second while the screen is on and detection is armed.
-It pairs consecutive `ACTIVITY_RESUMED` events to tell real opens apart from
-share-sheet/file-viewer/link-grabber entries, then launches **TriggerActivity**
-over the target app when all trigger rules pass:
+UsageStatsManager every second while the screen is on and detection is armed,
+and feeds each `ACTIVITY_RESUMED` event to **TriggerDecision**
+(`detection/TriggerDecision.kt`). That module owns every trigger rule and all
+rule state; each event gets a verdict — trigger, or ignore with a reason — and
+the service, its Android adapter, launches **TriggerActivity** on a Trigger.
+The rules, in the order the decision applies them:
 
 1. one pause per continuous foreground-stay of an app,
 2. never on indirect entries (picker-mediated or worker activities),
@@ -20,10 +22,20 @@ over the target app when all trigger rules pass:
    screen,
 4. never when returning from Waqfah's own interstitial,
 5. never on a quick switch-back within `SWITCH_BACK_GAP_MS`, regardless of the
-   per-app interval,
-6. otherwise the per-app interval decides (`0` = "Off" triggers on every fresh
-   open that gets this far); `last_shown_at` is stamped once, at trigger time,
-   regardless of how the interstitial is later dismissed.
+   cooldown,
+6. otherwise the cooldown decides (`0` = "Off" triggers on every fresh
+   open that gets this far); the `last_shown_at` anchor is stamped inside the
+   module, exactly at trigger time, regardless of how the interstitial is
+   later dismissed.
+
+The decision is tested on the JVM through scripted resumed-activity sequences
+with fake clocks (`TriggerDecisionTest`) — the three regression loops that
+used to be fixed blind in the service are pinned there. When the monitor gate
+closes (screen off, monitoring off), the service resets the decision, severing
+the picker pairing and call context so nothing from before the pause pairs
+into a post-wake resume. The reset deliberately spares the foreground tracker
+and switch-back map: switch-back entries expire by age, so a stale one can't
+suppress a later open.
 
 **TriggerActivity** is a translucent interstitial rendering **ReadingCard**;
 finishing it falls through to whatever was really underneath.

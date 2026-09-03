@@ -32,12 +32,12 @@ class MonitoredAppsRepository @Inject constructor(
 
     suspend fun remove(packageName: String) = appDatabase.monitoredAppDao().remove(packageName)
 
-    suspend fun isInCooldown(packageName: String, cooldownMinutes: Int): Boolean =
-        isWithinCooldown(
-            lastShownAt = appDatabase.monitoredAppDao().getLastShown(packageName),
-            now = System.currentTimeMillis(),
-            cooldownMinutes = cooldownMinutes,
-        )
+    // The persisted trigger stamp — the cooldown's anchor. Written only by
+    // recordShown, at trigger time from TriggerDecision, and read by the
+    // same module's cooldown rule; wall-clock on purpose, so stamps survive
+    // reboots.
+    suspend fun getTriggerStamp(packageName: String): Long? =
+        appDatabase.monitoredAppDao().getLastShown(packageName)
 
     suspend fun recordShown(packageName: String) =
         appDatabase.monitoredAppDao().updateLastShown(packageName, System.currentTimeMillis())
@@ -92,14 +92,5 @@ class MonitoredAppsRepository @Inject constructor(
 
     companion object {
         const val ICON_SIZE_PX = 128
-
-        // Pure core of isInCooldown, extracted for unit testing. Negative
-        // elapsed (clock rolled back / NTP resync) counts as expired, never as
-        // permanently cooling down. A 0-minute interval (Off) never cools down.
-        fun isWithinCooldown(lastShownAt: Long?, now: Long, cooldownMinutes: Int): Boolean {
-            lastShownAt ?: return false
-            val elapsedMs = now - lastShownAt
-            return elapsedMs >= 0 && elapsedMs < cooldownMinutes * 60_000L
-        }
     }
 }
