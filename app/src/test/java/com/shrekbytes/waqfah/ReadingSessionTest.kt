@@ -66,15 +66,24 @@ class ReadingSessionTest {
     private var surahQueries = 0
     private var startingVerseLoads = 0
 
-    // Opened only by the mark-read race test to stall inside the lock.
+    // Opened only by tests that stall inside the lock: the mark-read race and
+    // the preference-emission-during-a-step ordering. Both are one-shot: a
+    // render's preview probes call the same ports, and they must not stall.
     private var isReadDelayMs = 0L
+    private var nextDelayMs = 0L
 
     private fun TestScope.session() = ReadingSession(
         preferences = prefs,
         downloadedIds = downloadedIds,
         progressReset = resetSignal,
         verseById = { id -> verses.firstOrNull { it.id == id } },
-        nextVerse = { afterId -> verses.firstOrNull { it.id > afterId } ?: verses.first() },
+        nextVerse = {
+            val stall = nextDelayMs
+            nextDelayMs = 0
+            if (stall > 0) delay(stall)
+            val afterId = it
+            verses.firstOrNull { v -> v.id > afterId } ?: verses.first()
+        },
         previousVerse = { beforeId -> verses.lastOrNull { it.id < beforeId } ?: verses.last() },
         firstUnreadVerse = { startingVerseLoads++; verses.firstOrNull { it.id !in readIds } },
         randomUnreadVerse = { startingVerseLoads++; verses.filter { it.id !in readIds }.randomOrNull() ?: verses.random() },
@@ -290,6 +299,82 @@ class ReadingSessionTest {
         runCurrent()
         assertFalse(session.uiState.value.isCompleted)
         assertEquals((1..VERSE_COUNT).toSet(), readIds)
+    }
+
+    // The session's own resetAll() echoes through progressReset; before the
+    // echo suppression this landed as a second, redundant reload.
+    @Test
+    fun startOver_reloadsExactlyOnce() = runTest {
+        readIds += setOf(1, 2)
+        val session = session()
+        runCurrent()
+        assertEquals(1, startingVerseLoads)
+
+        session.startOver()
+        runCurrent()
+
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertEquals(2, startingVerseLoads)
+    }
+
+    @Test
+    fun switchModeAndRestart_reloadsExactlyOnce_andEchoesTheMode() = runTest {
+        readIds += setOf(1, 2)
+        val session = session()
+        runCurrent()
+
+        session.switchModeAndRestart()
+        runCurrent()
+
+        assertEquals(listOf(ReadingMode.RANDOM), setReadingModeCalls)
+        assertEquals(ReadingMode.RANDOM, session.uiState.value.readingMode)
+        assertEquals(2, startingVerseLoads)
+    }
+
+    // The echo suppression must not over-suppress: a genuine external reset
+    // (Reset progress in Settings) after a self-initiated one still reloads.
+    @Test
+    fun externalReset_afterSelfReset_stillReloads() = runTest {
+        val session = session()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+
+        session.startOver()
+        runCurrent()
+        assertEquals(2, startingVerseLoads)
+
+        readIds += setOf(1, 2) // wiped again by the external reset
+        resetSignal.value++
+        runCurrent()
+
+        assertEquals("1:3", session.uiState.value.ayahLabel)
+        assertEquals(3, startingVerseLoads)
+    }
+
+    // A preference emission landing while a step holds the lock must not
+    // interleave with it: the step renders with the old preferences, then the
+    // emission re-renders with the new ones — neither effect lost, latestPrefs
+    // never read mid-write.
+    @Test
+    fun preferenceEmission_duringStalledStep_appliesAfterIt() = runTest {
+        val session = session()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertEquals(26, session.uiState.value.arabicFontSize)
+
+        nextDelayMs = 100
+        val stepped = launch { session.next() }
+        runCurrent() // the step holds the mutex, suspended in its port
+        prefs.value = prefs.value.copy(arabicFontSize = 30)
+        runCurrent() // the emission's collector queues behind the mutex
+        advanceTimeBy(100) // the step completes and renders with the old size
+        runCurrent()
+        stepped.join()
+        runCurrent() // the queued emission re-renders with the new size
+
+        assertEquals("1:2", session.uiState.value.ayahLabel)
+        assertEquals(30, session.uiState.value.arabicFontSize)
+        assertEquals(1, startingVerseLoads) // a prefs emission never reloads
     }
 
     @Test

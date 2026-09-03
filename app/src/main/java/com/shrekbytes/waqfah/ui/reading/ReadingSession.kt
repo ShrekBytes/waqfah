@@ -27,9 +27,10 @@ import kotlinx.coroutines.sync.withLock
 // (see CONTEXT.md). It owns the whole reading loop: stepping between verses,
 // rendering the current one, marking verses read, the compare-translations
 // peek, and the completion state — plus the ordering that keeps all of it
-// consistent: every mutation of the current verse and every render that reads
-// it is serialized behind one mutex, which is this module's internal
-// invariant, not a convention callers must know about.
+// consistent: every read and write of currentVerse, latestPrefs,
+// translationOverrideId and the render-signature bookkeeping happens behind
+// one mutex — this module's internal invariant, not a convention callers must
+// know about.
 //
 // Everything impure arrives through the constructor as a flow or a function:
 // the three input signals (preferences, downloaded translation ids, the
@@ -40,7 +41,10 @@ import kotlinx.coroutines.sync.withLock
 class ReadingSession(
     private val preferences: Flow<UserPreferences>,
     private val downloadedIds: StateFlow<Set<String>>,
-    private val progressReset: Flow<Int>,
+    // A monotonic counter the adapter bumps on every external progress wipe
+    // (ReadingProgressRepository.progressReset). The session reads the value
+    // to recognise the echo of its own resets — see lastSelfInitiatedReset.
+    private val progressReset: StateFlow<Int>,
     private val verseById: suspend (Int) -> VerseEntity?,
     private val nextVerse: suspend (Int) -> VerseEntity?,
     private val previousVerse: suspend (Int) -> VerseEntity?,
@@ -84,28 +88,35 @@ class ReadingSession(
     // hidden until progress actually changes again.
     private var completionDismissed = false
 
+    // The progressReset counter's value right after the session's own last
+    // resetAll(); the collector skips emissions at or below it so the reset's
+    // echo never reloads again. Guarded by mutationMutex. Monotonic-counter
+    // arithmetic makes this conflations-safe: an external reset that bumps
+    // past the recorded value always lands above it.
+    private var lastSelfInitiatedReset = Int.MIN_VALUE
+
     private val _uiState = MutableStateFlow(ReadingUiState())
     val uiState: StateFlow<ReadingUiState> = _uiState.asStateFlow()
 
     init {
         scope.launch {
             preferences.collect { prefs ->
-                // Changing the persisted default must win over any session-local
-                // compare-mode peek — otherwise switching translations looks
-                // like it "didn't update" while the old override still renders.
-                val defaultChanged = prefs.activeTranslationEnglish != latestPrefs.activeTranslationEnglish ||
-                    prefs.activeTranslationBengali != latestPrefs.activeTranslationBengali
-                // The first emission always renders (it loads the starting
-                // verse); later ones only when something the card displays
-                // changed — unrelated writes (theme ticks, cooldown stepper,
-                // locale mirror…) skip the render instead of paying ~6 DB
-                // queries per emission.
-                val firstLoad = currentVerse == null
-                val signature = readingRenderSignature(prefs)
-                latestPrefs = prefs
-                if (!firstLoad && signature == lastRenderSignature) return@collect
-                lastRenderSignature = signature
                 mutationMutex.withLock {
+                    // Changing the persisted default must win over any session-local
+                    // compare-mode peek — otherwise switching translations looks
+                    // like it "didn't update" while the old override still renders.
+                    val defaultChanged = prefs.activeTranslationEnglish != latestPrefs.activeTranslationEnglish ||
+                        prefs.activeTranslationBengali != latestPrefs.activeTranslationBengali
+                    // The first emission always renders (it loads the starting
+                    // verse); later ones only when something the card displays
+                    // changed — unrelated writes (theme ticks, cooldown stepper,
+                    // locale mirror…) skip the render instead of paying ~6 DB
+                    // queries per emission.
+                    val firstLoad = currentVerse == null
+                    val signature = readingRenderSignature(prefs)
+                    latestPrefs = prefs
+                    if (!firstLoad && signature == lastRenderSignature) return@withLock
+                    lastRenderSignature = signature
                     if (defaultChanged) translationOverrideId = null
                     if (currentVerse == null) currentVerse = loadStartingVerse(prefs)
                     render(prefs)
@@ -127,12 +138,17 @@ class ReadingSession(
         }
         // Same idea for "Reset progress" in Settings: if this screen is already
         // showing an ayah, jump to a fresh starting verse instead of leaving
-        // stale read/completion state on screen until a restart.
-        // startOver()/switchModeAndRestart() also land here as a harmless
-        // extra reload since they trigger this same signal themselves.
+        // stale read/completion state on screen until a restart. The session's
+        // own resets (startOver / switchModeAndRestart) echo through this same
+        // signal — but they reload synchronously under the lock and record the
+        // echo below, so the collector skips their emission instead of paying
+        // a second reload.
         scope.launch {
-            progressReset.drop(1).collect {
-                if (currentVerse != null) beginFreshSession()
+            progressReset.drop(1).collect { value ->
+                mutationMutex.withLock {
+                    if (value <= lastSelfInitiatedReset) return@withLock
+                    if (currentVerse != null) beginFreshSessionLocked()
+                }
             }
         }
     }
@@ -169,18 +185,28 @@ class ReadingSession(
 
     // Both completion-popup reset paths wipe read history and land on a fresh
     // starting ayah — Start Again keeps the current mode, the switch moves to
-    // the other mode first.
+    // the other mode first. Both reload synchronously under the lock and then
+    // swallow the progressReset echo of their own resetAll(), so exactly one
+    // reload happens; switchModeAndRestart also writes the mode echo into
+    // latestPrefs under the same lock, so the fresh session picks it up
+    // whichever collector runs first.
     fun startOver() = scope.launch {
-        resetAll()
-        beginFreshSession()
+        mutationMutex.withLock {
+            resetAll()
+            lastSelfInitiatedReset = progressReset.value
+            beginFreshSessionLocked()
+        }
     }
 
     fun switchModeAndRestart() = scope.launch {
-        val newMode = if (latestPrefs.readingMode == ReadingMode.SEQUENTIAL) ReadingMode.RANDOM else ReadingMode.SEQUENTIAL
-        setReadingMode(newMode)
-        latestPrefs = latestPrefs.copy(readingMode = newMode)
-        resetAll()
-        beginFreshSession()
+        mutationMutex.withLock {
+            val newMode = if (latestPrefs.readingMode == ReadingMode.SEQUENTIAL) ReadingMode.RANDOM else ReadingMode.SEQUENTIAL
+            setReadingMode(newMode)
+            latestPrefs = latestPrefs.copy(readingMode = newMode)
+            resetAll()
+            lastSelfInitiatedReset = progressReset.value
+            beginFreshSessionLocked()
+        }
     }
 
     // The interstitial's "you opened <app>" label is host garnish, not reading
@@ -190,19 +216,19 @@ class ReadingSession(
         _uiState.update { it.copy(triggeredAppLabel = label) }
     }
 
-    private suspend fun beginFreshSession() {
+    // Caller must hold mutationMutex.
+    private suspend fun beginFreshSessionLocked() {
         completionDismissed = false
-        mutationMutex.withLock {
-            currentVerse = loadStartingVerse(latestPrefs)
-            render(latestPrefs)
-        }
+        currentVerse = loadStartingVerse(latestPrefs)
+        render(latestPrefs)
     }
 
     // Jumps to an explicit verse without touching read history or sequential/
     // random position — "Surahs & ayahs" works for read or unread, and
-    // next/previous still step by global id after the jump. Mirrors beginFreshSession but
-    // with an explicit target and cleared translation peek. Home-only by design;
-    // TriggerActivity keeps its own instance via a separate Activity.
+    // next/previous still step by global id after the jump. Like a fresh
+    // session but with an explicit target and a cleared translation peek.
+    // Home-only by design; TriggerActivity keeps its own instance via a
+    // separate Activity.
     suspend fun jumpToVerse(verseId: Int) {
         mutationMutex.withLock {
             val target = verseById(verseId) ?: return@withLock
@@ -232,8 +258,8 @@ class ReadingSession(
     // active display language, wrapping around. Never touches the persisted
     // default — pure "peek at another wording" for this ayah only.
     fun cycleTranslationSource(forward: Boolean) = scope.launch {
-        val lang = latestPrefs.translationDisplay.toTranslationLanguage() ?: return@launch
         mutationMutex.withLock {
+            val lang = latestPrefs.translationDisplay.toTranslationLanguage() ?: return@withLock
             val downloaded = downloadedIds.value
             val available = TranslationLibrary.available(lang, downloaded)
             if (available.size < 2) return@withLock
