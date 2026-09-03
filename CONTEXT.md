@@ -78,6 +78,15 @@ The persisted record of when an app last triggered — the cooldown's anchor.
 Written once, at trigger time, never on dismissal.
 _Avoid_: last shown, cooldown write
 
+### Reading
+
+**ReadingSession**:
+The reading machine shared by both hosts — the Home tab and the
+interstitial. It steps between verses, renders the current one, and marks
+verses read, owning its own ordering; the ViewModel only adapts it to
+Android.
+_Avoid_: reading engine, reader, reading manager
+
 ### Translations
 
 **Translation library**:
