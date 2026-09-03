@@ -71,3 +71,27 @@ _Avoid_: decision result
 The persisted record of when an app last triggered — the cooldown's anchor.
 Written once, at trigger time, never on dismissal.
 _Avoid_: last shown, cooldown write
+
+### Translations
+
+**Translation library**:
+The module that decides which translations are available for a language and
+which one is active. The one place those two questions are answered.
+_Avoid_: translation service, translation manager
+
+**Available translation**:
+A catalog entry usable right now: bundled (always, even before its file is
+first copied), or downloaded to disk.
+_Avoid_: downloaded translation, installed translation
+
+**Stored translation**:
+The translation the user last picked for a language, persisted in
+preferences. May be unavailable: removed from the catalog, or its file
+missing.
+_Avoid_: saved translation, preferred translation
+
+**Active translation**:
+What a language actually renders: the stored translation when available,
+otherwise the language's bundled one. Settings' active label and the reading
+card never disagree about this.
+_Avoid_: default translation, selected translation

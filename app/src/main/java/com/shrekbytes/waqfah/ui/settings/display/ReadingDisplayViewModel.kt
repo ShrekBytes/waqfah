@@ -10,6 +10,7 @@ import com.shrekbytes.waqfah.data.model.ReadingMode
 import com.shrekbytes.waqfah.data.model.UserPreferences
 import com.shrekbytes.waqfah.data.model.PreferenceLimits
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
+import com.shrekbytes.waqfah.data.repository.TranslationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,10 +21,15 @@ import javax.inject.Inject
 @HiltViewModel
 class ReadingDisplayViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    translationRepository: TranslationRepository,
 ) : ViewModel() {
 
     val prefs: StateFlow<UserPreferences> = settingsRepository.preferences
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferences())
+
+    // Disk truth for resolving the stored translation ids to the active
+    // translation names shown on this screen.
+    val downloadedIds: StateFlow<Set<String>> = translationRepository.downloadedIds
 
     fun setReadingMode(mode: ReadingMode) = viewModelScope.launch { settingsRepository.setReadingMode(mode) }
     fun setSurahNameLanguage(lang: NameDisplayLanguage) = viewModelScope.launch { settingsRepository.setSurahNameLanguage(lang) }

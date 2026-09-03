@@ -97,6 +97,14 @@ private fun TranslationRow(
                         modifier = Modifier.clickable(onClick = onDownload),
                     )
                     row.isActive -> Text(stringResource(R.string.active_label), color = colors.accent, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                    // Not on disk and not bundled — the only case Download applies to.
+                    !row.isUsable -> Text(
+                        stringResource(R.string.download_label),
+                        color = colors.inkMuted,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable(onClick = onDownload),
+                    )
                     // Bundled translations can't meaningfully be downloaded or deleted.
                     row.meta.isBundled -> Text(
                         stringResource(R.string.select_label),
@@ -105,7 +113,8 @@ private fun TranslationRow(
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clickable(onClick = onSelect),
                     )
-                    row.isDownloaded -> {
+                    // Usable and not bundled: a downloaded file the user can drop.
+                    else -> {
                         Text(
                             stringResource(R.string.select_label),
                             color = colors.accent,
@@ -121,13 +130,6 @@ private fun TranslationRow(
                             modifier = Modifier.clickable(onClick = onDelete),
                         )
                     }
-                    else -> Text(
-                        stringResource(R.string.download_label),
-                        color = colors.inkMuted,
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable(onClick = onDownload),
-                    )
                 }
             }
         }

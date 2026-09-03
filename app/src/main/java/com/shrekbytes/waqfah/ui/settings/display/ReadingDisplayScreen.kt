@@ -34,8 +34,8 @@ import com.shrekbytes.waqfah.data.model.ArabicScript
 import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
 import com.shrekbytes.waqfah.data.model.PreferenceLimits
 import com.shrekbytes.waqfah.data.model.ReadingMode
-import com.shrekbytes.waqfah.data.model.TranslationCatalog
 import com.shrekbytes.waqfah.data.model.TranslationLanguage
+import com.shrekbytes.waqfah.data.model.TranslationLibrary
 import com.shrekbytes.waqfah.ui.components.ChevronDirection
 import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.components.ChipGroup
@@ -59,6 +59,7 @@ fun ReadingDisplayScreen(
     scrollToSection: String? = null,
 ) {
     val prefs by viewModel.prefs.collectAsStateWithLifecycle()
+    val downloadedIds by viewModel.downloadedIds.collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
     val scrollState = rememberScrollState()
     val translationRequester = remember { BringIntoViewRequester() }
@@ -192,11 +193,12 @@ fun ReadingDisplayScreen(
                     onChange = viewModel::setTranslationFontSize,
                 )
             }
-            TranslationLinkField(stringResource(R.string.english_translation_row), prefs.activeTranslationEnglish, TranslationLanguage.ENGLISH, onOpenTranslations)
+            TranslationLinkField(stringResource(R.string.english_translation_row), prefs.activeTranslationEnglish, TranslationLanguage.ENGLISH, downloadedIds, onOpenTranslations)
             TranslationLinkField(
                 stringResource(R.string.bengali_translation_row),
                 prefs.activeTranslationBengali,
                 TranslationLanguage.BENGALI,
+                downloadedIds,
                 onOpenTranslations,
                 showDivider = false,
             )
@@ -208,16 +210,14 @@ fun ReadingDisplayScreen(
 @Composable
 private fun TranslationLinkField(
     label: String,
-    activeId: String,
+    storedId: String,
     language: TranslationLanguage,
+    downloadedIds: Set<String>,
     onClick: (TranslationLanguage) -> Unit,
     showDivider: Boolean = true,
 ) {
     val colors = WaqfahTheme.colors
-    val name = TranslationCatalog.all
-        .firstOrNull { it.language == language && it.id == activeId }
-        ?.name
-        ?: TranslationCatalog.all.first { it.language == language && it.isBundled }.name
+    val name = TranslationLibrary.resolveActive(language, storedId, downloadedIds).name
     InlineField(label, showDivider = showDivider, onClick = { onClick(language) }) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(name, color = colors.inkMuted, fontSize = 13.sp)

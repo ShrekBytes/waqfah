@@ -18,8 +18,8 @@ class ReadingProgressRepository @Inject constructor(
 
     // Bumped on every resetAll() so a ReadingViewModel already showing content
     // (e.g. the Home tab, while the user resets progress from Settings) knows
-    // to reload its starting verse instead of silently going stale. Mirrors
-    // TranslationRepository.downloadsChanged.
+    // to reload its starting verse instead of silently going stale. Same
+    // nudge-a-long-lived-screen pattern as TranslationRepository.downloadedIds.
     private val _progressReset = MutableStateFlow(0)
     val progressReset: StateFlow<Int> = _progressReset.asStateFlow()
 

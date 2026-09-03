@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.data.model.TranslationCatalog
 import com.shrekbytes.waqfah.data.model.TranslationLanguage
+import com.shrekbytes.waqfah.data.model.TranslationLibrary
 import com.shrekbytes.waqfah.data.model.TranslationMeta
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.repository.TranslationRepository
@@ -13,12 +14,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,7 +25,10 @@ import javax.inject.Inject
 
 data class TranslationRowState(
     val meta: TranslationMeta,
-    val isDownloaded: Boolean,
+    // Usable right now: bundled always counts (even before its lazy
+    // first-copy), otherwise the file must be on disk. Same rule the reading
+    // card uses — TranslationLibrary.available.
+    val isUsable: Boolean,
     val isActive: Boolean,
     val isDownloading: Boolean,
     // 0f..1f while downloading with a known Content-Length; null otherwise.
@@ -51,34 +53,28 @@ class TranslationsViewModel @Inject constructor(
     private val downloadProgress = MutableStateFlow<Map<String, Float>>(emptyMap())
     private val downloadErrors = MutableStateFlow<Map<String, String>>(emptyMap())
 
-    // Bumped after every download()/delete() so rows re-read download state —
-    // a simple nudge instead of tracking downloads in Room.
-    private val refreshTrigger = MutableStateFlow(0)
-
-    // Which catalog entries exist on disk. Deliberately derived ONLY from
-    // refreshTrigger: putting this lookup in the row combine below would re-run
-    // a disk existence check per row on every download-progress tick (~100×
-    // per download), rebuilding the list and recomposing for each.
-    private val downloadedIdsByRefresh: Flow<Set<String>> = refreshTrigger.map {
-        TranslationCatalog.all.filter { translationRepository.isDownloaded(it) }.map { it.id }.toSet()
-    }
-
     private val rowFlows = mutableMapOf<TranslationLanguage, StateFlow<List<TranslationRowState>>>()
 
     fun rowsFor(language: TranslationLanguage): StateFlow<List<TranslationRowState>> =
         rowFlows.getOrPut(language) {
             combine(
                 settingsRepository.preferences,
-                downloadedIdsByRefresh,
+                // Repository-published disk truth: restated after every
+                // download/delete/first-copy, deduped so progress ticks and
+                // failed attempts never re-run this combine for no change.
+                translationRepository.downloadedIds,
                 downloadingIds,
                 downloadProgress,
                 downloadErrors,
             ) { prefs, downloadedIds, downloading, progress, errors ->
-                val activeId = if (language == TranslationLanguage.ENGLISH) prefs.activeTranslationEnglish else prefs.activeTranslationBengali
+                // "Active" means what the reading card actually renders — the
+                // stored translation when usable, else the bundled fallback —
+                // so the label can never disagree with the card.
+                val activeId = TranslationLibrary.resolveActive(language, prefs.storedTranslationId(language), downloadedIds).id
                 TranslationCatalog.all.filter { it.language == language }.map { meta ->
                     TranslationRowState(
                         meta = meta,
-                        isDownloaded = meta.id in downloadedIds,
+                        isUsable = TranslationLibrary.isAvailable(meta, downloadedIds),
                         isActive = meta.id == activeId,
                         isDownloading = meta.id in downloading,
                         downloadProgress = progress[meta.id],
@@ -129,7 +125,6 @@ class TranslationsViewModel @Inject constructor(
         } finally {
             downloadingIds.update { it - meta.id }
             downloadProgress.update { it - meta.id }
-            refreshTrigger.update { it + 1 }
         }
     }
 
@@ -138,7 +133,6 @@ class TranslationsViewModel @Inject constructor(
         // too so a bundled fallback can never be wiped.
         if (meta.isBundled) return@launch
         translationRepository.delete(meta)
-        refreshTrigger.update { it + 1 }
     }
 
     private companion object {

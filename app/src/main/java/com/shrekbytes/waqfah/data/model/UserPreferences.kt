@@ -51,4 +51,10 @@ data class UserPreferences(
     // False until the user finishes the Home-screen feature tour once. Skipped
     // tours leave this untouched, so they're offered again next launch.
     val hasCompletedFeatureTour: Boolean = false,
-)
+) {
+    // The stored translation for a language — which field holds it is this
+    // class's shape detail. Resolve it to the active translation through
+    // TranslationLibrary.
+    fun storedTranslationId(language: TranslationLanguage): String =
+        if (language == TranslationLanguage.ENGLISH) activeTranslationEnglish else activeTranslationBengali
+}

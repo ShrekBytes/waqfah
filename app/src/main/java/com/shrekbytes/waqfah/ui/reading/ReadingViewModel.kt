@@ -7,9 +7,7 @@ import com.shrekbytes.waqfah.data.local.core.VerseEntity
 import com.shrekbytes.waqfah.data.model.AidLanguage
 import com.shrekbytes.waqfah.data.model.NameDisplayLanguage
 import com.shrekbytes.waqfah.data.model.ReadingMode
-import com.shrekbytes.waqfah.data.model.TranslationCatalog
-import com.shrekbytes.waqfah.data.model.TranslationLanguage
-import com.shrekbytes.waqfah.data.model.TranslationMeta
+import com.shrekbytes.waqfah.data.model.TranslationLibrary
 import com.shrekbytes.waqfah.data.model.UserPreferences
 import com.shrekbytes.waqfah.data.model.toTranslationLanguage
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
@@ -94,12 +92,14 @@ class ReadingViewModel @Inject constructor(
                 }
             }
         }
-        // A download/delete can land while this screen is already alive (e.g. a
-        // translation finishes downloading in Settings, then the user returns
-        // Home). Re-render so compare-switcher availability reflects the new
-        // file instead of staying stale until the next ayah change.
+        // A download/delete/first-copy can land while this screen is already
+        // alive (e.g. a translation finishes downloading in Settings, then the
+        // user returns Home). The set dedupes, so this only fires when
+        // availability actually changed — re-render so compare-switcher
+        // availability reflects the new file instead of staying stale until
+        // the next ayah change.
         viewModelScope.launch {
-            translationRepository.downloadsChanged.drop(1).collect {
+            translationRepository.downloadedIds.drop(1).collect {
                 mutationMutex.withLock {
                     if (currentVerse != null) render(latestPrefs)
                 }
@@ -207,16 +207,14 @@ class ReadingViewModel @Inject constructor(
     fun cycleTranslationSource(forward: Boolean) = viewModelScope.launch {
         val lang = latestPrefs.translationDisplay.toTranslationLanguage() ?: return@launch
         mutationMutex.withLock {
-            // Same availability rule as render(): bundled counts even before its
-            // lazy first-copy, otherwise cycling was a no-op on fresh sessions.
-            val downloaded = TranslationCatalog.all.filter {
-                it.language == lang && (it.isBundled || translationRepository.isDownloaded(it))
-            }
-            if (downloaded.size < 2) return@withLock
-            val currentId = translationOverrideId ?: activeTranslation(lang, latestPrefs).id
-            val currentIndex = downloaded.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
+            val downloadedIds = translationRepository.downloadedIds.value
+            val available = TranslationLibrary.available(lang, downloadedIds)
+            if (available.size < 2) return@withLock
+            val currentId = translationOverrideId
+                ?: TranslationLibrary.resolveActive(lang, latestPrefs.storedTranslationId(lang), downloadedIds).id
+            val currentIndex = available.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
             val stepDir = if (forward) 1 else -1
-            translationOverrideId = downloaded[(currentIndex + stepDir + downloaded.size) % downloaded.size].id
+            translationOverrideId = available[(currentIndex + stepDir + available.size) % available.size].id
             render(latestPrefs)
         }
     }
@@ -262,6 +260,11 @@ class ReadingViewModel @Inject constructor(
     private suspend fun render(prefs: UserPreferences) {
         val verse = currentVerse ?: return
 
+        // One snapshot for the whole render: availability and the active
+        // translation must agree even if a download lands mid-render —
+        // shared with the next/prev previews too.
+        val downloadedIds = translationRepository.downloadedIds.value
+
         // The independent lookups run concurrently — sequentially a render
         // costs ~6 DB round-trips (per swipe, and per settings tick).
         coroutineScope {
@@ -269,24 +272,18 @@ class ReadingViewModel @Inject constructor(
             val isReadDeferred = async { readingProgressRepository.isRead(verse.id) }
             val allReadDeferred = async { isEverythingRead() }
             val nextPreviewDeferred =
-                async { quranRepository.getNextVerse(verse.id)?.let { buildPreview(it, prefs) } }
+                async { quranRepository.getNextVerse(verse.id)?.let { buildPreview(it, prefs, downloadedIds) } }
             val previousPreviewDeferred =
-                async { quranRepository.getPreviousVerse(verse.id)?.let { buildPreview(it, prefs) } }
+                async { quranRepository.getPreviousVerse(verse.id)?.let { buildPreview(it, prefs, downloadedIds) } }
 
             val translationLanguage = prefs.translationDisplay.toTranslationLanguage()
-            // Availability rule: bundled translations always count — their file
-            // is created lazily on the first getText() below, and statting for
-            // existence BEFORE that copy made the switcher vanish on fresh
-            // sessions (it only reappeared after the next ayah/reopen).
-            val downloadedTranslations = translationLanguage
-                ?.let { lang ->
-                    TranslationCatalog.all.filter {
-                        it.language == lang && (it.isBundled || translationRepository.isDownloaded(it))
-                    }
-                }
+            val availableTranslations = translationLanguage
+                ?.let { TranslationLibrary.available(it, downloadedIds) }
                 .orEmpty()
-            val defaultMeta = translationLanguage?.let { activeTranslation(it, prefs) }
-            val shownMeta = downloadedTranslations.find { it.id == translationOverrideId } ?: defaultMeta
+            val defaultMeta = translationLanguage?.let {
+                TranslationLibrary.resolveActive(it, prefs.storedTranslationId(it), downloadedIds)
+            }
+            val shownMeta = availableTranslations.find { it.id == translationOverrideId } ?: defaultMeta
             val translationText = shownMeta?.let { translationRepository.getText(it, verse.id) }
             val translitText = when (prefs.pronunciation) {
                 AidLanguage.NONE -> null
@@ -309,7 +306,7 @@ class ReadingViewModel @Inject constructor(
                     translationText = translationText,
                     translationFontSize = prefs.translationFontSize,
                     translationSourceName = shownMeta?.name,
-                    translationHasAlternates = downloadedTranslations.size > 1,
+                    translationHasAlternates = availableTranslations.size > 1,
                     isMarkedRead = isReadDeferred.await(),
                     readingMode = prefs.readingMode,
                     isCompleted = allReadDeferred.await() && !completionDismissed,
@@ -323,10 +320,17 @@ class ReadingViewModel @Inject constructor(
 
     // Like render(), minus what only applies to the ayah actually being read
     // (override mode, read status, header) and always with the real default
-    // translation — a peeked neighbour isn't in compare mode.
-    private suspend fun buildPreview(verse: VerseEntity, prefs: UserPreferences): AyahPreview {
+    // translation — a peeked neighbour isn't in compare mode. Shares render's
+    // downloadedIds snapshot so previews can't disagree with the main ayah.
+    private suspend fun buildPreview(
+        verse: VerseEntity,
+        prefs: UserPreferences,
+        downloadedIds: Set<String>,
+    ): AyahPreview {
         val translationLanguage = prefs.translationDisplay.toTranslationLanguage()
-        val meta = translationLanguage?.let { activeTranslation(it, prefs) }
+        val meta = translationLanguage?.let {
+            TranslationLibrary.resolveActive(it, prefs.storedTranslationId(it), downloadedIds)
+        }
         val translationText = meta?.let { translationRepository.getText(it, verse.id) }
         val translitText = when (prefs.pronunciation) {
             AidLanguage.NONE -> null
@@ -343,15 +347,6 @@ class ReadingViewModel @Inject constructor(
             translationText = translationText,
             translationFontSize = prefs.translationFontSize,
         )
-    }
-
-    // Falls back to the language's bundled translation when the stored id is no
-    // longer in the catalog (e.g. removed after an app update) instead of
-    // crashing every render.
-    private fun activeTranslation(lang: TranslationLanguage, prefs: UserPreferences): TranslationMeta {
-        val id = if (lang == TranslationLanguage.ENGLISH) prefs.activeTranslationEnglish else prefs.activeTranslationBengali
-        return TranslationCatalog.all.firstOrNull { it.language == lang && it.id == id }
-            ?: TranslationCatalog.all.first { it.language == lang && it.isBundled }
     }
 
 }

@@ -6,14 +6,17 @@ import android.database.sqlite.SQLiteDatabaseCorruptException
 import android.database.sqlite.SQLiteException
 import android.util.Log
 import com.shrekbytes.waqfah.data.local.translation.TranslationDatabase
+import com.shrekbytes.waqfah.data.model.TranslationCatalog
 import com.shrekbytes.waqfah.data.model.TranslationMeta
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -33,11 +36,33 @@ import javax.inject.Singleton
 class TranslationRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    // Bumped whenever translation files appear or disappear (download finished,
-    // file deleted, bundled first-copy). Lets long-lived screens restat
-    // availability reactively instead of staying stale until their next render.
-    private val _downloadsChanged = MutableStateFlow(0)
-    val downloadsChanged: StateFlow<Int> = _downloadsChanged.asStateFlow()
+    // Disk truth: which catalog translations have a file on disk right now.
+    // Restated on init and after every download/delete/first-copy; equal sets
+    // dedupe, so observers re-render only when availability actually changed.
+    // Empty until the first refresh lands — bundled translations never depend
+    // on it (TranslationLibrary counts them unconditionally).
+    private val _downloadedIds = MutableStateFlow<Set<String>>(emptySet())
+    val downloadedIds: StateFlow<Set<String>> = _downloadedIds.asStateFlow()
+
+    // Repository is an app-lifetime singleton, so this scope lives for the
+    // process — it exists only to run the initial refresh.
+    private val initScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        initScope.launch { refreshDownloadedIds() }
+    }
+
+    // Republishes disk truth. Serialized so an early refresh can never finish
+    // after a later one and publish a stale set (a finished download would
+    // then read as missing until the next change).
+    private val refreshLock = Mutex()
+
+    private suspend fun refreshDownloadedIds() = refreshLock.withLock {
+        val ids = withContext(Dispatchers.IO) {
+            TranslationCatalog.all.filter { fileFor(it).exists() }.map { it.id }.toSet()
+        }
+        _downloadedIds.value = ids
+    }
 
     // ConcurrentHashMap: getText() runs on arbitrary dispatchers while
     // download()/delete() run on others.
@@ -50,9 +75,10 @@ class TranslationRepository @Inject constructor(
     // with NoSuchFileException ("Failed to copy bundled translation …").
     private val downloadLocks = ConcurrentHashMap<String, Mutex>()
 
-    // Suspend + IO: callers poll this per-row inside flow transforms (and
-    // render paths) that run on the main dispatcher; File.exists() is disk I/O.
-    suspend fun isDownloaded(meta: TranslationMeta): Boolean =
+    // Suspend + IO: callers poll this per-row inside render paths that run on
+    // the main dispatcher; File.exists() is disk I/O. Private — callers read
+    // availability through downloadedIds + TranslationLibrary instead.
+    private suspend fun isDownloaded(meta: TranslationMeta): Boolean =
         withContext(Dispatchers.IO) { fileFor(meta).exists() }
 
     suspend fun getText(meta: TranslationMeta, verseId: Int): String? {
@@ -78,6 +104,7 @@ class TranslationRepository @Inject constructor(
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed reading '${meta.id}' for verse $verseId", e)
+            var evicted = false
             // Always drop the cached handle so the next call reopens cleanly,
             // but only DELETE the file when it's genuinely broken: transient
             // failures (e.g. SQLITE_BUSY while connections race a first open)
@@ -87,8 +114,12 @@ class TranslationRepository @Inject constructor(
                 if (meta.isBundled || isCorruption(e)) {
                     Log.w(TAG, "Evicting translation file for '${meta.id}'")
                     fileFor(meta).delete()
+                    evicted = true
                 }
             }
+            // The published set must forget the file too, or resolveActive
+            // would keep returning a translation that now renders null.
+            if (evicted) refreshDownloadedIds()
             null
         }
     }
@@ -122,7 +153,7 @@ class TranslationRepository @Inject constructor(
                     runInterruptible { downloadOverNetwork(meta, url, target, onProgress) }
                 }
             }
-            _downloadsChanged.update { it + 1 }
+            refreshDownloadedIds()
         }
     }
 
@@ -135,7 +166,7 @@ class TranslationRepository @Inject constructor(
                 openDatabases.remove(meta.id)?.close()
                 fileFor(meta).delete()
             }
-            _downloadsChanged.update { it + 1 }
+            refreshDownloadedIds()
         }
     }
 
