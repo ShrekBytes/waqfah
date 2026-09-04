@@ -90,7 +90,8 @@ class AppMonitorService : Service() {
     // The trigger decision and all of its rule state. The impure edges are
     // wired here: audio routing, the cached PackageManager probe, the
     // preference snapshot (read late, after the cheap rules have run), the
-    // persisted trigger stamp, and the two clocks.
+    // monitored-app membership snapshot and atomic trigger claim, and the two
+    // clocks.
     private val triggerDecision by lazy {
         TriggerDecision(
             isMonitored = { pkg -> pkg in monitoredPackages.value },
@@ -99,8 +100,8 @@ class AppMonitorService : Service() {
             prefs = {
                 settingsRepository.preferences.first().let { TriggerPrefs(it.appActive, it.cooldownMinutes) }
             },
-            triggerStamp = { monitoredAppState.triggerStamp(it) },
-            stampShown = { monitoredAppState.recordTrigger(it) },
+            monitoredMembership = { monitoredAppState.monitoredMembership(it) },
+            claimTrigger = { membership, triggeredAt -> monitoredAppState.claimTrigger(membership, triggeredAt) },
             nowElapsed = SystemClock::elapsedRealtime,
             nowWall = System::currentTimeMillis,
         )
@@ -221,6 +222,7 @@ class AppMonitorService : Service() {
                 Reason.INTERSTITIAL_RETURN -> Log.d(TAG, "Skipping ${activity.packageName} — resumed from Waqfah's interstitial")
                 Reason.CALL_GRACE -> Log.d(TAG, "Skipping ${activity.packageName} — within post-call grace window")
                 Reason.INDIRECT_ENTRY -> Log.d(TAG, "Skipping ${activity.className} for ${activity.packageName} — indirect entry")
+                Reason.TRIGGER_CLAIM_REJECTED -> Log.d(TAG, "Skipping ${activity.packageName} — monitored-app membership changed")
                 Reason.SAME_FOREGROUND, Reason.NOT_MONITORED, Reason.INACTIVE, Reason.SWITCH_BACK, Reason.COOLDOWN -> {}
             }
         }

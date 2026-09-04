@@ -99,6 +99,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.room.testing)
 
     // Debug
     debugImplementation(libs.androidx.compose.ui.test.manifest)

@@ -3,12 +3,14 @@ package com.shrekbytes.waqfah.data.repository
 import androidx.room.withTransaction
 import com.shrekbytes.waqfah.data.local.appstate.MonitoredAppEntity
 import com.shrekbytes.waqfah.data.local.appstate.WaqfahAppDatabase
+import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppMembership
 import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
+import java.util.UUID
 
 @Singleton
 class MonitoredAppStateRepository @Inject constructor(
@@ -24,7 +26,7 @@ class MonitoredAppStateRepository @Inject constructor(
     // INSERT IGNORE preserves an existing app's addedAt and trigger stamp.
     // Adding an already monitored app is therefore idempotent.
     override suspend fun add(packageName: String) {
-        dao.insertIfAbsent(MonitoredAppEntity(packageName, addedAt = nowWall()))
+        dao.insertIfAbsent(newMembership(packageName))
     }
 
     override suspend fun remove(packageName: String) = dao.remove(packageName)
@@ -36,14 +38,33 @@ class MonitoredAppStateRepository @Inject constructor(
             if (dao.exists(packageName)) {
                 dao.remove(packageName)
             } else {
-                dao.insertIfAbsent(MonitoredAppEntity(packageName, addedAt = nowWall()))
+                dao.insertIfAbsent(newMembership(packageName))
             }
         }
     }
 
-    override suspend fun triggerStamp(packageName: String): Long? = dao.getLastShown(packageName)
+    private fun newMembership(packageName: String) = MonitoredAppEntity(
+        packageName = packageName,
+        membershipId = UUID.randomUUID().toString(),
+        addedAt = nowWall(),
+    )
 
-    override suspend fun recordTrigger(packageName: String) {
-        dao.updateLastShown(packageName, nowWall())
-    }
+    override suspend fun monitoredMembership(packageName: String): MonitoredAppMembership? =
+        dao.get(packageName)?.let {
+            MonitoredAppMembership(
+                packageName = it.packageName,
+                membershipId = it.membershipId,
+                triggerStamp = it.lastShownAt,
+                triggerRevision = it.triggerRevision,
+            )
+        }
+
+    override suspend fun claimTrigger(membership: MonitoredAppMembership, triggeredAt: Long): Boolean =
+        dao.claimTrigger(
+            packageName = membership.packageName,
+            membershipId = membership.membershipId,
+            expectedStamp = membership.triggerStamp,
+            expectedRevision = membership.triggerRevision,
+            triggeredAt = triggeredAt,
+        ) == 1
 }

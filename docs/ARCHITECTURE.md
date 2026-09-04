@@ -56,7 +56,10 @@ finishing it falls through to whatever was really underneath.
   monitored-app state facts — monitored package membership and trigger stamps —
   while `MonitoredAppStateRepository` adapts them to the Room database. Its
   `toggle` operation keeps membership changes atomic, and adding an existing
-  package preserves its trigger stamp.
+  package preserves its trigger stamp. A `monitoredMembership` snapshot carries
+  the current membership identity and claim revision; `claimTrigger` atomically
+  stamps only that observed membership, so a removed/re-added package or a
+  concurrent decision fails closed. Version 1 to 2 preserves all user data.
 - **InstalledAppCatalog** (`data/installedapp/InstalledAppCatalog.kt`) owns the
   installed-app catalog seam. `PackageManagerInstalledAppCatalog` adapts Android
   launchable-app discovery, labels, and fixed-size icons for Settings and
@@ -85,6 +88,10 @@ finishing it falls through to whatever was really underneath.
 - ReadingSession serializes verse mutation, render, and the preference state
   they read behind `mutationMutex`; mark-read decisions are made under that
   lock against DB truth. ReadingViewModel is only its Android adapter.
+- TriggerDecision keeps cooldown policy and captures the exact wall-clock stamp;
+  MonitoredAppState owns the compare-and-set trigger claim. Membership identity
+  distinguishes remove-and-re-add, and the claim revision distinguishes
+  concurrent claims that happen to share a wall-clock value.
 - TranslationRepository guards downloads with per-id mutexes and Room handles
   with a double-checked open cache.
 

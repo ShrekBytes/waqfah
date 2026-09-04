@@ -5,6 +5,9 @@ import com.shrekbytes.waqfah.detection.ResumedActivity
 import com.shrekbytes.waqfah.detection.TriggerDecision
 import com.shrekbytes.waqfah.detection.TriggerPrefs
 import com.shrekbytes.waqfah.detection.Verdict
+import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppMembership
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -156,14 +159,47 @@ class TriggerDecisionTest {
     private val monitored = mutableSetOf(A, B)
     private val indirectClasses = mutableMapOf<String, Set<String>>()
     private val stamps = mutableListOf<Pair<String, Long>>()
+    private val revisions = mutableMapOf<String, Long>()
 
-    private fun engine(cooldownMinutes: Int = 0) = TriggerDecision(
+    private fun engine(
+        cooldownMinutes: Int = 0,
+        claim: suspend (MonitoredAppMembership, Long) -> Boolean = { membership, triggeredAt ->
+            val current = if (membership.packageName in monitored) {
+                MonitoredAppMembership(
+                    packageName = membership.packageName,
+                    membershipId = membership.membershipId,
+                    triggerStamp = stamps.lastOrNull { it.first == membership.packageName }?.second,
+                    triggerRevision = revisions[membership.packageName] ?: 0L,
+                )
+            } else {
+                null
+            }
+            if (current != membership) {
+                false
+            } else {
+                stamps.add(membership.packageName to triggeredAt)
+                revisions[membership.packageName] = membership.triggerRevision + 1
+                true
+            }
+        },
+    ) = TriggerDecision(
         isMonitored = { it in monitored },
         callAudioActive = { audioInCall },
         indirectEntryClasses = { indirectClasses[it] ?: emptySet() },
         prefs = { TriggerPrefs(appActive, cooldownMinutes) },
-        triggerStamp = { pkg -> stamps.lastOrNull { it.first == pkg }?.second },
-        stampShown = { pkg -> stamps.add(pkg to wallMs) },
+        monitoredMembership = { pkg ->
+            if (pkg !in monitored) {
+                null
+            } else {
+                MonitoredAppMembership(
+                    packageName = pkg,
+                    membershipId = "membership-$pkg",
+                    triggerStamp = stamps.lastOrNull { it.first == pkg }?.second,
+                    triggerRevision = revisions[pkg] ?: 0L,
+                )
+            }
+        },
+        claimTrigger = claim,
         nowElapsed = { elapsedMs },
         nowWall = { wallMs },
     )
@@ -239,6 +275,64 @@ class TriggerDecisionTest {
 
         assertEquals(Verdict.Trigger(A), e.resume(resumed(A)).single())
         assertEquals(listOf(A to 0L, A to 31 * 60_000L + 5 * 60_000L), stamps)
+    }
+
+    @Test
+    fun failedTriggerClaim_isIgnored_withoutEmittingATrigger() {
+        val e = engine(claim = { _, _ -> false })
+
+        assertEquals(Verdict.Ignore(Reason.TRIGGER_CLAIM_REJECTED), e.resume(resumed(A)).single())
+        assertTrue(stamps.isEmpty())
+    }
+
+    @Test
+    fun missingMonitoredMembership_isIgnored_withoutAttemptingAClaim() {
+        var claimAttempts = 0
+        val e = TriggerDecision(
+            isMonitored = { true },
+            callAudioActive = { false },
+            indirectEntryClasses = { emptySet() },
+            prefs = { TriggerPrefs(true, 0) },
+            monitoredMembership = { null },
+            claimTrigger = { _, _ -> claimAttempts++; true },
+            nowElapsed = { 0L },
+            nowWall = { 0L },
+        )
+
+        assertEquals(Verdict.Ignore(Reason.TRIGGER_CLAIM_REJECTED), e.resume(resumed(A)).single())
+        assertEquals(0, claimAttempts)
+    }
+
+    @Test
+    fun concurrentTriggerClaims_onlyOneDecisionEmitsATrigger() = runBlocking {
+        val lock = Any()
+        var sharedStamp: Long? = null
+        var sharedRevision = 0L
+        val claim: suspend (MonitoredAppMembership, Long) -> Boolean = { membership, triggeredAt ->
+            synchronized(lock) {
+                if (membership.triggerStamp != sharedStamp || membership.triggerRevision != sharedRevision) {
+                    false
+                } else {
+                    sharedStamp = triggeredAt
+                    sharedRevision++
+                    true
+                }
+            }
+        }
+        val first = engine(claim = claim)
+        val second = engine(claim = claim)
+
+        val verdicts = coroutineScope {
+            listOf(
+                async { first.onResumedActivity(resumed(A)) },
+                async { second.onResumedActivity(resumed(A)) },
+            ).map { it.await() }
+        }
+
+        assertEquals(1, verdicts.count { it is Verdict.Trigger })
+        assertEquals(1, verdicts.count { it == Verdict.Ignore(Reason.TRIGGER_CLAIM_REJECTED) })
+        assertEquals(0L, sharedStamp)
+        assertEquals(1L, sharedRevision)
     }
 
     // A call never counts as leaving the foreground: the app the call
@@ -389,4 +483,5 @@ class TriggerDecisionTest {
 
         assertEquals(Verdict.Ignore(Reason.INDIRECT_ENTRY), verdict)
     }
+
 }

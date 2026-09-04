@@ -21,11 +21,27 @@ interface MonitoredAppDao {
     @Query("DELETE FROM monitored_apps WHERE package_name = :packageName")
     suspend fun remove(packageName: String)
 
-    @Query("UPDATE monitored_apps SET last_shown_at = :timestamp WHERE package_name = :packageName")
-    suspend fun updateLastShown(packageName: String, timestamp: Long)
+    @Query("SELECT * FROM monitored_apps WHERE package_name = :packageName")
+    suspend fun get(packageName: String): MonitoredAppEntity?
 
-    @Query("SELECT last_shown_at FROM monitored_apps WHERE package_name = :packageName")
-    suspend fun getLastShown(packageName: String): Long?
+    @Query(
+        """
+        UPDATE monitored_apps
+        SET last_shown_at = :triggeredAt,
+            trigger_revision = trigger_revision + 1
+        WHERE package_name = :packageName
+          AND membership_id = :membershipId
+          AND trigger_revision = :expectedRevision
+          AND ((last_shown_at IS NULL AND :expectedStamp IS NULL) OR last_shown_at = :expectedStamp)
+        """,
+    )
+    suspend fun claimTrigger(
+        packageName: String,
+        membershipId: String,
+        expectedStamp: Long?,
+        expectedRevision: Long,
+        triggeredAt: Long,
+    ): Int
 }
 
 @Dao

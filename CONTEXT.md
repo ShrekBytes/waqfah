@@ -50,6 +50,11 @@ _Avoid_: target app, watched app
 **Monitored-app state**:
 The current set of monitored apps together with each app's trigger stamp.
 
+**Monitored-app membership**:
+One current selection of a package as a monitored app. Removing a package ends
+that membership; selecting it again starts a new membership, even if its trigger
+stamp is empty.
+
 **Installed-app catalog**:
 The launchable apps Waqfah offers for the user to choose as monitored apps.
 _Avoid_: all installed packages

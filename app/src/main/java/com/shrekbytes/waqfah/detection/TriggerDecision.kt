@@ -2,6 +2,7 @@ package com.shrekbytes.waqfah.detection
 
 import com.shrekbytes.waqfah.BuildConfig
 import com.shrekbytes.waqfah.TriggerActivity
+import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppMembership
 
 // One foreground observation from UsageStatsManager. The activity class is
 // what tells a fresh open apart from an indirect entry (a picker, a share
@@ -22,6 +23,7 @@ enum class Reason {
     CALL_GRACE,
     INTERSTITIAL_RETURN,
     INDIRECT_ENTRY,
+    TRIGGER_CLAIM_REJECTED,
     NOT_MONITORED,
     INACTIVE,
     SWITCH_BACK,
@@ -77,17 +79,17 @@ sealed interface Verdict {
 //
 // Everything impure arrives through the constructor as a function: the audio
 // probe, the indirect-entry class probe (PackageManager, cached by the
-// caller), the preference snapshot, the persisted trigger stamp, and two
-// clocks. Monotonic elapsed time drives the switch-back and
-// call-grace windows; wall time drives the persisted cooldown anchor, which
+// caller), the preference snapshot, the monitored-app membership snapshot and
+// trigger claim, and two clocks. Monotonic elapsed time drives the switch-back
+// and call-grace windows; wall time drives the persisted cooldown anchor, which
 // must survive reboots.
 class TriggerDecision(
     private val isMonitored: (String) -> Boolean,
     private val callAudioActive: () -> Boolean,
     private val indirectEntryClasses: (String) -> Set<String>,
     private val prefs: suspend () -> TriggerPrefs,
-    private val triggerStamp: suspend (String) -> Long?,
-    private val stampShown: suspend (String) -> Unit,
+    private val monitoredMembership: suspend (String) -> MonitoredAppMembership?,
+    private val claimTrigger: suspend (MonitoredAppMembership, Long) -> Boolean,
     private val nowElapsed: () -> Long,
     private val nowWall: () -> Long,
 ) {
@@ -215,8 +217,11 @@ class TriggerDecision(
         val leftAt = lastLeftForegroundAt[candidate]
         if (leftAt != null && nowElapsed() - leftAt < SWITCH_BACK_GAP_MS) return Verdict.Ignore(Reason.SWITCH_BACK)
 
+        val membership = monitoredMembership(candidate)
+            ?: return Verdict.Ignore(Reason.TRIGGER_CLAIM_REJECTED)
+        val triggerTime = nowWall()
         if (triggerPrefs.cooldownMinutes > 0 &&
-            isWithinCooldown(triggerStamp(candidate), nowWall(), triggerPrefs.cooldownMinutes)
+            isWithinCooldown(membership.triggerStamp, triggerTime, triggerPrefs.cooldownMinutes)
         ) {
             return Verdict.Ignore(Reason.COOLDOWN)
         }
@@ -224,7 +229,9 @@ class TriggerDecision(
         // The anchor is stamped here, at trigger time, exactly once — never
         // on dismissal — so the cooldown always runs from the moment the
         // interstitial was shown.
-        stampShown(candidate)
+        if (!claimTrigger(membership, triggerTime)) {
+            return Verdict.Ignore(Reason.TRIGGER_CLAIM_REJECTED)
+        }
         return Verdict.Trigger(candidate)
     }
 

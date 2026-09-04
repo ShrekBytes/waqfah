@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.shrekbytes.waqfah.data.local.appstate.MonitoredAppDao
 import com.shrekbytes.waqfah.data.local.appstate.ReadVerseDao
+import com.shrekbytes.waqfah.data.local.appstate.AppStateMigrations
 import com.shrekbytes.waqfah.data.local.appstate.WaqfahAppDatabase
 import com.shrekbytes.waqfah.data.local.core.QuranDatabase
 import com.shrekbytes.waqfah.data.local.core.SurahDao
@@ -35,7 +36,9 @@ object DatabaseModule {
     fun provideWaqfahAppDatabase(@ApplicationContext context: Context): WaqfahAppDatabase =
         // No destructive-migration fallback — read_verses is real user progress;
         // add proper Migration objects if this schema ever changes.
-        Room.databaseBuilder(context, WaqfahAppDatabase::class.java, "waqfah_app.db").build()
+        Room.databaseBuilder(context, WaqfahAppDatabase::class.java, "waqfah_app.db")
+            .addMigrations(AppStateMigrations.MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideMonitoredAppDao(db: WaqfahAppDatabase): MonitoredAppDao = db.monitoredAppDao()

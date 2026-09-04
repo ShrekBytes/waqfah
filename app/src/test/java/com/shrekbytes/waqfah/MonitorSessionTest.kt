@@ -6,6 +6,7 @@ import com.shrekbytes.waqfah.detection.ResumedActivity
 import com.shrekbytes.waqfah.detection.TriggerDecision
 import com.shrekbytes.waqfah.detection.TriggerPrefs
 import com.shrekbytes.waqfah.detection.Verdict
+import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppMembership
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -57,8 +58,13 @@ class MonitorSessionTest {
         callAudioActive = { callAudio },
         indirectEntryClasses = { emptySet() },
         prefs = { TriggerPrefs(true, 0) },
-        triggerStamp = { null },
-        stampShown = { stamped += it },
+        monitoredMembership = { pkg ->
+            if (pkg in monitored) MonitoredAppMembership(pkg, "membership-$pkg", null, 0L) else null
+        },
+        claimTrigger = { membership, _ ->
+            stamped += membership.packageName
+            true
+        },
         nowElapsed = { decisionElapsed },
         nowWall = { wallNow },
     )
