@@ -161,7 +161,7 @@ fun FeatureTourOverlay(
     viewModel: ReadingViewModel = hiltViewModel(),
 ) {
     val colors = WaqfahTheme.colors
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val state by viewModel.session.uiState.collectAsStateWithLifecycle()
 
     var stepIndex by rememberSaveable { mutableIntStateOf(0) }
     // True while the surah/ayah picker is embedded in the Go-to step's sandbox.

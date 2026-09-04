@@ -90,10 +90,10 @@ fun GoToSurahScreen(
     LaunchedEffect(expandedSurahNo) { ayahInput = "" }
 
     // Every jump action (Go / First / Continue) funnels through these two so
-    // the "resolve verse → shared ReadingViewModel.jumpToVerse → pop screen"
+    // the "resolve verse → shared ReadingSession.jumpToVerse → pop screen"
     // sequence exists exactly once.
     val jumpToVerseId: suspend (Int) -> Unit = { verseId ->
-        readingViewModel.jumpToVerse(verseId)
+        readingViewModel.session.jumpToVerse(verseId)
         onJumped()
     }
     val jumpToAyah: suspend (Int, Int) -> Unit = { surahNo, ayahNo ->

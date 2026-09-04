@@ -27,17 +27,17 @@ fun WaqfahReadingContent(
     onGoToAyah: (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit,
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val state by viewModel.session.uiState.collectAsStateWithLifecycle()
     ReadingCard(
         state = state,
-        onMarkRead = viewModel::markCurrentRead,
-        onNext = viewModel::next,
-        onPrevious = viewModel::previous,
-        onCycleTranslation = viewModel::cycleTranslationSource,
-        onResetTranslation = viewModel::resetTranslationSource,
-        onCompletionDismiss = viewModel::dismissCompletion,
-        onStartOver = viewModel::startOver,
-        onSwitchModeAndRestart = viewModel::switchModeAndRestart,
+        onMarkRead = viewModel.session::markCurrentRead,
+        onNext = viewModel.session::next,
+        onPrevious = viewModel.session::previous,
+        onCycleTranslation = viewModel.session::cycleTranslationSource,
+        onResetTranslation = viewModel.session::resetTranslationSource,
+        onCompletionDismiss = viewModel.session::dismissCompletion,
+        onStartOver = viewModel.session::startOver,
+        onSwitchModeAndRestart = viewModel.session::switchModeAndRestart,
         onGoToAyah = onGoToAyah,
         bottomBar = bottomBar,
     )
@@ -53,7 +53,7 @@ fun ReadingScreen(
     onDismissRequest: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val state by viewModel.session.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(triggeredPackage) { viewModel.setTriggeredPackage(triggeredPackage) }
 

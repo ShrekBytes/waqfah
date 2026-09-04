@@ -2,10 +2,12 @@ package com.shrekbytes.waqfah.di
 
 import android.content.Context
 import android.content.Intent
+import com.shrekbytes.waqfah.data.repository.DefaultReadingPorts
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.detection.AppMonitorService
 import com.shrekbytes.waqfah.detection.MonitorSupervisor
+import com.shrekbytes.waqfah.ui.reading.ReadingPorts
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -44,4 +46,11 @@ object AppModule {
         startMonitor = { AppMonitorService.start(context) },
         stopMonitor = { context.stopService(Intent(context, AppMonitorService::class.java)) },
     )
+
+    // The reading machine's probes: same adapter story as the supervisor above
+    // — the repositories own the facts, ReadingPorts is the machine-facing
+    // interface, and this is the one place the two are wired together.
+    @Provides
+    @Singleton
+    fun provideReadingPorts(ports: DefaultReadingPorts): ReadingPorts = ports
 }

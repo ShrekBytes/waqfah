@@ -65,7 +65,11 @@ finishing it falls through to whatever was really underneath.
   emission, contract pinned by LoadedPreferencesTest); await-then-act readers
   use the cold `preferences` flow.
 - Repositories expose Flows; ViewModels combine them into immutable UI state;
-  Compose screens stay stateless where possible.
+  Compose screens stay stateless where possible. Two deliberate exceptions:
+  ReadingViewModel exposes its ReadingSession directly (the machine owns its
+  state — screens read `session.uiState`), and ReadingPorts is owned by the
+  reading machine (ui/reading) with DefaultReadingPorts (data/repository)
+  implementing it — a consumer-owned port, wired in AppModule.
 
 ## Concurrency notes
 

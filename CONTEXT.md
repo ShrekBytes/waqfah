@@ -94,6 +94,13 @@ verses read, owning its own ordering; the ViewModel only adapts it to
 Android.
 _Avoid_: reading engine, reader, reading manager
 
+**ReadingPorts**:
+The reading machine's on-demand probes — the verse, progress, and translation
+facts ReadingSession fetches mid-step or mid-render, as distinct from the three
+signals it subscribes to. The repositories are adapted to it by
+DefaultReadingPorts; tests fake it inline.
+_Avoid_: probe bundle, session callbacks
+
 ### Translations
 
 **Translation library**:

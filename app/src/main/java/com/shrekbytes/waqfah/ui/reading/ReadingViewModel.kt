@@ -3,12 +3,10 @@ package com.shrekbytes.waqfah.ui.reading
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
-import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.repository.TranslationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,57 +16,29 @@ import javax.inject.Inject
 // across them — read status — is persisted in Room, not held in memory.
 //
 // The reading machine itself lives in ReadingSession; this class is only its
-// Android adapter: it wires repositories to the session's ports and exposes the
-// session through ViewModel-shaped members. Every behavioural question —
-// stepping, rendering, mark-read, completion — is answered (and tested) there.
+// Android adapter: it hands the session its three signals, exposes the session
+// for every verb and state read, and resolves the interstitial's package label.
+// Every behavioural question — stepping, rendering, mark-read, completion — is
+// answered (and tested) there. The session's probes arrive through
+// ReadingPorts, provided by AppModule (DefaultReadingPorts).
 @HiltViewModel
 class ReadingViewModel @Inject constructor(
-    quranRepository: QuranRepository,
+    settingsRepository: SettingsRepository,
     translationRepository: TranslationRepository,
     readingProgressRepository: ReadingProgressRepository,
     private val monitoredAppsRepository: MonitoredAppsRepository,
-    settingsRepository: SettingsRepository,
+    ports: ReadingPorts,
 ) : ViewModel() {
 
-    private val session = ReadingSession(
+    val session = ReadingSession(
         // filterNotNull: the session's first emission renders, so nothing
         // renders until prefs are loaded — same wait the cold flow imposed.
         preferences = settingsRepository.loadedPreferences.filterNotNull(),
         downloadedIds = translationRepository.downloadedIds,
         progressReset = readingProgressRepository.progressReset,
-        verseById = quranRepository::getVerseById,
-        nextVerse = quranRepository::getNextVerse,
-        previousVerse = quranRepository::getPreviousVerse,
-        firstUnreadVerse = quranRepository::getFirstUnreadVerse,
-        randomUnreadVerse = quranRepository::getRandomUnreadVerse,
-        firstVerse = quranRepository::getFirstVerse,
-        surah = quranRepository::getSurah,
-        totalVerseCount = quranRepository::totalVerseCount,
-        readVerseIds = readingProgressRepository::getReadVerseIds,
-        isRead = readingProgressRepository::isRead,
-        markRead = readingProgressRepository::markRead,
-        unmarkRead = readingProgressRepository::unmarkRead,
-        countRead = readingProgressRepository::countRead,
-        resetAll = readingProgressRepository::resetAll,
-        translationText = translationRepository::getText,
-        setReadingMode = settingsRepository::setReadingMode,
+        ports = ports,
         scope = viewModelScope,
     )
-
-    val uiState: StateFlow<ReadingUiState> = session.uiState
-
-    // Awaited mid-gesture by the card to sequence swipe animation, verse swap,
-    // and offset reset strictly.
-    suspend fun next() = session.next()
-    suspend fun previous() = session.previous()
-
-    fun markCurrentRead() = session.markCurrentRead()
-    fun dismissCompletion() = session.dismissCompletion()
-    fun startOver() = session.startOver()
-    fun switchModeAndRestart() = session.switchModeAndRestart()
-    suspend fun jumpToVerse(verseId: Int) = session.jumpToVerse(verseId)
-    fun cycleTranslationSource(forward: Boolean) = session.cycleTranslationSource(forward)
-    fun resetTranslationSource() = session.resetTranslationSource()
 
     // The interstitial's "you opened <app>" caption — label resolution is
     // adapter work (package-manager lookups), the state write is the session's.

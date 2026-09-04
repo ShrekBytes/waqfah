@@ -3,7 +3,9 @@ package com.shrekbytes.waqfah
 import com.shrekbytes.waqfah.data.local.core.SurahEntity
 import com.shrekbytes.waqfah.data.local.core.VerseEntity
 import com.shrekbytes.waqfah.data.model.ReadingMode
+import com.shrekbytes.waqfah.data.model.TranslationMeta
 import com.shrekbytes.waqfah.data.model.UserPreferences
+import com.shrekbytes.waqfah.ui.reading.ReadingPorts
 import com.shrekbytes.waqfah.ui.reading.ReadingSession
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -76,33 +78,46 @@ class ReadingSessionTest {
         preferences = prefs,
         downloadedIds = downloadedIds,
         progressReset = resetSignal,
-        verseById = { id -> verses.firstOrNull { it.id == id } },
-        nextVerse = {
-            val stall = nextDelayMs
-            nextDelayMs = 0
-            if (stall > 0) delay(stall)
-            val afterId = it
-            verses.firstOrNull { v -> v.id > afterId } ?: verses.first()
+        ports = object : ReadingPorts {
+            override suspend fun verseById(id: Int) = verses.firstOrNull { it.id == id }
+            override suspend fun nextVerse(afterId: Int): VerseEntity? {
+                val stall = nextDelayMs
+                nextDelayMs = 0
+                if (stall > 0) delay(stall)
+                return verses.firstOrNull { v -> v.id > afterId } ?: verses.first()
+            }
+            override suspend fun previousVerse(beforeId: Int) = verses.lastOrNull { it.id < beforeId } ?: verses.last()
+            override suspend fun firstUnreadVerse(exclude: Set<Int>): VerseEntity? {
+                startingVerseLoads++
+                return verses.firstOrNull { it.id !in readIds }
+            }
+            override suspend fun randomUnreadVerse(exclude: Set<Int>): VerseEntity? {
+                startingVerseLoads++
+                return verses.filter { it.id !in readIds }.randomOrNull() ?: verses.random()
+            }
+            override suspend fun firstVerse() = verses.first()
+            override suspend fun surah(surahNo: Int): SurahEntity? {
+                surahQueries++
+                return if (surahNo == 1) surah1 else null
+            }
+            override suspend fun totalVerseCount() = verses.size
+            override suspend fun readVerseIds() = readIds.toList()
+            override suspend fun isRead(verseId: Int): Boolean {
+                if (isReadDelayMs > 0) delay(isReadDelayMs)
+                return verseId in readIds
+            }
+            override suspend fun markRead(verseId: Int) { readIds += verseId }
+            override suspend fun unmarkRead(verseId: Int) { readIds -= verseId }
+            override suspend fun countRead() = readIds.size
+            // Mirrors ReadingProgressRepository.resetAll: clears, then bumps the
+            // signal the session's own collector watches.
+            override suspend fun resetAll() { readIds.clear(); resetSignal.value++ }
+            override suspend fun translationText(meta: TranslationMeta, verseId: Int) = translationTexts[meta.id to verseId]
+            override suspend fun setReadingMode(mode: ReadingMode) {
+                setReadingModeCalls += mode
+                prefs.value = prefs.value.copy(readingMode = mode)
+            }
         },
-        previousVerse = { beforeId -> verses.lastOrNull { it.id < beforeId } ?: verses.last() },
-        firstUnreadVerse = { startingVerseLoads++; verses.firstOrNull { it.id !in readIds } },
-        randomUnreadVerse = { startingVerseLoads++; verses.filter { it.id !in readIds }.randomOrNull() ?: verses.random() },
-        firstVerse = { verses.first() },
-        surah = { surahQueries++; if (it == 1) surah1 else null },
-        totalVerseCount = { verses.size },
-        readVerseIds = { readIds.toList() },
-        isRead = {
-            if (isReadDelayMs > 0) delay(isReadDelayMs)
-            it in readIds
-        },
-        markRead = { readIds += it },
-        unmarkRead = { readIds -= it },
-        countRead = { readIds.size },
-        // Mirrors ReadingProgressRepository.resetAll: clears, then bumps the
-        // signal the session's own collector watches.
-        resetAll = { readIds.clear(); resetSignal.value++ },
-        translationText = { meta, verseId -> translationTexts[meta.id to verseId] },
-        setReadingMode = { setReadingModeCalls += it; prefs.value = prefs.value.copy(readingMode = it) },
         scope = backgroundScope,
     )
 

@@ -33,12 +33,12 @@ import kotlinx.coroutines.sync.withLock
 // bookkeeping happens behind one mutex — this module's internal invariant,
 // not a convention callers must know about.
 //
-// Everything impure arrives through the constructor as a flow or a function:
-// the three input signals (preferences, downloaded translation ids, the
-// progress-reset nudge), the verse/progress/translation probes, and the scope
-// hosting the collectors. ReadingViewModel is the Android adapter that wires
-// repositories to those ports, so the whole machine is unit-testable with
-// fake ports and virtual time (see ReadingSessionTest).
+// Everything impure arrives through the constructor: the three signals it
+// subscribes to (preferences, downloaded translation ids, the progress-reset
+// nudge) as flows, and the verse/progress/translation probes behind one
+// interface — ReadingPorts — that DefaultReadingPorts adapts the repositories
+// to. The whole machine is unit-testable with a fake ReadingPorts and virtual
+// time (see ReadingSessionTest).
 class ReadingSession(
     private val preferences: Flow<UserPreferences>,
     private val downloadedIds: StateFlow<Set<String>>,
@@ -46,24 +46,31 @@ class ReadingSession(
     // (ReadingProgressRepository.progressReset). The session reads the value
     // to recognise the echo of its own resets — see lastSelfInitiatedReset.
     private val progressReset: StateFlow<Int>,
-    private val verseById: suspend (Int) -> VerseEntity?,
-    private val nextVerse: suspend (Int) -> VerseEntity?,
-    private val previousVerse: suspend (Int) -> VerseEntity?,
-    private val firstUnreadVerse: suspend (Set<Int>) -> VerseEntity?,
-    private val randomUnreadVerse: suspend (Set<Int>) -> VerseEntity?,
-    private val firstVerse: suspend () -> VerseEntity?,
-    private val surah: suspend (Int) -> SurahEntity?,
-    private val totalVerseCount: suspend () -> Int,
-    private val readVerseIds: suspend () -> List<Int>,
-    private val isRead: suspend (Int) -> Boolean,
-    private val markRead: suspend (Int) -> Unit,
-    private val unmarkRead: suspend (Int) -> Unit,
-    private val countRead: suspend () -> Int,
-    private val resetAll: suspend () -> Unit,
-    private val translationText: suspend (TranslationMeta, Int) -> String?,
-    private val setReadingMode: suspend (ReadingMode) -> Unit,
+    private val ports: ReadingPorts,
     private val scope: CoroutineScope,
 ) {
+
+    // One-line delegates so the machine body keeps calling the probes by
+    // name — the seam's plumbing stays out of the mutex and render logic. These
+    // live in the class body rather than the constructor because constructor
+    // vals require explicit types on this compiler, which would resurrect the
+    // 16-line function-type block this seam removed.
+    private val verseById = ports::verseById
+    private val nextVerse = ports::nextVerse
+    private val previousVerse = ports::previousVerse
+    private val firstUnreadVerse = ports::firstUnreadVerse
+    private val randomUnreadVerse = ports::randomUnreadVerse
+    private val firstVerse = ports::firstVerse
+    private val surah = ports::surah
+    private val totalVerseCount = ports::totalVerseCount
+    private val readVerseIds = ports::readVerseIds
+    private val isRead = ports::isRead
+    private val markRead = ports::markRead
+    private val unmarkRead = ports::unmarkRead
+    private val countRead = ports::countRead
+    private val resetAll = ports::resetAll
+    private val translationText = ports::translationText
+    private val setReadingMode = ports::setReadingMode
 
     // Serializes every mutation of currentVerse / translationOverrideId and the
     // renders that read them. next()/previous() are awaited mid-gesture from
