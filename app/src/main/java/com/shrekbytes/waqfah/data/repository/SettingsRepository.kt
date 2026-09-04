@@ -18,8 +18,12 @@ import com.shrekbytes.waqfah.data.model.UserPreferences
 import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,8 +32,17 @@ private val Context.settingsDataStore by preferencesDataStore(name = "waqfah_set
 @Singleton
 class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
+    scope: CoroutineScope,
 ) {
+    // Await-then-act readers (the monitor supervisor, the toggle flip) use
+    // this cold flow: first() waits for DataStore's first emission.
     val preferences: Flow<UserPreferences> = context.settingsDataStore.data.map { it.toUserPreferences() }
+
+    // Observers read this instead: null until DataStore's first emission —
+    // "not yet loaded" is part of the type, so no caller invents its own
+    // sentinel or inherits one by coincidence. See loadedIn for the contract,
+    // pinned once by LoadedPreferencesTest.
+    val loadedPreferences: StateFlow<UserPreferences?> = preferences.loadedIn(scope)
 
     suspend fun setTheme(theme: AppTheme) = edit { it[SettingsKeys.THEME] = theme.name }
     suspend fun setAccentColor(accent: AccentColor) = edit { it[SettingsKeys.ACCENT_COLOR] = accent.name }
@@ -88,3 +101,9 @@ internal fun Preferences.toUserPreferences() = UserPreferences(
 // longer matches any enum constant (e.g. after a rename).
 internal inline fun <reified T : Enum<T>> Preferences.enumOrDefault(key: Preferences.Key<String>, default: T): T =
     this[key]?.let { stored -> enumValues<T>().firstOrNull { it.name == stored } } ?: default
+
+// The typed "not yet loaded" seam: null before the upstream's first value,
+// the value after, updates carried through. Eagerly, so the app's one shared
+// answer stays warm whether or not anyone is watching this instant.
+internal fun Flow<UserPreferences>.loadedIn(scope: CoroutineScope): StateFlow<UserPreferences?> =
+    map { it as UserPreferences? }.stateIn(scope, SharingStarted.Eagerly, null)

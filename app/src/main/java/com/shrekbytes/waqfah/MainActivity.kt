@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity() {
         splashScreen.setKeepOnScreenCondition { !contentReady }
 
         setContent {
-            val prefs by settingsRepository.preferences.collectAsStateWithLifecycle(initialValue = null)
+            val prefs by settingsRepository.loadedPreferences.collectAsStateWithLifecycle()
             val hasCompletedOnboarding = prefs?.hasCompletedOnboarding
 
             SideEffect { contentReady = hasCompletedOnboarding != null }

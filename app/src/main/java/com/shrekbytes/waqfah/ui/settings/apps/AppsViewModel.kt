@@ -28,8 +28,9 @@ data class AppRowState(val app: InstalledApp, val isMonitored: Boolean, val pinn
 private data class LoadedApp(val app: InstalledApp, val pinnedTop: Boolean)
 
 data class AppsUiState(
-    // Mirrors UserPreferences' persisted default so the pre-DataStore frame
-    // doesn't flash a different number.
+    // Seed and cooldownMinutes below both render UserPreferences()'s own
+    // default for "not yet loaded" — a decision made at the null mapping, not
+    // a coincidence of equal literals.
     val cooldownMinutes: Int = UserPreferences().cooldownMinutes,
     val searchQuery: String = "",
     val apps: List<AppRowState> = emptyList(),
@@ -61,9 +62,10 @@ class AppsViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // Narrowed to cooldownMinutes only so unrelated preference changes don't
-    // rebuild the whole filtered list.
-    private val cooldownMinutes = settingsRepository.preferences
-        .map { it.cooldownMinutes }
+    // rebuild the whole filtered list. Null (not yet loaded) maps to the
+    // same default the uiState seed renders.
+    private val cooldownMinutes = settingsRepository.loadedPreferences
+        .map { it?.cooldownMinutes ?: UserPreferences().cooldownMinutes }
         .distinctUntilChanged()
 
     val uiState: StateFlow<AppsUiState> = combine(

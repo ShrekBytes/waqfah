@@ -21,8 +21,10 @@ class FeatureTourViewModel @Inject constructor(
 
     // null until DataStore's first emission arrives — callers treat that as
     // "don't show yet" instead of flashing the tour over unresolved state.
-    val hasCompletedTour: StateFlow<Boolean?> = settingsRepository.preferences
-        .map { it.hasCompletedFeatureTour }
+    // The typed null comes from the repository's shared loadedPreferences
+    // seam rather than a per-VM sentinel.
+    val hasCompletedTour: StateFlow<Boolean?> = settingsRepository.loadedPreferences
+        .map { it?.hasCompletedFeatureTour }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun completeTour() {

@@ -14,6 +14,7 @@ import com.shrekbytes.waqfah.data.repository.TranslationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,7 +25,11 @@ class ReadingDisplayViewModel @Inject constructor(
     translationRepository: TranslationRepository,
 ) : ViewModel() {
 
-    val prefs: StateFlow<UserPreferences> = settingsRepository.preferences
+    // "Not yet loaded" renders as the persisted defaults, knowingly: null maps
+    // to UserPreferences() here (and seeds this flow), so no frame flashes a
+    // different value than the user's fallbacks would produce.
+    val prefs: StateFlow<UserPreferences> = settingsRepository.loadedPreferences
+        .map { it ?: UserPreferences() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferences())
 
     // Disk truth for resolving the stored translation ids to the active

@@ -110,10 +110,14 @@ class AppMonitorService : Service() {
     // The watching session. Its gate inputs come from the adapters below:
     // the appActive preference mapped to a plain boolean flow, the shared
     // monitored-package snapshot, and the screen-on state the receiver keeps
-    // fresh.
+    // fresh. "Not yet loaded" maps to gate-closed — the same closed state the
+    // cold flow's silent wait produced, and unreachable in practice since the
+    // supervisor only starts this service after awaiting a loaded value.
     private val monitorSession by lazy {
         MonitorSession(
-            appActive = settingsRepository.preferences.map { it.appActive }.distinctUntilChanged(),
+            appActive = settingsRepository.loadedPreferences
+                .map { it?.appActive == true }
+                .distinctUntilChanged(),
             monitoredApps = monitoredPackages,
             screenOn = screenOn,
             resumedActivities = ::queryResumedActivities,

@@ -13,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -63,9 +64,10 @@ class GoToSurahViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Base rows: refresh only when prefs or read progress changes (not on every keystroke).
+            // Base rows: refresh only when prefs or read progress changes (not on
+            // every keystroke). filterNotNull holds rows until prefs are loaded.
             combine(
-                settingsRepository.preferences,
+                settingsRepository.loadedPreferences.filterNotNull(),
                 readingProgressRepository.readCount,
             ) { prefs, _ -> prefs }
                 .collect { prefs ->

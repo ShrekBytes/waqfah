@@ -9,6 +9,7 @@ import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.repository.TranslationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,7 +31,9 @@ class ReadingViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val session = ReadingSession(
-        preferences = settingsRepository.preferences,
+        // filterNotNull: the session's first emission renders, so nothing
+        // renders until prefs are loaded — same wait the cold flow imposed.
+        preferences = settingsRepository.loadedPreferences.filterNotNull(),
         downloadedIds = translationRepository.downloadedIds,
         progressReset = readingProgressRepository.progressReset,
         verseById = quranRepository::getVerseById,

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -48,7 +49,7 @@ class SettingsViewModel @Inject constructor(
     private val totalCount = MutableStateFlow(0)
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        settingsRepository.preferences,
+        settingsRepository.loadedPreferences.filterNotNull(),
         readingProgressRepository.readCount,
         monitoredAppsRepository.monitoredApps,
         totalCount,
@@ -70,14 +71,16 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { totalCount.value = quranRepository.totalVerseCount() }
     }
 
-    // Reads the persisted value rather than uiState, whose default (active =
-    // true) is wrong until DataStore's first emission arrives. Whether that
-    // flip starts or stops the monitor — permissions gate and all — is the
-    // MonitorSupervisor's rule; this toggle persists the intent and hands the
-    // event over. The service lifetime mirrors the toggle exactly: turning
-    // Waqfah off tears the monitor down (notification included), turning it
-    // back on restarts it immediately — the user is looking at the switch, so
-    // waiting for a MainActivity resume would feel broken.
+    // Reads the persisted value rather than uiState, whose seed renders the
+    // defaults until DataStore's first emission (wrong for a user who toggled
+    // off — a knowingly accepted frame, not an actionable lie: this flip
+    // always awaits persisted truth). Whether the flip starts or stops the
+    // monitor — permissions gate and all — is the MonitorSupervisor's rule;
+    // this toggle persists the intent and hands the event over. The service
+    // lifetime mirrors the toggle exactly: turning Waqfah off tears the
+    // monitor down (notification included), turning it back on restarts it
+    // immediately — the user is looking at the switch, so waiting for a
+    // MainActivity resume would feel broken.
     fun toggleActive() = viewModelScope.launch {
         val activate = !settingsRepository.preferences.first().appActive
         settingsRepository.setAppActive(activate)

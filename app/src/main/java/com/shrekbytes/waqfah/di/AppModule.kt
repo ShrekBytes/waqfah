@@ -11,12 +11,22 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    // Application-lifetime scope for app-singleton flows that must stay warm
+    // (SettingsRepository.loadedPreferences). SupervisorJob so one failed
+    // child doesn't kill the scope.
+    @Provides
+    @Singleton
+    fun provideApplicationScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // The supervisor is the one owner of the monitor's service lifetime; the
     // Android gestures — starting the foreground service, stopping it — are

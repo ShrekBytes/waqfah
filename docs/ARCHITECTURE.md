@@ -60,7 +60,10 @@ finishing it falls through to whatever was really underneath.
   waqfah-translations repo changes), corruption-vs-transient error
   classification.
 - **SettingsRepository** — DataStore-backed `UserPreferences`; enum values
-  degrade to defaults instead of crashing after renames.
+  degrade to defaults instead of crashing after renames. Observers read
+  `loadedPreferences` (`UserPreferences?`: null until DataStore's first
+  emission, contract pinned by LoadedPreferencesTest); await-then-act readers
+  use the cold `preferences` flow.
 - Repositories expose Flows; ViewModels combine them into immutable UI state;
   Compose screens stay stateless where possible.
 

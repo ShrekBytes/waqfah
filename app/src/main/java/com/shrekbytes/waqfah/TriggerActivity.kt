@@ -121,7 +121,7 @@ class TriggerActivity : AppCompatActivity() {
                 }
             }
 
-            val prefs by settingsRepository.preferences.collectAsStateWithLifecycle(initialValue = null)
+            val prefs by settingsRepository.loadedPreferences.collectAsStateWithLifecycle()
             WaqfahTheme(
                 theme = prefs?.theme ?: AppTheme.SYSTEM,
                 accentColor = prefs?.accentColor ?: AccentColor.SAGE,

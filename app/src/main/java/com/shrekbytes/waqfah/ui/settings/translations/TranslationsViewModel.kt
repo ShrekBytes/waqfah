@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -58,7 +59,9 @@ class TranslationsViewModel @Inject constructor(
     fun rowsFor(language: TranslationLanguage): StateFlow<List<TranslationRowState>> =
         rowFlows.getOrPut(language) {
             combine(
-                settingsRepository.preferences,
+                // filterNotNull: rows stay empty until prefs are loaded —
+                // exactly what the cold flow's silent wait did.
+                settingsRepository.loadedPreferences.filterNotNull(),
                 // Repository-published disk truth: restated after every
                 // download/delete/first-copy, deduped so progress ticks and
                 // failed attempts never re-run this combine for no change.
