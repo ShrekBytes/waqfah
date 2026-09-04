@@ -4,7 +4,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
+import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppState
 import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
@@ -41,7 +41,7 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val readingProgressRepository: ReadingProgressRepository,
-    private val monitoredAppsRepository: MonitoredAppsRepository,
+    private val monitoredAppState: MonitoredAppState,
     private val supervisor: MonitorSupervisor,
     quranRepository: QuranRepository,
 ) : ViewModel() {
@@ -51,7 +51,7 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsRepository.loadedPreferences.filterNotNull(),
         readingProgressRepository.readCount,
-        monitoredAppsRepository.monitoredApps,
+        monitoredAppState.monitoredPackages,
         totalCount,
     ) { prefs, readCount, monitored, total ->
         SettingsUiState(

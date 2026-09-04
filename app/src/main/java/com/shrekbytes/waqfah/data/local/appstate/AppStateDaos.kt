@@ -1,6 +1,8 @@
 package com.shrekbytes.waqfah.data.local.appstate
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
@@ -10,8 +12,11 @@ interface MonitoredAppDao {
     @Query("SELECT * FROM monitored_apps")
     fun observeAll(): Flow<List<MonitoredAppEntity>>
 
-    @Upsert
-    suspend fun upsert(app: MonitoredAppEntity)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(app: MonitoredAppEntity)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM monitored_apps WHERE package_name = :packageName)")
+    suspend fun exists(packageName: String): Boolean
 
     @Query("DELETE FROM monitored_apps WHERE package_name = :packageName")
     suspend fun remove(packageName: String)

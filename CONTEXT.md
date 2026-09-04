@@ -47,6 +47,13 @@ _Avoid_: per-app interval, interval
 An app the user selected to be subject to triggers.
 _Avoid_: target app, watched app
 
+**Monitored-app state**:
+The current set of monitored apps together with each app's trigger stamp.
+
+**Installed-app catalog**:
+The launchable apps Waqfah offers for the user to choose as monitored apps.
+_Avoid_: all installed packages
+
 **Resumed activity**:
 One observation of an app coming to the foreground, including which of its
 screens showed.

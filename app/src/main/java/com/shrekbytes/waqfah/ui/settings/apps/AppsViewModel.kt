@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.model.InstalledApp
 import com.shrekbytes.waqfah.data.model.PreferenceLimits
 import com.shrekbytes.waqfah.data.model.UserPreferences
-import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
+import com.shrekbytes.waqfah.data.installedapp.InstalledAppCatalog
+import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppState
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,29 +35,30 @@ data class AppsUiState(
     val cooldownMinutes: Int = UserPreferences().cooldownMinutes,
     val searchQuery: String = "",
     val apps: List<AppRowState> = emptyList(),
-    // True until getInstalledLaunchableApps() completes — apps.isEmpty() alone
+    // True until InstalledAppCatalog.load() completes — apps.isEmpty() alone
     // can't tell "still loading" from "no search hits".
     val isLoading: Boolean = true,
 )
 
 @HiltViewModel
 class AppsViewModel @Inject constructor(
-    private val monitoredAppsRepository: MonitoredAppsRepository,
+    private val monitoredAppState: MonitoredAppState,
+    private val installedAppCatalog: InstalledAppCatalog,
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
     private val isLoadingApps = MutableStateFlow(true)
 
-    // queryIntentActivities + icon rendering run off the main thread inside the
-    // repository. Lazily, not Eagerly: the scan only happens when a screen
+    // PackageManager discovery + icon rendering run off the main thread inside
+    // the catalog adapter. Lazily, not Eagerly: the scan only happens when a screen
     // actually collects uiState, but the result is then kept for the ViewModel's
     // lifetime instead of rescanning on every revisit.
     private val installedApps: StateFlow<List<LoadedApp>> = flow {
-        val all = monitoredAppsRepository.getInstalledLaunchableApps()
+        val all = installedAppCatalog.load()
         // Snapshot of the monitored set at load time — this decides who starts
         // pinned to the top for this list session.
-        val baseline = monitoredAppsRepository.monitoredApps.first().map { it.packageName }.toSet()
+        val baseline = monitoredAppState.monitoredPackages.first()
         emit(all.map { LoadedApp(it, it.packageName in baseline) })
         isLoadingApps.value = false
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -70,12 +72,12 @@ class AppsViewModel @Inject constructor(
 
     val uiState: StateFlow<AppsUiState> = combine(
         cooldownMinutes,
-        monitoredAppsRepository.monitoredApps,
+        monitoredAppState.monitoredPackages,
         searchQuery,
         installedApps,
         isLoadingApps,
     ) { cooldown, monitored, query, allApps, loading ->
-        val monitoredIds = monitored.map { it.packageName }.toSet()
+        val monitoredIds = monitored
         AppsUiState(
             cooldownMinutes = cooldown,
             searchQuery = query,
@@ -95,8 +97,7 @@ class AppsViewModel @Inject constructor(
     }
 
     fun toggle(app: InstalledApp) = viewModelScope.launch {
-        val isMonitored = monitoredAppsRepository.monitoredApps.first().any { it.packageName == app.packageName }
-        if (isMonitored) monitoredAppsRepository.remove(app.packageName) else monitoredAppsRepository.add(app.packageName)
+        monitoredAppState.toggle(app.packageName)
     }
 
     fun setCooldown(minutes: Int) = viewModelScope.launch {

@@ -22,7 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.TriggerActivity
-import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
+import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppState
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
@@ -53,7 +53,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class AppMonitorService : Service() {
 
-    @Inject lateinit var monitoredAppsRepository: MonitoredAppsRepository
+    @Inject lateinit var monitoredAppState: MonitoredAppState
     @Inject lateinit var settingsRepository: SettingsRepository
     @Inject lateinit var permissionsRepository: PermissionsRepository
 
@@ -69,8 +69,7 @@ class AppMonitorService : Service() {
     // both, so the trigger decision reads a warm snapshot instead of
     // re-querying Room once per foreground change.
     private val monitoredPackages by lazy {
-        monitoredAppsRepository.monitoredApps
-            .map { apps -> apps.map { it.packageName }.toSet() }
+        monitoredAppState.monitoredPackages
             .stateIn(serviceScope, SharingStarted.Eagerly, emptySet())
     }
 
@@ -100,8 +99,8 @@ class AppMonitorService : Service() {
             prefs = {
                 settingsRepository.preferences.first().let { TriggerPrefs(it.appActive, it.cooldownMinutes) }
             },
-            triggerStamp = { monitoredAppsRepository.getTriggerStamp(it) },
-            stampShown = { monitoredAppsRepository.recordShown(it) },
+            triggerStamp = { monitoredAppState.triggerStamp(it) },
+            stampShown = { monitoredAppState.recordTrigger(it) },
             nowElapsed = SystemClock::elapsedRealtime,
             nowWall = System::currentTimeMillis,
         )

@@ -52,6 +52,15 @@ finishing it falls through to whatever was really underneath.
   rebuilt wholesale each release; destructive migration by design).
 - `data/local/appstate` — user data (`monitored_apps`, `read_verses`);
   **no** destructive fallback here, migrations must be written if schema changes.
+- **MonitoredAppState** (`data/monitoredapp/MonitoredAppState.kt`) owns the
+  monitored-app state facts — monitored package membership and trigger stamps —
+  while `MonitoredAppStateRepository` adapts them to the Room database. Its
+  `toggle` operation keeps membership changes atomic, and adding an existing
+  package preserves its trigger stamp.
+- **InstalledAppCatalog** (`data/installedapp/InstalledAppCatalog.kt`) owns the
+  installed-app catalog seam. `PackageManagerInstalledAppCatalog` adapts Android
+  launchable-app discovery, labels, and fixed-size icons for Settings and
+  onboarding; it is separate from monitored-app state.
 - `data/local/translation` + **TranslationRepository** — per-language
   translation `.db` files hosted in the separate waqfah-translations repo and
   downloaded into internal storage;

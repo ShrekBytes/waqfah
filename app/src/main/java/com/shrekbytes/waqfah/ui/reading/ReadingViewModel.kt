@@ -2,7 +2,7 @@ package com.shrekbytes.waqfah.ui.reading
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
+import com.shrekbytes.waqfah.data.installedapp.InstalledAppCatalog
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.repository.TranslationRepository
@@ -26,7 +26,7 @@ class ReadingViewModel @Inject constructor(
     settingsRepository: SettingsRepository,
     translationRepository: TranslationRepository,
     readingProgressRepository: ReadingProgressRepository,
-    private val monitoredAppsRepository: MonitoredAppsRepository,
+    private val installedAppCatalog: InstalledAppCatalog,
     ports: ReadingPorts,
 ) : ViewModel() {
 
@@ -43,7 +43,7 @@ class ReadingViewModel @Inject constructor(
     // The interstitial's "you opened <app>" caption — label resolution is
     // adapter work (package-manager lookups), the state write is the session's.
     fun setTriggeredPackage(packageName: String?) = viewModelScope.launch {
-        val label = packageName?.let { monitoredAppsRepository.getAppLabel(it) ?: it }
+        val label = packageName?.let { installedAppCatalog.labelFor(it) ?: it }
         session.setTriggeredAppLabel(label)
     }
 }
