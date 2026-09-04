@@ -74,14 +74,17 @@ finishing it falls through to whatever was really underneath.
 
 ## Lifecycle
 
-- Service lifetime mirrors the Waqfah on/off toggle: **SettingsViewModel.toggleActive**
-  starts it (permissions permitting) or stops it outright; MainActivity.onResume
-  restarts it when permissions were just granted (but never resurrects a
-  toggled-off monitor); BootReceiver restarts it after reboot only when
-  permissions are present AND Waqfah is toggled on. The session asks the
-  service to self-stop if permissions are revoked mid-run (re-checked every
-  30s). While the monitor gate is closed — screen off, monitoring off, no
-  monitored apps — the session's loop suspends.
+- Service lifetime is owned by **MonitorSupervisor** (`detection/MonitorSupervisor.kt`):
+  three one-line adapters hand it an event — **SettingsViewModel.toggleActive**
+  (persists the flip, then syncs), MainActivity.onResume, BootReceiver (boot,
+  logging the outcome) — and it starts or stops the service from persisted
+  `appActive` + required permissions. The toggle may start or stop; resume and
+  boot may only start, so resuming the app never resurrects a toggled-off
+  monitor. The rule's matrix is pinned in `MonitorSupervisorTest`. The session
+  asks the service to self-stop if permissions are revoked mid-run (re-checked
+  every 30s) — runtime self-defense, not a supervisor event. While the monitor
+  gate is closed — screen off, monitoring off, no monitored apps — the
+  session's loop suspends.
 - **The toggle governs DETECTION only.** Home-tab reading (`ReadingViewModel` /
   `ReadingCard`) never reads `appActive` and runs entirely off Room + DataStore;
   stopping the service must never affect it. Keep these decoupled.

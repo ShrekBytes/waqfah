@@ -1,18 +1,15 @@
 package com.shrekbytes.waqfah.ui.settings
 
-import android.content.Context
-import android.content.Intent
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.repository.MonitoredAppsRepository
-import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.model.AppLanguage
-import com.shrekbytes.waqfah.detection.AppMonitorService
+import com.shrekbytes.waqfah.detection.MonitorSupervisor
 import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 import com.shrekbytes.waqfah.ui.theme.hasAccentPicker
@@ -44,8 +41,7 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val readingProgressRepository: ReadingProgressRepository,
     private val monitoredAppsRepository: MonitoredAppsRepository,
-    private val permissionsRepository: PermissionsRepository,
-    @ApplicationContext private val context: Context,
+    private val supervisor: MonitorSupervisor,
     quranRepository: QuranRepository,
 ) : ViewModel() {
 
@@ -75,25 +71,17 @@ class SettingsViewModel @Inject constructor(
     }
 
     // Reads the persisted value rather than uiState, whose default (active =
-    // true) is wrong until DataStore's first emission arrives.
-    //
-    // The foreground service's lifetime mirrors this toggle exactly: turning
-    // Waqfah off tears the monitor down (notification included) instead of
-    // leaving an idle service parked in memory; turning it back on restarts it
-    // immediately — the user is looking at the switch, so waiting for a
-    // MainActivity resume would feel broken. Without permissions there is no
-    // point starting (the service would stop itself on its first check);
-    // MainActivity.onResume covers the grant-later path.
+    // true) is wrong until DataStore's first emission arrives. Whether that
+    // flip starts or stops the monitor — permissions gate and all — is the
+    // MonitorSupervisor's rule; this toggle persists the intent and hands the
+    // event over. The service lifetime mirrors the toggle exactly: turning
+    // Waqfah off tears the monitor down (notification included), turning it
+    // back on restarts it immediately — the user is looking at the switch, so
+    // waiting for a MainActivity resume would feel broken.
     fun toggleActive() = viewModelScope.launch {
         val activate = !settingsRepository.preferences.first().appActive
         settingsRepository.setAppActive(activate)
-        if (activate) {
-            if (permissionsRepository.hasRequiredPermissions()) {
-                AppMonitorService.start(context)
-            }
-        } else {
-            context.stopService(Intent(context, AppMonitorService::class.java))
-        }
+        supervisor.sync(MonitorSupervisor.Reason.TOGGLE)
     }
 
     fun setTheme(theme: AppTheme) = viewModelScope.launch { settingsRepository.setTheme(theme) }

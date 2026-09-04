@@ -63,6 +63,13 @@ and feeds every resumed activity to the trigger decision, ending when permission
 revoked or Waqfah stops watching.
 _Avoid_: poller, monitor loop, foreground watcher
 
+**MonitorSupervisor**:
+The module that owns the monitor's service lifetime: it maps each external event —
+toggle, app resume, boot — to starting or stopping the monitor, from the persisted
+toggle and the required permissions. Resume and boot may only start; only the toggle
+may stop.
+_Avoid_: monitor starter, service sync, lifecycle handler
+
 ### The trigger decision
 
 **TriggerDecision**:
