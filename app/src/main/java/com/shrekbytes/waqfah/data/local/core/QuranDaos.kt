@@ -29,9 +29,6 @@ interface VerseDao {
     @Query("SELECT * FROM verses ORDER BY id DESC LIMIT 1")
     suspend fun getLastVerse(): VerseEntity?
 
-    @Query("SELECT * FROM verses ORDER BY RANDOM() LIMIT 1")
-    suspend fun getRandomVerse(): VerseEntity?
-
     @Query("SELECT COUNT(*) FROM verses")
     suspend fun countAll(): Int
 

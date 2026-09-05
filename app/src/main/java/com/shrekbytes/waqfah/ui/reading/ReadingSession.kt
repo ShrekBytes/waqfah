@@ -10,6 +10,7 @@ import com.shrekbytes.waqfah.data.model.TranslationLibrary
 import com.shrekbytes.waqfah.data.model.TranslationMeta
 import com.shrekbytes.waqfah.data.model.UserPreferences
 import com.shrekbytes.waqfah.data.model.toTranslationLanguage
+import com.shrekbytes.waqfah.data.repository.VerseSelection
 import androidx.compose.ui.unit.LayoutDirection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -35,10 +36,11 @@ import kotlinx.coroutines.sync.withLock
 //
 // Everything impure arrives through the constructor: the three signals it
 // subscribes to (preferences, downloaded translation ids, the progress-reset
-// nudge) as flows, and the verse/progress/translation probes behind one
-// interface — ReadingPorts — that DefaultReadingPorts adapts the repositories
-// to. The whole machine is unit-testable with a fake ReadingPorts and virtual
-// time (see ReadingSessionTest).
+// nudge) as flows, verse movement as VerseSelection, and the remaining
+// verse/progress/translation probes behind one interface — ReadingPorts —
+// that DefaultReadingPorts adapts the repositories to. The whole machine is
+// unit-testable with a fake ReadingPorts, a fake VerseLookups behind a real
+// VerseSelection, and virtual time (see ReadingSessionTest).
 class ReadingSession(
     private val preferences: Flow<UserPreferences>,
     private val downloadedIds: StateFlow<Set<String>>,
@@ -47,6 +49,7 @@ class ReadingSession(
     // to recognise the echo of its own resets — see lastSelfInitiatedReset.
     private val progressReset: StateFlow<Int>,
     private val ports: ReadingPorts,
+    private val verseSelection: VerseSelection,
     private val scope: CoroutineScope,
 ) {
 
@@ -54,13 +57,8 @@ class ReadingSession(
     // name — the seam's plumbing stays out of the mutex and render logic. These
     // live in the class body rather than the constructor because constructor
     // vals require explicit types on this compiler, which would resurrect the
-    // 16-line function-type block this seam removed.
+    // function-type block this seam removed.
     private val verseById = ports::verseById
-    private val nextVerse = ports::nextVerse
-    private val previousVerse = ports::previousVerse
-    private val firstUnreadVerse = ports::firstUnreadVerse
-    private val randomUnreadVerse = ports::randomUnreadVerse
-    private val firstVerse = ports::firstVerse
     private val surah = ports::surah
     private val totalVerseCount = ports::totalVerseCount
     private val readVerseIds = ports::readVerseIds
@@ -163,8 +161,8 @@ class ReadingSession(
 
     // Suspend so the card can await these mid-gesture to sequence the swipe
     // animation, verse swap, and offset reset strictly.
-    suspend fun next() = mutationMutex.withLock { step { nextVerse(it) } }
-    suspend fun previous() = mutationMutex.withLock { step { previousVerse(it) } }
+    suspend fun next() = mutationMutex.withLock { step { verseSelection.next(it) } }
+    suspend fun previous() = mutationMutex.withLock { step { verseSelection.previous(it) } }
 
     fun markCurrentRead() = scope.launch {
         mutationMutex.withLock {
@@ -302,18 +300,11 @@ class ReadingSession(
     }
 
     // Picks the *starting* verse of a fresh session only; prev/next always step
-    // sequentially by id regardless of mode. Sequential opens on the lowest
-    // ayah not yet marked read — marking a later ayah while leaving earlier
-    // ones unmarked never strands an unread ayah behind. Random opens on any
-    // unread ayah. When everything is already read, Sequential falls back to
-    // the very first ayah so there is still content behind the popup.
-    private suspend fun loadStartingVerse(prefs: UserPreferences): VerseEntity? {
-        val readIds = readVerseIds().toHashSet()
-        return when (prefs.readingMode) {
-            ReadingMode.RANDOM -> randomUnreadVerse(readIds)
-            ReadingMode.SEQUENTIAL -> firstUnreadVerse(readIds) ?: firstVerse()
-        }
-    }
+    // sequentially by id regardless of mode. Which verse that is — including
+    // every everything-read fallback — is verse selection's decision, not a
+    // branch here.
+    private suspend fun loadStartingVerse(prefs: UserPreferences): VerseEntity? =
+        verseSelection.start(prefs.readingMode, readVerseIds().toHashSet())
 
     // Pronunciation aid for a verse, or null when the user turned it off.
     private fun translitFor(verse: VerseEntity, prefs: UserPreferences): String? =
@@ -349,9 +340,9 @@ class ReadingSession(
             val isReadDeferred = async { isRead(verse.id) }
             val allReadDeferred = async { isEverythingRead() }
             val nextPreviewDeferred =
-                async { nextVerse(verse.id)?.let { buildPreview(it, prefs, downloaded) } }
+                async { verseSelection.next(verse.id)?.let { buildPreview(it, prefs, downloaded) } }
             val previousPreviewDeferred =
-                async { previousVerse(verse.id)?.let { buildPreview(it, prefs, downloaded) } }
+                async { verseSelection.previous(verse.id)?.let { buildPreview(it, prefs, downloaded) } }
 
             val translationLanguage = prefs.translationDisplay.toTranslationLanguage()
             val availableTranslations = translationLanguage

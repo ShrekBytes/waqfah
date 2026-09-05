@@ -5,9 +5,12 @@ import com.shrekbytes.waqfah.data.local.core.VerseEntity
 import com.shrekbytes.waqfah.data.model.ReadingMode
 import com.shrekbytes.waqfah.data.model.TranslationMeta
 import com.shrekbytes.waqfah.data.model.UserPreferences
+import com.shrekbytes.waqfah.data.repository.VerseLookups
+import com.shrekbytes.waqfah.data.repository.VerseSelection
 import com.shrekbytes.waqfah.ui.reading.ReadingPorts
 import com.shrekbytes.waqfah.ui.reading.ReadingSession
 import com.shrekbytes.waqfah.ui.theme.AppTheme
+import kotlin.random.Random
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,10 +25,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 // Tests the ReadingSession at its interface: flows in, verbs called, uiState
-// out. Every port is a fake over plain mutable state and virtual time drives
-// the delays, so the machine's ordering — the mutex, the render skip, the
-// mark-read-under-lock — is exercised exactly the way the reading card drives
-// it in production. Five verses of one surah stand in for the mushaf.
+// out. Every port is a fake over plain mutable state, verse movement goes
+// through a real VerseSelection over a fake VerseLookups, and virtual time
+// drives the delays, so the machine's ordering — the mutex, the render skip,
+// the mark-read-under-lock — is exercised exactly the way the reading card
+// drives it in production. Five verses of one surah stand in for the mushaf.
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReadingSessionTest {
 
@@ -64,15 +68,36 @@ class ReadingSessionTest {
     private val setReadingModeCalls = mutableListOf<ReadingMode>()
 
     // One surah probe happens per render, so its count is the render-skip
-    // probe; one firstUnread/randomUnread call happens per fresh session.
+    // probe; one id-list scan happens per fresh session, so its count is the
+    // reload probe.
     private var surahQueries = 0
     private var startingVerseLoads = 0
 
     // Opened only by tests that stall inside the lock: the mark-read race and
     // the preference-emission-during-a-step ordering. Both are one-shot: a
-    // render's preview probes call the same ports, and they must not stall.
+    // render's preview probes call the same lookups, and they must not stall.
     private var isReadDelayMs = 0L
     private var nextDelayMs = 0L
+
+    private val lookups = object : VerseLookups {
+        override suspend fun getVerseById(id: Int) = verses.firstOrNull { it.id == id }
+        override suspend fun getAllVerseIds(): List<Int> {
+            startingVerseLoads++
+            return verses.map { it.id }
+        }
+        override suspend fun getVerseIdsForSurah(surahNo: Int) =
+            verses.filter { it.surahNo == surahNo }.map { it.id }
+        override suspend fun getFirstVerse() = verses.firstOrNull()
+        override suspend fun getLastVerse() = verses.lastOrNull()
+        override suspend fun getNextVerse(afterId: Int): VerseEntity? {
+            val stall = nextDelayMs
+            nextDelayMs = 0
+            if (stall > 0) delay(stall)
+            return verses.firstOrNull { v -> v.id > afterId }
+        }
+        override suspend fun getPreviousVerse(beforeId: Int) =
+            verses.lastOrNull { it.id < beforeId }
+    }
 
     private fun TestScope.session() = ReadingSession(
         preferences = prefs,
@@ -80,22 +105,6 @@ class ReadingSessionTest {
         progressReset = resetSignal,
         ports = object : ReadingPorts {
             override suspend fun verseById(id: Int) = verses.firstOrNull { it.id == id }
-            override suspend fun nextVerse(afterId: Int): VerseEntity? {
-                val stall = nextDelayMs
-                nextDelayMs = 0
-                if (stall > 0) delay(stall)
-                return verses.firstOrNull { v -> v.id > afterId } ?: verses.first()
-            }
-            override suspend fun previousVerse(beforeId: Int) = verses.lastOrNull { it.id < beforeId } ?: verses.last()
-            override suspend fun firstUnreadVerse(exclude: Set<Int>): VerseEntity? {
-                startingVerseLoads++
-                return verses.firstOrNull { it.id !in readIds }
-            }
-            override suspend fun randomUnreadVerse(exclude: Set<Int>): VerseEntity? {
-                startingVerseLoads++
-                return verses.filter { it.id !in readIds }.randomOrNull() ?: verses.random()
-            }
-            override suspend fun firstVerse() = verses.first()
             override suspend fun surah(surahNo: Int): SurahEntity? {
                 surahQueries++
                 return if (surahNo == 1) surah1 else null
@@ -118,6 +127,7 @@ class ReadingSessionTest {
                 prefs.value = prefs.value.copy(readingMode = mode)
             }
         },
+        verseSelection = VerseSelection(lookups, Random(0)),
         scope = backgroundScope,
     )
 

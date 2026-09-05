@@ -119,6 +119,13 @@ signals it subscribes to. The repositories are adapted to it by
 DefaultReadingPorts; tests fake it inline.
 _Avoid_: probe bundle, session callbacks
 
+**Verse selection**:
+The choice of which verse to show: the fresh-session start (sequential
+first-unread, random random-unread, each with its everything-read fallback),
+the in-surah continue (first-unread-in-surah, else the surah's first ayah),
+and next/previous stepping with wrap-around.
+_Avoid_: verse picker
+
 ### Feature tour
 
 **Feature tour**:

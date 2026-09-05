@@ -10,63 +10,35 @@ import javax.inject.Singleton
 @Singleton
 class QuranRepository @Inject constructor(
     private val quranDatabase: QuranDatabase,
-) {
+) : VerseLookups {
     suspend fun getSurah(surahNo: Int): SurahEntity? = quranDatabase.surahDao().getBySurahNo(surahNo)
 
     suspend fun getAllSurahs(): List<SurahEntity> = quranDatabase.surahDao().getAll()
 
-    suspend fun getVerseById(id: Int): VerseEntity? = quranDatabase.verseDao().getVerseById(id)
+    override suspend fun getVerseById(id: Int): VerseEntity? = quranDatabase.verseDao().getVerseById(id)
 
     suspend fun getVerse(surahNo: Int, ayahNo: Int): VerseEntity? =
         quranDatabase.verseDao().getBySurahAndAyah(surahNo, ayahNo)
 
-    suspend fun getVerseIdsForSurah(surahNo: Int): List<Int> =
+    override suspend fun getVerseIdsForSurah(surahNo: Int): List<Int> =
         quranDatabase.verseDao().getVerseIdsForSurah(surahNo)
 
     suspend fun getAllVerseSurahPairs(): List<VerseSurahPair> =
         quranDatabase.verseDao().getAllVerseSurahPairs()
 
-    suspend fun getFirstVerse(): VerseEntity? = quranDatabase.verseDao().getFirstVerse()
-    suspend fun getRandomVerse(): VerseEntity? = quranDatabase.verseDao().getRandomVerse()
+    override suspend fun getFirstVerse(): VerseEntity? = quranDatabase.verseDao().getFirstVerse()
 
-    // Sequential mode fresh-session start: the lowest-numbered ayah not yet
-    // marked read. Null only when every ayah has been read.
-    suspend fun getFirstUnreadVerse(readVerseIds: Set<Int>): VerseEntity? {
-        val dao = quranDatabase.verseDao()
-        return dao.getAllVerseIds()
-            .firstOrNull { it !in readVerseIds }
-            ?.let { dao.getVerseById(it) }
-    }
+    override suspend fun getLastVerse(): VerseEntity? = quranDatabase.verseDao().getLastVerse()
 
-    // Random mode fresh-session start: any unread ayah, uniformly. Falls back
-    // to a purely random ayah once everything has been marked read.
-    suspend fun getRandomUnreadVerse(readVerseIds: Set<Int>): VerseEntity? {
-        val dao = quranDatabase.verseDao()
-        val unread = dao.getAllVerseIds().filterNot { it in readVerseIds }
-        return unread.randomOrNull()?.let { dao.getVerseById(it) } ?: getRandomVerse()
-    }
-
-    // First unread within a specific surah — used by "Continue this surah".
-    // When every ayah in the surah is already read, falls back to the surah's
-    // first ayah (the caller wants always-enabled behavior; nothing read yet
-    // simply returns the first unread, i.e. the first ayah).
-    suspend fun getFirstUnreadVerseInSurah(surahNo: Int, readVerseIds: Set<Int>): VerseEntity? {
-        val dao = quranDatabase.verseDao()
-        val ids = dao.getVerseIdsForSurah(surahNo)
-        val firstUnreadId = ids.firstOrNull { it !in readVerseIds }
-        return when {
-            firstUnreadId != null -> dao.getVerseById(firstUnreadId)
-            ids.isNotEmpty() -> dao.getVerseById(ids.first())
-            else -> null
-        }
-    }
+    override suspend fun getAllVerseIds(): List<Int> = quranDatabase.verseDao().getAllVerseIds()
 
     suspend fun totalVerseCount(): Int = quranDatabase.verseDao().countAll()
 
-    // Wrap around at either end of the mushaf.
-    suspend fun getNextVerse(afterId: Int): VerseEntity? =
-        quranDatabase.verseDao().getNextVerse(afterId) ?: quranDatabase.verseDao().getFirstVerse()
+    // Raw positional neighbours, null at the mushaf ends — wrap-around is
+    // verse selection's decision, never this adapter's.
+    override suspend fun getNextVerse(afterId: Int): VerseEntity? =
+        quranDatabase.verseDao().getNextVerse(afterId)
 
-    suspend fun getPreviousVerse(beforeId: Int): VerseEntity? =
-        quranDatabase.verseDao().getPreviousVerse(beforeId) ?: quranDatabase.verseDao().getLastVerse()
+    override suspend fun getPreviousVerse(beforeId: Int): VerseEntity? =
+        quranDatabase.verseDao().getPreviousVerse(beforeId)
 }

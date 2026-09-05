@@ -7,8 +7,10 @@ import javax.inject.Inject
 
 // The repositories behind the reading machine's probes (ReadingPorts). One
 // line per probe: this file is pure wiring — each fact's owner is the
-// repository it forwards to. Provided in AppModule next to
-// provideMonitorSupervisor, the other pure-core-to-repository adapter.
+// repository it forwards to. Verse movement lives in VerseSelection, taken
+// directly by the session, so no probe here merely forwards to it. Provided
+// in AppModule next to provideMonitorSupervisor, the other
+// pure-core-to-repository adapter.
 class DefaultReadingPorts @Inject constructor(
     private val quranRepository: QuranRepository,
     private val readingProgressRepository: ReadingProgressRepository,
@@ -16,11 +18,6 @@ class DefaultReadingPorts @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ReadingPorts {
     override suspend fun verseById(id: Int) = quranRepository.getVerseById(id)
-    override suspend fun nextVerse(afterId: Int) = quranRepository.getNextVerse(afterId)
-    override suspend fun previousVerse(beforeId: Int) = quranRepository.getPreviousVerse(beforeId)
-    override suspend fun firstUnreadVerse(exclude: Set<Int>) = quranRepository.getFirstUnreadVerse(exclude)
-    override suspend fun randomUnreadVerse(exclude: Set<Int>) = quranRepository.getRandomUnreadVerse(exclude)
-    override suspend fun firstVerse() = quranRepository.getFirstVerse()
     override suspend fun surah(surahNo: Int) = quranRepository.getSurah(surahNo)
     override suspend fun totalVerseCount() = quranRepository.totalVerseCount()
     override suspend fun readVerseIds() = readingProgressRepository.getReadVerseIds()

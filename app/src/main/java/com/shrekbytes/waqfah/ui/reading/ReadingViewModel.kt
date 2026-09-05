@@ -6,6 +6,7 @@ import com.shrekbytes.waqfah.data.installedapp.InstalledAppCatalog
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import com.shrekbytes.waqfah.data.repository.TranslationRepository
+import com.shrekbytes.waqfah.data.repository.VerseSelection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
@@ -28,6 +29,7 @@ class ReadingViewModel @Inject constructor(
     readingProgressRepository: ReadingProgressRepository,
     private val installedAppCatalog: InstalledAppCatalog,
     ports: ReadingPorts,
+    verseSelection: VerseSelection,
 ) : ViewModel() {
 
     val session = ReadingSession(
@@ -37,6 +39,7 @@ class ReadingViewModel @Inject constructor(
         downloadedIds = translationRepository.downloadedIds,
         progressReset = readingProgressRepository.progressReset,
         ports = ports,
+        verseSelection = verseSelection,
         scope = viewModelScope,
     )
 

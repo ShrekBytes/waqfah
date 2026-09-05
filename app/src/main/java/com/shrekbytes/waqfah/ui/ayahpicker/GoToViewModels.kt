@@ -9,6 +9,7 @@ import com.shrekbytes.waqfah.data.model.UserPreferences
 import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
+import com.shrekbytes.waqfah.data.repository.VerseSelection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,7 @@ class GoToSurahViewModel @Inject constructor(
     private val quranRepository: QuranRepository,
     private val readingProgressRepository: ReadingProgressRepository,
     private val settingsRepository: SettingsRepository,
+    private val verseSelection: VerseSelection,
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
@@ -113,7 +115,7 @@ class GoToSurahViewModel @Inject constructor(
     suspend fun getReadIds(): Set<Int> = readingProgressRepository.getReadVerseIds().toHashSet()
 
     suspend fun getFirstUnreadInSurah(surahNo: Int, readIds: Set<Int>): VerseEntity? =
-        quranRepository.getFirstUnreadVerseInSurah(surahNo, readIds)
+        verseSelection.continueInSurah(surahNo, readIds)
 }
 
 data class GoToSurahUiState(

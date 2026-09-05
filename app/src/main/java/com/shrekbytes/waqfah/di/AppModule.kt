@@ -8,7 +8,9 @@ import com.shrekbytes.waqfah.data.repository.DefaultReadingPorts
 import com.shrekbytes.waqfah.data.repository.MonitoredAppStateRepository
 import com.shrekbytes.waqfah.data.repository.PackageManagerInstalledAppCatalog
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
+import com.shrekbytes.waqfah.data.repository.QuranRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
+import com.shrekbytes.waqfah.data.repository.VerseLookups
 import com.shrekbytes.waqfah.detection.AppMonitorService
 import com.shrekbytes.waqfah.detection.MonitorSupervisor
 import com.shrekbytes.waqfah.ui.reading.ReadingPorts
@@ -23,6 +25,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import javax.inject.Named
 import javax.inject.Singleton
+import kotlin.random.Random
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -74,4 +77,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideReadingPorts(ports: DefaultReadingPorts): ReadingPorts = ports
+
+    // Verse selection reads through the Quran repository's raw lookups, and
+    // picks with a plain Random — production needs no seed, tests pass one.
+    @Provides
+    @Singleton
+    fun provideVerseLookups(repository: QuranRepository): VerseLookups = repository
+
+    @Provides
+    @Singleton
+    fun provideVerseSelectionRandom(): Random = Random.Default
 }

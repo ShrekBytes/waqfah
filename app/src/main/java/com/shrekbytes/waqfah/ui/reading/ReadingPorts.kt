@@ -8,16 +8,12 @@ import com.shrekbytes.waqfah.data.model.TranslationMeta
 // The reading machine's on-demand probes — every fact ReadingSession fetches
 // mid-step or mid-render, as opposed to the three signals it subscribes to
 // (preferences, downloadedIds, progressReset), which stay direct constructor
-// flows on the session. DefaultReadingPorts (data/repository) adapts the
-// repositories to this interface, provided in AppModule; tests fake it inline.
-// 1:1 with the function ports it replaced, so the session body is untouched.
+// flows on the session. Verse movement (fresh start, stepping) is verse
+// selection's decision, not a probe: the session takes VerseSelection
+// directly. DefaultReadingPorts (data/repository) adapts the repositories to
+// this interface, provided in AppModule; tests fake it inline.
 interface ReadingPorts {
     suspend fun verseById(id: Int): VerseEntity?
-    suspend fun nextVerse(afterId: Int): VerseEntity?
-    suspend fun previousVerse(beforeId: Int): VerseEntity?
-    suspend fun firstUnreadVerse(exclude: Set<Int>): VerseEntity?
-    suspend fun randomUnreadVerse(exclude: Set<Int>): VerseEntity?
-    suspend fun firstVerse(): VerseEntity?
     suspend fun surah(surahNo: Int): SurahEntity?
     suspend fun totalVerseCount(): Int
     suspend fun readVerseIds(): List<Int>
