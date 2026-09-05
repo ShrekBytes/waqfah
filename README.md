@@ -86,8 +86,9 @@ app open.
 ./gradlew :app:testDebugUnitTest  # unit tests
 ```
 
-Requirements: JDK 17 and Android SDK platform 37 (AGP 9.x-compatible
-tooling, e.g. a current Android Studio).
+Requirements: Android SDK platform 37 (AGP 9.x-compatible tooling, e.g.
+a current Android Studio). Gradle auto-provisions its daemon JDK, pinned
+in `gradle/gradle-daemon-jvm.properties`.
 minSdk 28 (Android 9) · targetSdk 37.
 
 Built with Kotlin and Jetpack Compose (Material 3); persistence via Room and
