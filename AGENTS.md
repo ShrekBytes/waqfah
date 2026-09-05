@@ -42,5 +42,5 @@ Applies to conversation only. Code, docs, commit messages, etc. follow normal pr
 ./gradlew :app:assembleDebug       # compile check
 ```
 
-- `androidTest` (incl. Room migration tests) needs a device/emulator — headless verification is the two commands above.
+- `androidTest` (incl. Room migration tests) needs a device/emulator. Headless verification is the two commands above.
 - Gradle auto-provisions its daemon JDK (pinned in `gradle/gradle-daemon-jvm.properties`); needs Android SDK platform 37. `local.properties` is gitignored machine setup — never commit a fix.
