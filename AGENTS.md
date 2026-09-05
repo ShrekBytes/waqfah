@@ -15,7 +15,7 @@ Applies to conversation only. Code, docs, commit messages, etc. follow normal pr
 - Check installed skills when the task clearly matches one. Use the skill when it provides relevant procedures or tooling; otherwise work directly.
 - Prefer the simplest solution. No abstraction, layers, dependencies, or future-proofing without concrete need. Follow existing codebase patterns even when they add structure.
 - Tests match the change, never get weakened. Add/update tests when behavior changes or existing tests are relevant, nothing extra. Never skip, delete, or dumb down a test to pass; explain first if a test is genuinely wrong.
-- Escalate after two failed attempts. If the same approach fails twice, stop and ask before continuing; don't retry without changing the diagnosis or approach.
+- Escalate after two failed attempts. Don't retry the same approach; change the diagnosis or approach, or ask before continuing.
 - Verify before finishing. Run the narrowest relevant tests and build checks first, then broader checks when warranted. Don't claim success from reading code alone.
 - Ask when scope, requirements, or intent are materially ambiguous. Resolve ordinary implementation choices by following existing patterns.
 - Commits: `type: summary`
