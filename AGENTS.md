@@ -4,7 +4,7 @@
 
 ### Communication
 
-Talk to me in clear, plain language — avoid unnecessary jargon, explain technical terms when used. Be direct; don't pad responses. Plain language, not less detail — give thorough explanations when needed.
+Talk to me in clear, plain language. Avoid unnecessary jargon. Explain technical terms when used. Be direct; don't pad responses. Plain language, not less detail. Give thorough explanations when needed.
 
 Applies to conversation only. Code, docs, commit messages, etc. follow normal professional/technical conventions.
 
