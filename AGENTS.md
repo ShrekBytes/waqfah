@@ -10,7 +10,7 @@ Applies to conversation only. Code, docs, commit messages, etc. follow normal pr
 
 ### Working rules
 
-- Information requests get answers, not implementations. Do not edit files, build, test, or change issues unless explicitly requested.
+- Information requests get answers, not implementations. Do not make changes unless explicitly requested.
 - Stay on task. Keep changes minimal and focused on what was asked. Don't fix unrelated problems unless necessary — mention them instead.
 - Check installed skills when the task clearly matches one. Use the skill when it provides relevant procedures or tooling; otherwise work directly.
 - Prefer the simplest solution. No abstraction, layers, dependencies, or future-proofing without concrete need. Follow existing codebase patterns even when they add structure.
