@@ -30,7 +30,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -38,18 +37,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -72,158 +68,50 @@ import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
 private const val TOUR_LINK_TAG = "tour_translation_link"
 
-private enum class TaskKind { MARK_READ, CHANGE_AYAH, SWITCH_TRANSLATION, GO_TO_AYAH }
-
-// One stop of the feature tour. Flow shows how Waqfah works as a
-// blockquote-style chain, TryIt asks the user to perform the real action on the live
-// reading card, SettingRows/Checklist visualize where things live.
-private sealed interface TourStep {
-    val titleRes: Int
-
-    data class Flow(
-        @StringRes override val titleRes: Int,
-        val steps: List<Int>,
-    ) : TourStep
-
-    data class Info(
-        @StringRes override val titleRes: Int,
-        @StringRes val bodyRes: Int,
-        val icon: ImageVector,
-    ) : TourStep
-
-    data class TryIt(
-        val kind: TaskKind,
-        @StringRes override val titleRes: Int,
-        @StringRes val bodyRes: Int,
-    ) : TourStep
-
-    data class SettingRows(
-        @StringRes override val titleRes: Int,
-        @StringRes val hintRes: Int,
-        val icon: ImageVector,
-        val rows: List<SettingRow>,
-    ) : TourStep
-}
-
-private data class SettingRow(
-    @StringRes val labelRes: Int,
-    @StringRes val descRes: Int,
-)
-
-private val TOUR_STEPS = listOf<TourStep>(
-    // The whole idea as a scannable chain instead of a paragraph.
-    TourStep.Flow(
-        R.string.tour_flow_title,
-        listOf(
-            R.string.tour_f1,
-            R.string.tour_f2,
-            R.string.tour_f3,
-            R.string.tour_f4,
-            R.string.tour_f5,
-        ),
-    ),
-    TourStep.TryIt(TaskKind.MARK_READ, R.string.tour_t_mark_title, R.string.tour_t_mark_body),
-    TourStep.TryIt(TaskKind.CHANGE_AYAH, R.string.tour_t_move_title, R.string.tour_t_move_body),
-    TourStep.TryIt(TaskKind.SWITCH_TRANSLATION, R.string.tour_t_trans_title, R.string.tour_t_trans_body),
-    TourStep.TryIt(TaskKind.GO_TO_AYAH, R.string.tour_t_goto_title, R.string.tour_t_goto_body),
-    TourStep.SettingRows(
-        R.string.tour_set_title,
-        R.string.tour_set_hint,
-        Icons.Filled.Settings,
-        listOf(
-            SettingRow(R.string.tour_r_mode_t, R.string.tour_r_mode_d),
-            SettingRow(R.string.tour_r_script_t, R.string.tour_r_script_d),
-            SettingRow(R.string.tour_r_size_t, R.string.tour_r_size_d),
-            SettingRow(R.string.tour_r_trans_t, R.string.tour_r_trans_d),
-        ),
-    ),
-    // Check (not a more "celebratory" icon): this closing step is really just
-    // pointing at where to find FAQ/troubleshooting, so it should read as
-    // "you're set up" rather than promise something more than that.
-    TourStep.Info(R.string.tour_p5_title, R.string.tour_p5_body, Icons.Filled.Check),
-)
-
-// Full-screen overlay hosting the guided tour. Rendered ONLY over the Home tab
-// of MainActivity (see MainScreen) — never over TriggerActivity's interstitial.
+// Full-screen overlay hosting the guided tour — the tour machine's rendering
+// adapter. Steps, TryIt completion, back ordering and dismissal live in
+// TourSession (see CONTEXT.md); this composable pushes it the reading card's
+// facts and renders its uiState. Rendered ONLY over the Home tab of
+// MainActivity (see MainScreen) — never over TriggerActivity's interstitial.
 // The TryIt steps embed the REAL home reading card (same ReadingViewModel as
 // the Home tab), so what the user practices here is the actual thing; the
 // Go-to step opens the REAL surah/ayah picker (GoToSurahScreen) INSIDE the
 // sandbox instead of pushing a full screen over the tour, so the tour never
 // gets disposed mid-step. Steps navigate via AnimatedContent rather than
 // HorizontalPager on purpose: the pager's own horizontal drag would steal the
-// card's swipe-to-change-ayah gesture. onFinish marks the tour completed so it
-// never auto-shows again; onSkip keeps it incomplete so it re-offers next launch.
+// card's swipe-to-change-ayah gesture.
 @Composable
 fun FeatureTourOverlay(
-    onFinish: () -> Unit,
-    onSkip: () -> Unit,
+    tourSession: TourSession,
     onBrowseTranslations: () -> Unit = {},
     viewModel: ReadingViewModel = hiltViewModel(),
 ) {
     val colors = WaqfahTheme.colors
     val state by viewModel.session.uiState.collectAsStateWithLifecycle()
+    val tour by tourSession.uiState.collectAsStateWithLifecycle()
 
-    var stepIndex by rememberSaveable { mutableIntStateOf(0) }
-    // True while the surah/ayah picker is embedded in the Go-to step's sandbox.
-    var goToPickerOpen by rememberSaveable { mutableStateOf(false) }
-    val isLast = stepIndex == TOUR_STEPS.lastIndex
+    // The machine's only input from the card: raw facts; derivation (anchors,
+    // the shown translation, the switch hints) happens in the session.
+    LaunchedEffect(state) {
+        tourSession.onReadingState(
+            TourReadingFacts(
+                isLoading = state.isLoading,
+                ayahLabel = state.ayahLabel,
+                translationSourceName = state.translationSourceName,
+                translationText = state.translationText,
+                isMarkedRead = state.isMarkedRead,
+                hasTranslationAlternates = state.translationHasAlternates,
+            ),
+        )
+    }
 
     // Back closes the in-sandbox Go-to picker first, then goes a step back;
-    // from the first step it dismisses early (a skip). GoToSurahScreen has no
-    // BackHandler of its own, so this one catches back while the picker shows.
-    BackHandler {
-        when {
-            goToPickerOpen -> goToPickerOpen = false
-            stepIndex > 0 -> stepIndex--
-            else -> onSkip()
-        }
-    }
+    // from the first step it dismisses early (a skip) — the session decides.
+    // GoToSurahScreen has no BackHandler of its own, so this one catches back
+    // while the picker shows.
+    BackHandler { tourSession.back() }
 
-    // Baselines for detecting a completed hands-on task, snapshotted whenever
-    // an interactive step becomes current (and re-snapshotted once loading
-    // resolves, since the first snapshot would otherwise capture blank state).
-    var anchorAyah by remember { mutableStateOf<String?>(null) }
-    var anchorTranslation by remember { mutableStateOf<String?>(null) }
-    // GO_TO_AYAH completion flag lives here (not inside TryItPage) so
-    // AnimatedContent's page switches don't reset it; rememberSaveable
-    // additionally carries it across rotation/process death. Only a jump
-    // performed INSIDE the embedded picker sets it — tapping the header or
-    // swiping the card can never falsely complete the step. The picker itself
-    // is embedded in the sandbox (no navigation happens, so there is no
-    // Navigation3 disposal mid-task to survive anymore).
-    var goToJumpedFromPicker by rememberSaveable { mutableStateOf(false) }
-    var goToResetStep by rememberSaveable { mutableIntStateOf(-1) }
-    LaunchedEffect(stepIndex, state.isLoading) {
-        if (!state.isLoading && TOUR_STEPS[stepIndex] is TourStep.TryIt) {
-            anchorAyah = state.ayahLabel
-            anchorTranslation = state.translationSourceName ?: state.translationText
-        }
-    }
-    // Reset the GO_TO_AYAH completion flag only when the step genuinely becomes
-    // current (not on every recomposition) — opening/closing the picker or a
-    // jump recomposes without a step change, and a reset there would wipe the
-    // flag right after a jump. Leaving the step also collapses the embedded
-    // picker, so coming back lands on the reading card again instead of a
-    // stale open picker.
-    if (goToResetStep != stepIndex) {
-        goToResetStep = stepIndex
-        goToJumpedFromPicker = false
-        goToPickerOpen = false
-    }
-    // Opens the surah/ayah picker INSIDE the sandbox. Completion is decided by
-    // the jump itself (onJumped), never by the tap — so a swipe-only ayah
-    // change can't falsely complete the step.
-    val onOpenGoToPickerForTour: () -> Unit = {
-        goToPickerOpen = true
-    }
-    val taskDone = when ((TOUR_STEPS[stepIndex] as? TourStep.TryIt)?.kind) {
-        TaskKind.MARK_READ -> !state.isLoading && state.isMarkedRead
-        TaskKind.CHANGE_AYAH -> anchorAyah != null && state.ayahLabel != anchorAyah
-        TaskKind.GO_TO_AYAH -> goToJumpedFromPicker
-        TaskKind.SWITCH_TRANSLATION ->
-            anchorTranslation != null && (state.translationSourceName ?: state.translationText) != anchorTranslation
-        null -> false
-    }
+    val isLast = tour.stepIndex == TOUR_STEPS.lastIndex
 
     // Dimmer swallows taps so nothing underneath reacts while touring.
     Box(
@@ -241,15 +129,15 @@ fun FeatureTourOverlay(
             Column(Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 18.dp)) {
                 // Header: round-dot progress track + dismiss controls.
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    HeaderDots(selected = stepIndex, count = TOUR_STEPS.size)
+                    HeaderDots(selected = tour.stepIndex, count = TOUR_STEPS.size)
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onSkip, contentPadding = PaddingValues(0.dp)) {
+                    TextButton(onClick = tourSession::skip, contentPadding = PaddingValues(0.dp)) {
                         Text(stringResource(R.string.tour_skip), color = colors.inkMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 }
 
                 AnimatedContent(
-                    targetState = stepIndex,
+                    targetState = tour.stepIndex,
                     modifier = Modifier.weight(1f),
                     transitionSpec = {
                         (fadeIn(tween(220)) + scaleIn(initialScale = 0.97f, animationSpec = tween(220)))
@@ -263,17 +151,14 @@ fun FeatureTourOverlay(
                         is TourStep.SettingRows -> SettingsPage(step)
                         is TourStep.TryIt -> TryItPage(
                             step = step,
-                            done = index == stepIndex && taskDone,
-                            isTranslationDisabled = step.kind == TaskKind.SWITCH_TRANSLATION && state.translationText == null && !state.isLoading,
-                            showTranslationFallback = step.kind == TaskKind.SWITCH_TRANSLATION && state.translationText != null && !state.translationHasAlternates,
+                            done = index == tour.stepIndex && tour.taskDone,
+                            isTranslationDisabled = step.kind == TourTaskKind.SWITCH_TRANSLATION && tour.isTranslationDisabled,
+                            showTranslationFallback = step.kind == TourTaskKind.SWITCH_TRANSLATION && tour.showTranslationFallback,
                             onBrowseTranslations = onBrowseTranslations,
-                            showGoToPicker = goToPickerOpen,
-                            onOpenPicker = onOpenGoToPickerForTour,
-                            onClosePicker = { goToPickerOpen = false },
-                            onJumpedInPicker = {
-                                goToJumpedFromPicker = true
-                                goToPickerOpen = false
-                            },
+                            showGoToPicker = tour.goToPickerOpen,
+                            onOpenPicker = tourSession::openGoToPicker,
+                            onClosePicker = tourSession::closeGoToPicker,
+                            onJumpedInPicker = tourSession::onJumpedInPicker,
                             viewModel = viewModel,
                         )
                     }
@@ -283,9 +168,9 @@ fun FeatureTourOverlay(
                 // Back lives beside the primary action where thumb navigation
                 // already happens; Skip alone stays up in the header.
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (stepIndex > 0) {
+                    if (tour.stepIndex > 0) {
                         TextButton(
-                            onClick = { stepIndex-- },
+                            onClick = { tourSession.back() },
                             contentPadding = PaddingValues(horizontal = 8.dp),
                             modifier = Modifier.weight(1f),
                         ) {
@@ -293,13 +178,13 @@ fun FeatureTourOverlay(
                         }
                         WaqfahPrimaryButton(
                             text = stringResource(if (isLast) R.string.tour_finish else R.string.tour_next),
-                            onClick = { if (isLast) onFinish() else stepIndex++ },
+                            onClick = { tourSession.next() },
                             modifier = Modifier.weight(2f),
                         )
                     } else {
                         WaqfahPrimaryButton(
                             text = stringResource(if (isLast) R.string.tour_finish else R.string.tour_next),
-                            onClick = { if (isLast) onFinish() else stepIndex++ },
+                            onClick = { tourSession.next() },
                         )
                     }
                 }
@@ -487,7 +372,7 @@ private fun TryItPage(
     onJumpedInPicker: () -> Unit = {},
 ) {
     val colors = WaqfahTheme.colors
-    val isGoToStep = step.kind == TaskKind.GO_TO_AYAH
+    val isGoToStep = step.kind == TourTaskKind.GO_TO_AYAH
 
     if (isGoToStep && showGoToPicker) {
         GoToSurahScreen(

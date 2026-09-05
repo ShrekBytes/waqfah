@@ -119,6 +119,37 @@ signals it subscribes to. The repositories are adapted to it by
 DefaultReadingPorts; tests fake it inline.
 _Avoid_: probe bundle, session callbacks
 
+### Feature tour
+
+**Feature tour**:
+The guided walkthrough shown over the Home tab, introducing Waqfah and having
+the user practice on the live reading card. It re-offers on every launch until
+finished once; skipping persists nothing.
+_Avoid_: onboarding tour, tutorial
+
+**TourSession**:
+The tour's machine. It owns the current step, decides when a TryIt task is
+done from the reading facts it is fed, and owns dismissal — finishing
+persists completion, skipping persists nothing. The overlay and the
+visibility gate are its adapters.
+_Avoid_: tour state, tour logic
+
+**TryIt step**:
+A tour stop that asks the user to perform a real action on the live reading
+card. It completes when the action happens — never by tapping through.
+_Avoid_: practice step, exercise
+
+**Sandbox**:
+The real reading card (and, for go-to, the real surah/ayah picker) embedded
+inside a TryIt step, so what the user practices is the actual thing.
+_Avoid_: practice area, demo
+
+**Task anchor**:
+The reading-card snapshot a TryIt step compares against — taken when the step
+becomes current, re-taken once loading resolves. The task is done when live
+reading moves off the anchor.
+_Avoid_: baseline, initial state
+
 ### Translations
 
 **Translation library**:

@@ -85,11 +85,16 @@ TriggerDecision as a constructor probe.
   emission, contract pinned by LoadedPreferencesTest); await-then-act readers
   use the cold `preferences` flow.
 - Repositories expose Flows; ViewModels combine them into immutable UI state;
-  Compose screens stay stateless where possible. Two deliberate exceptions:
+  Compose screens stay stateless where possible. Three deliberate exceptions:
   ReadingViewModel exposes its ReadingSession directly (the machine owns its
   state — screens read `session.uiState`), and ReadingPorts is owned by the
   reading machine (ui/reading) with DefaultReadingPorts (data/repository)
-  implementing it — a consumer-owned port, wired in AppModule.
+  implementing it — a consumer-owned port, wired in AppModule. Likewise
+  FeatureTourViewModel hosts **TourSession** (`ui/tour/TourSession.kt`), the
+  tour machine that owns steps, TryIt completion (anchors, jump-only go-to),
+  back ordering and dismissal; the overlay is its rendering adapter (it pushes
+  reading facts in), and MainScreen composes its pure `tourVisible` gate —
+  skip persists nothing (ADR-0003), finishing alone reaches persistence.
 
 ## Concurrency notes
 
