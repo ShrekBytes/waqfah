@@ -65,6 +65,7 @@ class MonitorSessionTest {
             stamped += membership.packageName
             true
         },
+        interstitialClassName = "com.shrekbytes.waqfah.TriggerActivity",
         nowElapsed = { decisionElapsed },
         nowWall = { wallNow },
     )

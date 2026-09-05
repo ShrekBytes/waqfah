@@ -82,6 +82,12 @@ toggle and the required permissions. Resume and boot may only start; only the to
 may stop.
 _Avoid_: monitor starter, service sync, lifecycle handler
 
+**InterstitialSession**:
+The interstitial's machine. It owns how the interstitial presents itself over the
+monitored app and how it recovers when the monitored app covers it — the once-only
+re-assert. The service and the activity are its Android adapters.
+_Avoid_: retry logic, relaunch guard, interstitial helper
+
 ### The trigger decision
 
 **TriggerDecision**:

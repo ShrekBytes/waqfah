@@ -44,7 +44,15 @@ and switch-back map: switch-back entries expire by age, so a stale one can't
 suppress a later open.
 
 **TriggerActivity** is a translucent interstitial rendering **ReadingCard**;
-finishing it falls through to whatever was really underneath.
+finishing it falls through to whatever was really underneath. The
+interstitial's presentation and recovery — the flag set for both launch paths
+and the once-only re-assert when the monitored app covers it mid-launch — live in
+**InterstitialSession** (`detection/InterstitialSession.kt`), with the service
+and the activity as its Android adapters and their own JVM tests. One
+**ResumedActivityReader** (`detection/ResumedActivityReader.kt`) owns the
+UsageStatsManager walk, feeding both the session's resumed-activity stream and
+the re-assert's foreground check; the interstitial's identity reaches
+TriggerDecision as a constructor probe.
 
 ## Layers
 

@@ -1,7 +1,6 @@
 package com.shrekbytes.waqfah.detection
 
 import com.shrekbytes.waqfah.BuildConfig
-import com.shrekbytes.waqfah.TriggerActivity
 import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppMembership
 
 // One foreground observation from UsageStatsManager. The activity class is
@@ -49,9 +48,10 @@ sealed interface Verdict {
 //    the persisted trigger stamp and cooldown then decide whether the next
 //    open is allowed through.
 //  - Returning from Waqfah's own interstitial never re-triggers: finishing
-//    TriggerActivity resumes the app underneath, an event identical to a
-//    fresh open. Matched by the TriggerActivity class name so an open that
-//    comes straight from Waqfah's own main screen still counts as fresh.
+//    the interstitial resumes the app underneath, an event identical to a
+//    fresh open. Matched by the interstitial's class name — supplied by the
+//    adapter — so an open that comes straight from Waqfah's own main screen
+//    still counts as fresh.
 //  - Calls are never paused, and never even count as leaving the foreground:
 //    a messaging app's own call screen, a system dialer/incall-UI package, or
 //    audio routed into a call (see isCallForeground) all count. Call screens
@@ -80,9 +80,11 @@ sealed interface Verdict {
 // Everything impure arrives through the constructor as a function: the audio
 // probe, the indirect-entry class probe (PackageManager, cached by the
 // caller), the preference snapshot, the monitored-app membership snapshot and
-// trigger claim, and two clocks. Monotonic elapsed time drives the switch-back
-// and call-grace windows; wall time drives the persisted cooldown anchor, which
-// must survive reboots.
+// trigger claim, and two clocks. The one plain value is the interstitial's
+// identity — the class name the adapter launches — so this module imports no
+// Activity. Monotonic elapsed time drives the switch-back and call-grace
+// windows; wall time drives the persisted cooldown anchor, which must survive
+// reboots.
 class TriggerDecision(
     private val isMonitored: (String) -> Boolean,
     private val callAudioActive: () -> Boolean,
@@ -90,6 +92,7 @@ class TriggerDecision(
     private val prefs: suspend () -> TriggerPrefs,
     private val monitoredMembership: suspend (String) -> MonitoredAppMembership?,
     private val claimTrigger: suspend (MonitoredAppMembership, Long) -> Boolean,
+    private val interstitialClassName: String,
     private val nowElapsed: () -> Long,
     private val nowWall: () -> Long,
 ) {
@@ -191,7 +194,7 @@ class TriggerDecision(
         // underneath resumes. Without this guard that resume re-triggers
         // whenever the reading session outlasted SWITCH_BACK_GAP_MS —
         // trapping the user in a loop of interstitials.
-        if (isReturnFromInterstitial(previous?.packageName, previous?.className)) {
+        if (isReturnFromInterstitial(previous?.packageName, previous?.className, interstitialClassName)) {
             return Verdict.Ignore(Reason.INTERSTITIAL_RETURN)
         }
 
@@ -338,12 +341,16 @@ class TriggerDecision(
         }
 
         // Pure core of the interstitial-return rule: did
-        // [previousPackage]/[previousClass] resume Waqfah's TriggerActivity?
+        // [previousPackage]/[previousClass] resume the interstitial?
         // Class match is what separates "returned from the interstitial"
-        // from "opened after using Waqfah itself".
-        internal fun isReturnFromInterstitial(previousPackage: String?, previousClass: String?): Boolean =
-            previousPackage == BuildConfig.APPLICATION_ID &&
-                previousClass == TriggerActivity::class.java.name
+        // from "opened after using Waqfah itself". The class name to match
+        // arrives through the constructor.
+        internal fun isReturnFromInterstitial(
+            previousPackage: String?,
+            previousClass: String?,
+            interstitialClassName: String,
+        ): Boolean = previousPackage == BuildConfig.APPLICATION_ID &&
+            previousClass == interstitialClassName
 
         // Pure core of the cooldown rule. Negative elapsed (clock rolled
         // back / NTP resync) counts as expired, never as permanently cooling

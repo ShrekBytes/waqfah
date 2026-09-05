@@ -25,7 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
-import com.shrekbytes.waqfah.detection.AppMonitorService
+import com.shrekbytes.waqfah.detection.InterstitialSession
+import com.shrekbytes.waqfah.detection.ResumedActivityReader
 import com.shrekbytes.waqfah.ui.reading.ReadingScreen
 import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
@@ -55,6 +56,7 @@ import javax.inject.Inject
 class TriggerActivity : AppCompatActivity() {
 
     @Inject lateinit var settingsRepository: SettingsRepository
+    @Inject lateinit var resumedActivityReader: ResumedActivityReader
 
     // Set once dismissal starts, so repeated dismiss requests can't restart the
     // exit fade or schedule multiple finishes.
@@ -63,12 +65,13 @@ class TriggerActivity : AppCompatActivity() {
     // Set after the single re-assertion below, so a stubborn app can't trap
     // the user in a loop of interstitials. Persisted across recreation
     // (rotation, locale switch mid-display) so the recreated instance can't
-    // fire the retry a second time.
-    private var buriedRetryUsed = false
+    // re-assert a second time. Whether to re-assert is InterstitialSession's
+    // decision; the once-only state is what this activity owns.
+    private var reassertUsed = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        buriedRetryUsed = savedInstanceState?.getBoolean(STATE_BURIED_RETRY_USED) ?: false
+        reassertUsed = savedInstanceState?.getBoolean(STATE_REASSERT_USED) ?: false
         enableEdgeToEdge()
 
         // Zero every window-level transition on all supported APIs: the visual
@@ -150,41 +153,35 @@ class TriggerActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putBoolean(STATE_BURIED_RETRY_USED, buriedRetryUsed)
+        outState.putBoolean(STATE_REASSERT_USED, reassertUsed)
     }
 
     override fun onStop() {
         super.onStop()
         val triggeredPackage = intent?.getStringExtra(EXTRA_TRIGGERED_PACKAGE) ?: return
-        if (buriedRetryUsed || isFinishing) return
 
-        // Screen-off also stops us without changing the foreground — never
-        // relaunch into a dark screen.
-        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
-        if (!powerManager.isInteractive) return
+        // Screen-off also stops us without changing the foreground.
+        val screenOn = (getSystemService(POWER_SERVICE) as PowerManager).isInteractive
 
         // If we lost visibility but the triggered app is still what's in the
-        // foreground, it raised its own task over this interstitial mid-launch
-        // (splash chains, VPN consent dialogs — 1.1.1.1 does this), which looks
-        // like Waqfah opened the app. Bring ourselves back once.
-        if (!AppMonitorService.isLatestForeground(this, triggeredPackage)) return
+        // foreground, it covered this interstitial mid-launch — the machine
+        // decides whether the once-only re-assert may fire.
+        if (!InterstitialSession.shouldReassert(
+                reassertUsed = reassertUsed,
+                finishing = isFinishing,
+                screenOn = screenOn,
+                triggeredAppIsLatestForeground = { resumedActivityReader.isLatestForeground(triggeredPackage) },
+            )
+        ) {
+            return
+        }
 
-        buriedRetryUsed = true
+        reassertUsed = true
         Log.d(TAG, "Target app covered the interstitial; re-asserting")
         startActivity(
             Intent(this, TriggerActivity::class.java).apply {
                 putExtra(EXTRA_TRIGGERED_PACKAGE, triggeredPackage)
-                // CLEAR_TOP finishes the buried instance(s) of this activity in
-                // the task instead of stacking another one on top, so repeated
-                // self-raising apps can't pile up stale overlays.
-                // EXCLUDE_FROM_RECENTS mirrors the manifest attribute — some
-                // OEM recents screens only honor one or the other.
-                addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
-                        Intent.FLAG_ACTIVITY_NO_ANIMATION,
-                )
+                addFlags(InterstitialSession.launchFlags(reassert = true))
             },
         )
     }
@@ -203,7 +200,9 @@ class TriggerActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "TriggerActivity"
         const val EXTRA_TRIGGERED_PACKAGE = "com.shrekbytes.waqfah.EXTRA_TRIGGERED_PACKAGE"
-        private const val STATE_BURIED_RETRY_USED = "waqfah.buriedRetryUsed"
+        // Same key string as before the reassertUsed rename — the name is
+        // opaque to Android.
+        private const val STATE_REASSERT_USED = "waqfah.buriedRetryUsed"
         private const val ENTER_FADE_MS = 360
         private const val EXIT_FADE_MS = 140
 

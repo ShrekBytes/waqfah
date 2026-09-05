@@ -65,18 +65,18 @@ class TriggerDecisionTest {
 
     // ---- Interstitial-return rule ----
 
-    // Finishing TriggerActivity resumes the paused app underneath — an event
+    // Finishing the interstitial resumes the paused app underneath — an event
     // indistinguishable from a fresh open. Getting this wrong in one direction
     // traps users in interstitial loops; getting it wrong the other way
     // swallows legitimate opens that come right after using Waqfah itself.
-    // That's why the match is on the TriggerActivity CLASS, not just the
+    // That's why the match is on the interstitial's CLASS, not just the
     // package.
     @Test
     fun resumingFromTheInterstitial_isAnInterstitialReturn() {
         val ownPackage = "com.shrekbytes.waqfah"
         val triggerClass = "com.shrekbytes.waqfah.TriggerActivity"
 
-        assertTrue(TriggerDecision.isReturnFromInterstitial(ownPackage, triggerClass))
+        assertTrue(TriggerDecision.isReturnFromInterstitial(ownPackage, triggerClass, INTERSTITIAL_CLASS))
     }
 
     @Test
@@ -85,19 +85,19 @@ class TriggerDecisionTest {
 
         // Waqfah's main screen shares the package name — only the trigger
         // activity's class marks an interstitial return.
-        assertFalse(TriggerDecision.isReturnFromInterstitial(ownPackage, "com.shrekbytes.waqfah.MainActivity"))
-        assertFalse(TriggerDecision.isReturnFromInterstitial(ownPackage, null))
+        assertFalse(TriggerDecision.isReturnFromInterstitial(ownPackage, "com.shrekbytes.waqfah.MainActivity", INTERSTITIAL_CLASS))
+        assertFalse(TriggerDecision.isReturnFromInterstitial(ownPackage, null, INTERSTITIAL_CLASS))
     }
 
     @Test
     fun comingFromAnyOtherApp_isAFreshOpen() {
-        assertFalse(TriggerDecision.isReturnFromInterstitial("com.android.systemui", "com.shrekbytes.waqfah.TriggerActivity"))
-        assertFalse(TriggerDecision.isReturnFromInterstitial("com.android.launcher3", null))
+        assertFalse(TriggerDecision.isReturnFromInterstitial("com.android.systemui", "com.shrekbytes.waqfah.TriggerActivity", INTERSTITIAL_CLASS))
+        assertFalse(TriggerDecision.isReturnFromInterstitial("com.android.launcher3", null, INTERSTITIAL_CLASS))
     }
 
     @Test
     fun noPreviousEvent_isNeverAnInterstitialReturn() {
-        assertFalse(TriggerDecision.isReturnFromInterstitial(null, null))
+        assertFalse(TriggerDecision.isReturnFromInterstitial(null, null, INTERSTITIAL_CLASS))
     }
 
     // ---- Cooldown arithmetic ----
@@ -150,7 +150,8 @@ class TriggerDecisionTest {
     private val A = "com.target.a"
     private val B = "com.target.b"
     private val L = "com.android.launcher3" // not monitored
-    private val TRIGGER = ResumedActivity("com.shrekbytes.waqfah", "com.shrekbytes.waqfah.TriggerActivity")
+    private val INTERSTITIAL_CLASS = "com.shrekbytes.waqfah.TriggerActivity"
+    private val TRIGGER = ResumedActivity("com.shrekbytes.waqfah", INTERSTITIAL_CLASS)
 
     private var elapsedMs = 0L
     private var wallMs = 0L
@@ -200,6 +201,7 @@ class TriggerDecisionTest {
             }
         },
         claimTrigger = claim,
+        interstitialClassName = INTERSTITIAL_CLASS,
         nowElapsed = { elapsedMs },
         nowWall = { wallMs },
     )
@@ -295,6 +297,7 @@ class TriggerDecisionTest {
             prefs = { TriggerPrefs(true, 0) },
             monitoredMembership = { null },
             claimTrigger = { _, _ -> claimAttempts++; true },
+            interstitialClassName = INTERSTITIAL_CLASS,
             nowElapsed = { 0L },
             nowWall = { 0L },
         )
