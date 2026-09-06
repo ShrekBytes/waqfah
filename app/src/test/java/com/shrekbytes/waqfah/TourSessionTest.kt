@@ -178,6 +178,41 @@ class TourSessionTest {
         assertEquals(0, finished)
     }
 
+    // ADR-0003's finish half: a skipped tour the user reopens manually can
+    // still be finished — the finish budget belongs to the showing, not to
+    // the session-wide skip flag.
+    @Test
+    fun skip_thenManualReopen_finishPersists() = runTest {
+        var finished = 0
+        completed.value = false
+        val s = session(listOf(TourTaskKind.MARK_READ, null), onFinished = { finished++ })
+        s.onOpenedManually()
+        s.skip()
+        s.onOpenedManually()
+
+        s.next() // walk to the last step
+        s.next() // finish
+
+        assertEquals(1, finished)
+        assertFalse(tourVisible(onHome = true, s.uiState.value))
+    }
+
+    // Finishing one showing doesn't consume a later manual showing's Finish,
+    // but within one showing the button still persists exactly once.
+    @Test
+    fun finish_thenManualReopen_finishesOnceMore() = runTest {
+        var finished = 0
+        completed.value = false
+        val s = session(listOf(null), onFinished = { finished++ })
+        s.next() // the single step is the last: finish
+        assertEquals(1, finished)
+
+        s.onOpenedManually()
+        s.next() // finish again
+        s.next() // the latch must swallow repeats before the overlay tears down
+        assertEquals(2, finished)
+    }
+
     @Test
     fun finishOnLastStep_persistsOnceAndDismisses() = runTest {
         var finished = 0

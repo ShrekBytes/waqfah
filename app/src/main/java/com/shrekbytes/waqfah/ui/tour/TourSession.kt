@@ -68,6 +68,15 @@ class TourSession(
     private var jumpedFromPicker = false
     private var openedManually = false
     private var dismissedThisSession = false
+
+    // Finishing is once per SHOWING, not once per session: skip and back-out
+    // share dismissedThisSession with the finish path's dismiss(), and a
+    // skipped tour the user reopens manually (Home's "?") must still be
+    // finishable — or ADR-0003's "finishing persists completion" becomes
+    // unreachable for the rest of the session. Visibility keeps using
+    // dismissedThisSession, so this latch never re-enables auto-show.
+    private var finishedThisShowing = false
+
     private var persistedComplete: Boolean? = null
 
     // The task anchor: the reading-card values the current TryIt step compares
@@ -96,6 +105,10 @@ class TourSession(
 
     fun onOpenedManually() {
         openedManually = true
+        // A manual (re)open is a fresh showing: Finish works again. The
+        // session-dismissal flag stays untouched — a skipped tour still
+        // never auto-shows again this session.
+        finishedThisShowing = false
         recompute()
     }
 
@@ -111,10 +124,11 @@ class TourSession(
 
     fun next() {
         if (stepIndex == tasks.lastIndex) {
-            // The only path to persistence: finishing — exactly once, however
-            // many times the button fires before the gate tears the overlay
-            // down (dismissal closes it).
-            if (!dismissedThisSession) {
+            // The only path to persistence: finishing — exactly once per
+            // showing, however many times the button fires before the gate
+            // tears the overlay down (dismissal closes it).
+            if (!finishedThisShowing) {
+                finishedThisShowing = true
                 onFinished()
                 dismiss()
             }
