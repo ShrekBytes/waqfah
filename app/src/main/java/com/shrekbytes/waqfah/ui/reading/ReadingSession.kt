@@ -227,6 +227,10 @@ class ReadingSession(
 
     // Caller must hold mutationMutex.
     private suspend fun beginFreshSessionLocked() {
+        // The fresh session lands on a new ayah: the compare peek never
+        // outlives the ayah it was opened on — the same rule step() and
+        // jumpToVerse() apply.
+        translationOverrideId = null
         completionDismissed = false
         currentVerse = loadStartingVerse(latestPrefs)
         render(latestPrefs)

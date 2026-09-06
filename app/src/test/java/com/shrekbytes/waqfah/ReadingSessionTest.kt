@@ -256,6 +256,29 @@ class ReadingSessionTest {
         assertEquals("Sahih International", session.uiState.value.translationSourceName)
     }
 
+    // The fresh-session paths (Start Again / Switch Mode / an external reset)
+    // all land on a new ayah — the compare peek must not ride along, or the
+    // fresh session opens on a translation the user never chose for it.
+    @Test
+    fun freshSessionAfterComparePeek_rendersTheDefaultTranslation() = runTest {
+        translationTexts += (SAHIH to 1) to "say it"
+        translationTexts += (PICKTHALL to 1) to "say it, pickthall"
+        readIds += setOf(1, 2)
+        val session = session()
+        runCurrent()
+        assertEquals("1:3", session.uiState.value.ayahLabel)
+        assertEquals("Sahih International", session.uiState.value.translationSourceName)
+
+        session.cycleTranslationSource(forward = true)
+        runCurrent()
+        assertEquals("Pickthall", session.uiState.value.translationSourceName)
+
+        session.startOver()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertEquals("Sahih International", session.uiState.value.translationSourceName)
+    }
+
     @Test
     fun jumpToVerse_retargetsWithoutTouchingReadHistory_thenStepsByGlobalId() = runTest {
         readIds += 1
