@@ -26,7 +26,17 @@ data class AppRowState(val app: InstalledApp, val isMonitored: Boolean, val pinn
 // An installed app plus whether it was monitored when the list was loaded —
 // the pinning decision is frozen per list session so live toggles never
 // reshuffle rows under the user's finger.
-private data class LoadedApp(val app: InstalledApp, val pinnedTop: Boolean)
+internal data class LoadedApp(val app: InstalledApp, val pinnedTop: Boolean)
+
+// Search semantics for the monitored-apps list: labels match as
+// case-insensitive substrings of the TRIMMED query, so stray keyboard
+// whitespace can't blank the list (same rule as the go-to list's
+// filterSurahRows). Pure so AppsFilterTest can pin it on the JVM.
+internal fun filterLoadedApps(apps: List<LoadedApp>, query: String): List<LoadedApp> {
+    val trimmed = query.trim()
+    if (trimmed.isBlank()) return apps
+    return apps.filter { it.app.label.contains(trimmed, ignoreCase = true) }
+}
 
 data class AppsUiState(
     // Seed and cooldownMinutes below both render UserPreferences()'s own
@@ -81,8 +91,7 @@ class AppsViewModel @Inject constructor(
         AppsUiState(
             cooldownMinutes = cooldown,
             searchQuery = query,
-            apps = allApps
-                .filter { it.app.label.contains(query, ignoreCase = true) }
+            apps = filterLoadedApps(allApps, query)
                 .map { AppRowState(it.app, it.app.packageName in monitoredIds, it.pinnedTop) }
                 // Monitored-at-load apps float to the top; sortByDescending is
                 // stable, so each group stays alphabetized. Toggling only flips
