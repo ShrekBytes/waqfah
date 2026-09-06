@@ -41,7 +41,12 @@ closes (screen off, monitoring off), the session resets the decision, severing
 the picker pairing and call context so nothing from before the pause pairs
 into a post-wake resume. The reset deliberately spares the foreground tracker
 and switch-back map: switch-back entries expire by age, so a stale one can't
-suppress a later open.
+suppress a later open. Both modules' rule state is touched from two coroutines
+of the service's multithreaded scope — the session loop and the gate
+collector — so all of it is serialized (a mutex in TriggerDecision, an atomic
+fresh-window flag in MonitorSession). While the gate stays open, consecutive
+poll windows tile the time: a window starts where the previous one ended, and
+only a close→wake opens a fresh window at the wake.
 
 **TriggerActivity** is a translucent interstitial rendering **ReadingCard**;
 finishing it falls through to whatever was really underneath. The
@@ -105,8 +110,10 @@ TriggerDecision as a constructor probe.
   MonitoredAppState owns the compare-and-set trigger claim. Membership identity
   distinguishes remove-and-re-add, and the claim revision distinguishes
   concurrent claims that happen to share a wall-clock value.
-- TranslationRepository guards downloads with per-id mutexes and Room handles
-  with a double-checked open cache.
+- TranslationRepository guards downloads with per-id mutexes, and the Room
+  handle cache's full lifecycle — creation, eviction, delete — with one lock
+  that also refuses to reopen a file being removed (Room would silently
+  recreate an empty database).
 
 ## Lifecycle
 
