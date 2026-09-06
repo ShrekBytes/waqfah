@@ -12,7 +12,7 @@ Applies to conversation only. Code, docs, commit messages, etc. follow normal pr
 
 - Information requests get answers, not implementations. Do not make changes unless explicitly requested.
 - Stay on task. Keep changes minimal and focused on what was asked. Don't fix unrelated problems unless necessary — mention them instead.
-- Skill routing: any request that changes behavior or produces work — building, fixing, diagnosing, reviewing, planning, researching — goes through the `route` skill, which decides direct-vs-workflow and picks the flow. Work directly only when `route` says so or the user tells you to.
+- Skill routing: requests to produce work — building, creating, changing, fixing, diagnosing, reviewing, planning, specifying, or ticketing — go through the `route` skill, which decides direct-vs-workflow and picks the flow. Pure information questions get answered directly.
 - Prefer the simplest solution. No abstraction, layers, dependencies, or future-proofing without concrete need. Follow existing codebase patterns even when they add structure.
 - Tests match the change, never get weakened. Add/update tests when behavior changes or existing tests are relevant, nothing extra. Never skip, delete, or dumb down a test to pass; explain first if a test is genuinely wrong.
 - Escalate after two failed attempts. Don't retry the same approach; change the diagnosis or approach, or ask before continuing.
@@ -22,7 +22,7 @@ Applies to conversation only. Code, docs, commit messages, etc. follow normal pr
 
 ### Before changing code
 
-- Read the relevant code and nearby tests before editing.
+- For non-mechanical changes, read the relevant code and nearby tests before editing.
 - Follow existing patterns before introducing new ones.
 - Check relevant domain/architecture docs when the change touches project concepts or boundaries.
 - `docs/ARCHITECTURE.md` is the codebase map; read the section covering the area you're touching.
