@@ -37,9 +37,10 @@ object InterstitialSession {
     // Waqfah opened the app and then nothing happened. When that happens the
     // activity loses visibility without the foreground changing, so the
     // interstitial re-asserts itself, at most ONCE, and only when:
-    //  - this instance hasn't re-asserted already (a stubborn app must not
-    //    be able to trap the user in a loop of interstitials; the flag
-    //    survives recreation — Bundle persistence is the activity's job),
+    //  - this trigger hasn't re-asserted already (a stubborn app must not
+    //    be able to trap the user in a loop of interstitials; the budget
+    //    belongs to the trigger, not the activity instance — see
+    //    reassertUsed below),
     //  - the interstitial isn't already dismissing,
     //  - the screen is on — screen-off also stops the activity without
     //    changing the foreground, and we never relaunch into a dark screen,
@@ -56,4 +57,28 @@ object InterstitialSession {
         screenOn: Boolean,
         triggeredAppIsLatestForeground: () -> Boolean,
     ): Boolean = !reassertUsed && !finishing && screenOn && triggeredAppIsLatestForeground()
+
+    // The once-only re-assert budget, owned by the CURRENT TRIGGER rather
+    // than by any activity instance: the re-assert's own CLEAR_TOP launch
+    // finishes the buried instance and starts a fresh one whose
+    // savedInstanceState is null, so a per-instance flag would be re-armed
+    // by the very re-assert it budgets — a stubborn app could bury each new
+    // instance once and chain re-asserts forever. The service clears the
+    // budget when it launches a new trigger (from the session loop's
+    // coroutine, off the main thread); the activity marks it used when the
+    // re-assert fires (main thread) — hence the volatile. Plain assignment
+    // in both directions, so no stronger synchronization is needed. Process
+    // death clears the budget along with the rest of the process: the
+    // monitor died too, so the next trigger simply starts fresh.
+    @Volatile
+    var reassertUsed: Boolean = false
+        private set
+
+    fun onTriggerLaunched() {
+        reassertUsed = false
+    }
+
+    fun markReassertUsed() {
+        reassertUsed = true
+    }
 }

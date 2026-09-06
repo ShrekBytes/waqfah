@@ -50,9 +50,10 @@ class InterstitialSessionTest {
         assertTrue(verdict)
     }
 
-    // Exactly once per instance — the once-flag survives recreation (the
-    // activity round-trips it through its Bundle), so the recreated instance
-    // can't fire the re-assert a second time.
+    // Exactly once per trigger — the budget survives recreation because it
+    // lives in InterstitialSession (per trigger, not per activity instance),
+    // so neither a recreated nor a CLEAR_TOP-replaced instance can fire the
+    // re-assert a second time.
     @Test
     fun reassertUsed_neverReasserts() {
         val verdict = InterstitialSession.shouldReassert(
@@ -111,5 +112,45 @@ class InterstitialSessionTest {
         InterstitialSession.shouldReassert(reassertUsed = false, finishing = false, screenOn = false) { probeCalls++; true }
 
         assertEquals(0, probeCalls)
+    }
+
+    // ---- Re-assert budget (process-lifetime, per trigger) ----
+
+    // The budget must survive the re-assert's own CLEAR_TOP launch: that
+    // launch finishes the buried instance and creates a fresh one whose
+    // savedInstanceState is null, so a per-instance flag would re-arm on
+    // every round and a self-raising app could chain re-asserts forever.
+    @Test
+    fun reassertBudget_onePerTrigger_resetOnlyByANewTrigger() {
+        InterstitialSession.onTriggerLaunched()
+
+        assertTrue(
+            InterstitialSession.shouldReassert(
+                reassertUsed = InterstitialSession.reassertUsed,
+                finishing = false,
+                screenOn = true,
+            ) { true },
+        )
+        InterstitialSession.markReassertUsed()
+
+        // A fresh activity instance ("recreated" or CLEAR_TOP-replaced) reads
+        // the same process-lifetime budget — no second round for this trigger.
+        assertFalse(
+            InterstitialSession.shouldReassert(
+                reassertUsed = InterstitialSession.reassertUsed,
+                finishing = false,
+                screenOn = true,
+            ) { true },
+        )
+
+        // Only the service's next trigger launch re-arms it.
+        InterstitialSession.onTriggerLaunched()
+        assertTrue(
+            InterstitialSession.shouldReassert(
+                reassertUsed = InterstitialSession.reassertUsed,
+                finishing = false,
+                screenOn = true,
+            ) { true },
+        )
     }
 }

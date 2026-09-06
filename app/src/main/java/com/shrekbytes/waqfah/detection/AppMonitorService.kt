@@ -239,6 +239,8 @@ class AppMonitorService : Service() {
         }
 
     private fun launchReadingScreen(packageName: String) {
+        // A new trigger gets a new once-only re-assert budget (InterstitialSession owns it).
+        InterstitialSession.onTriggerLaunched()
         val intent = Intent(this, TriggerActivity::class.java).apply {
             putExtra(TriggerActivity.EXTRA_TRIGGERED_PACKAGE, packageName)
             // Background starts are allowed because Waqfah holds

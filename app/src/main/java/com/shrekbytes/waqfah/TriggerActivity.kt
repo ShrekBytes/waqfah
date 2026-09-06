@@ -62,16 +62,8 @@ class TriggerActivity : AppCompatActivity() {
     // exit fade or schedule multiple finishes.
     private var closing = false
 
-    // Set after the single re-assertion below, so a stubborn app can't trap
-    // the user in a loop of interstitials. Persisted across recreation
-    // (rotation, locale switch mid-display) so the recreated instance can't
-    // re-assert a second time. Whether to re-assert is InterstitialSession's
-    // decision; the once-only state is what this activity owns.
-    private var reassertUsed = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        reassertUsed = savedInstanceState?.getBoolean(STATE_REASSERT_USED) ?: false
         enableEdgeToEdge()
 
         // Zero every window-level transition on all supported APIs: the visual
@@ -151,11 +143,6 @@ class TriggerActivity : AppCompatActivity() {
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putBoolean(STATE_REASSERT_USED, reassertUsed)
-    }
-
     override fun onStop() {
         super.onStop()
         val triggeredPackage = intent?.getStringExtra(EXTRA_TRIGGERED_PACKAGE) ?: return
@@ -165,9 +152,13 @@ class TriggerActivity : AppCompatActivity() {
 
         // If we lost visibility but the triggered app is still what's in the
         // foreground, it covered this interstitial mid-launch — the machine
-        // decides whether the once-only re-assert may fire.
+        // decides whether the once-only re-assert may fire. The budget lives
+        // in InterstitialSession, per trigger: this re-assert's own CLEAR_TOP
+        // launch creates a fresh instance of THIS activity with no saved
+        // state, so an instance-owned flag would be re-armed by the re-assert
+        // itself.
         if (!InterstitialSession.shouldReassert(
-                reassertUsed = reassertUsed,
+                reassertUsed = InterstitialSession.reassertUsed,
                 finishing = isFinishing,
                 screenOn = screenOn,
                 triggeredAppIsLatestForeground = { resumedActivityReader.isLatestForeground(triggeredPackage) },
@@ -176,7 +167,7 @@ class TriggerActivity : AppCompatActivity() {
             return
         }
 
-        reassertUsed = true
+        InterstitialSession.markReassertUsed()
         Log.d(TAG, "Target app covered the interstitial; re-asserting")
         startActivity(
             Intent(this, TriggerActivity::class.java).apply {
@@ -200,9 +191,6 @@ class TriggerActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "TriggerActivity"
         const val EXTRA_TRIGGERED_PACKAGE = "com.shrekbytes.waqfah.EXTRA_TRIGGERED_PACKAGE"
-        // Same key string as before the reassertUsed rename — the name is
-        // opaque to Android.
-        private const val STATE_REASSERT_USED = "waqfah.buriedRetryUsed"
         private const val ENTER_FADE_MS = 360
         private const val EXIT_FADE_MS = 140
 
