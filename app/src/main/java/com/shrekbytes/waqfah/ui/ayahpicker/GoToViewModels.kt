@@ -88,17 +88,9 @@ class GoToSurahViewModel @Inject constructor(
     }
 
     private fun emitFiltered(query: String, prefs: UserPreferences) {
-        val trimmed = query.trim()
-        val filtered = if (trimmed.isBlank()) cachedUnfilteredRows else cachedUnfilteredRows.filter { row ->
-            val surah = row.surah
-            surah.nameEnglish?.contains(query, ignoreCase = true) == true ||
-                surah.nameBengali?.contains(query, ignoreCase = true) == true ||
-                surah.nameArabic?.contains(query, ignoreCase = true) == true ||
-                surah.surahNo.toString() == trimmed
-        }
         _uiState.value = GoToSurahUiState(
             query = query,
-            rows = filtered,
+            rows = filterSurahRows(cachedUnfilteredRows, query),
             surahNameLanguage = prefs.surahNameLanguage,
             isLoading = false,
         )
@@ -116,6 +108,22 @@ class GoToSurahViewModel @Inject constructor(
 
     suspend fun getFirstUnreadInSurah(surahNo: Int, readIds: Set<Int>): VerseEntity? =
         verseSelection.continueInSurah(surahNo, readIds)
+}
+
+// Search semantics for the go-to list: surah names match as case-insensitive
+// substrings, the surah number exactly — both against the trimmed query, so
+// stray keyboard whitespace can't blank the list. Pure so GoToSurahFilterTest
+// can pin it on the JVM.
+internal fun filterSurahRows(rows: List<SurahRow>, query: String): List<SurahRow> {
+    val trimmed = query.trim()
+    if (trimmed.isBlank()) return rows
+    return rows.filter { row ->
+        val surah = row.surah
+        surah.nameEnglish?.contains(trimmed, ignoreCase = true) == true ||
+            surah.nameBengali?.contains(trimmed, ignoreCase = true) == true ||
+            surah.nameArabic?.contains(trimmed, ignoreCase = true) == true ||
+            surah.surahNo.toString() == trimmed
+    }
 }
 
 data class GoToSurahUiState(
