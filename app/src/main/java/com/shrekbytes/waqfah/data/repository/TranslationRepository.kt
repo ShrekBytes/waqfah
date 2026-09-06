@@ -109,12 +109,16 @@ class TranslationRepository @Inject constructor(
             // but only DELETE the file when it's genuinely broken: transient
             // failures (e.g. SQLITE_BUSY while connections race a first open)
             // must not force a pointless re-copy/re-download and blank ayahs.
+            // Under openLock so a concurrent getText can't rebuild a handle
+            // over the file being closed/removed (see openLock).
             withContext(Dispatchers.IO) {
-                openDatabases.remove(meta.id)?.close()
-                if (meta.isBundled || isCorruption(e)) {
-                    Log.w(TAG, "Evicting translation file for '${meta.id}'")
-                    fileFor(meta).delete()
-                    evicted = true
+                synchronized(openLock) {
+                    openDatabases.remove(meta.id)?.close()
+                    if (meta.isBundled || isCorruption(e)) {
+                        Log.w(TAG, "Evicting translation file for '${meta.id}'")
+                        fileFor(meta).delete()
+                        evicted = true
+                    }
                 }
             }
             // The published set must forget the file too, or resolveActive
@@ -158,13 +162,17 @@ class TranslationRepository @Inject constructor(
     }
 
     // Holds the same per-id mutex as download() so a delete landing mid-download
-    // can't be followed by the download's final rename resurrecting the file.
+    // can't be followed by the download's final rename resurrecting the file;
+    // the handle removal + file deletion run under openLock so they can't race
+    // a concurrent getText's reopen either (see openLock).
     suspend fun delete(meta: TranslationMeta) {
         val lock = downloadLocks.getOrPut(meta.id) { Mutex() }
         lock.withLock {
             withContext(Dispatchers.IO) {
-                openDatabases.remove(meta.id)?.close()
-                fileFor(meta).delete()
+                synchronized(openLock) {
+                    openDatabases.remove(meta.id)?.close()
+                    fileFor(meta).delete()
+                }
             }
             refreshDownloadedIds()
         }
@@ -314,16 +322,29 @@ class TranslationRepository @Inject constructor(
     private fun fileFor(meta: TranslationMeta): File =
         File(context.filesDir, "translations/${meta.language.code}/${meta.id}.db")
 
-    // Double-checked creation: render fires up to three concurrent getText calls
-    // for the SAME meta (main ayah + next/prev previews), and getOrPut alone is
-    // not atomic — racing threads would each build a Room instance and open the
-    // same sqlite file simultaneously, which intermittently fails (and used to
+    // One lock for the handle map's FULL lifecycle — creation, eviction, and
+    // the deletions that must not race a reopen. Double-checked creation:
+    // render fires up to three concurrent getText calls for the SAME meta
+    // (main ayah + next/prev previews), and getOrPut alone is not atomic —
+    // racing threads would each build a Room instance and open the same
+    // sqlite file simultaneously, which intermittently fails (and used to
     // look like "switching en↔bn sometimes shows an empty translation").
+    // Eviction and delete share the lock too: without it, a reopen could
+    // build a fresh handle while a close+delete is in flight, and Room would
+    // silently recreate an empty database at a path the rest of the app
+    // already believes is gone ("no such table" from then on).
     private val openLock = Any()
 
     private fun open(meta: TranslationMeta): TranslationDatabase =
         openDatabases[meta.id] ?: synchronized(openLock) {
-            openDatabases.getOrPut(meta.id) { TranslationDatabase.build(context, fileFor(meta)) }
+            openDatabases.getOrPut(meta.id) {
+                // A delete or eviction may have removed the file while we
+                // waited on the lock; building now would recreate it (see
+                // openLock). Throwing routes into getText's failure path,
+                // which re-copies bundled translations on the next call.
+                check(fileFor(meta).exists()) { "Translation file for '${meta.id}' was removed before it could be opened" }
+                TranslationDatabase.build(context, fileFor(meta))
+            }
         }
 
     internal companion object {
