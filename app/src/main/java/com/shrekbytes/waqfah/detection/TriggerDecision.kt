@@ -2,6 +2,8 @@ package com.shrekbytes.waqfah.detection
 
 import com.shrekbytes.waqfah.BuildConfig
 import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppMembership
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 // One foreground observation from UsageStatsManager. The activity class is
 // what tells a fresh open apart from an indirect entry (a picker, a share
@@ -85,6 +87,13 @@ sealed interface Verdict {
 // Activity. Monotonic elapsed time drives the switch-back and call-grace
 // windows; wall time drives the persisted cooldown anchor, which must survive
 // reboots.
+//
+// All rule state is touched from two coroutines of the service's
+// multithreaded scope — the session loop's onResumedActivity() and the gate
+// collector's reset() — so every access is serialized under one mutex: an
+// unsynchronized interleaving could let a pause's reset() clear grace state
+// that decide() is about to re-arm (or vice versa), letting one pre-pause
+// pairing or grace window survive into a post-wake verdict.
 class TriggerDecision(
     private val isMonitored: (String) -> Boolean,
     private val callAudioActive: () -> Boolean,
@@ -123,16 +132,19 @@ class TriggerDecision(
     private val callGracePackages = mutableSetOf<String>()
     private var callGraceEndsAt: Long? = null
 
-    suspend fun onResumedActivity(current: ResumedActivity): Verdict {
+    // Serializes all access to the rule state above — see the class doc.
+    private val stateMutex = Mutex()
+
+    suspend fun onResumedActivity(current: ResumedActivity): Verdict = stateMutex.withLock {
         val verdict = decide(lastResumedActivity, current)
         lastResumedActivity = current
-        return verdict
+        verdict
     }
 
     // Detection is pausing (screen off, monitoring off): sever the
     // picker-pairing and call-grace context so nothing from before the pause
     // influences a post-wake resume.
-    fun reset() {
+    suspend fun reset() = stateMutex.withLock {
         lastResumedActivity = null
         inCall = false
         callGracePackages.clear()

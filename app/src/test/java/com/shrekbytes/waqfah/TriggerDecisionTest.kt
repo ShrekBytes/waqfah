@@ -210,6 +210,8 @@ class TriggerDecisionTest {
         events.map { onResumedActivity(it) }
     }
 
+    private fun TriggerDecision.resetBlocking(): Unit = runBlocking { reset() }
+
     private fun resumed(pkg: String, className: String? = "$pkg.MainActivity") = ResumedActivity(pkg, className)
 
     @Test
@@ -387,7 +389,7 @@ class TriggerDecisionTest {
         val chooser = ResumedActivity("android", "com.android.internal.app.ResolverActivity")
         val e = engine()
         e.resume(resumed(A), chooser)
-        e.reset()
+        e.resetBlocking()
         elapsedMs += 60_000 // past the switch-back window, so only the pairing matters
 
         val verdict = e.resume(resumed(A)).single()
@@ -402,7 +404,7 @@ class TriggerDecisionTest {
         val e = engine()
         e.resume(resumed(A))
         e.resume(resumed("com.google.android.dialer"))
-        e.reset()
+        e.resetBlocking()
 
         val verdict = e.resume(resumed(B)).single()
 
