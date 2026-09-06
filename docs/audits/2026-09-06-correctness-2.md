@@ -1,4 +1,4 @@
-# Correctness audit — whole-codebase pass 2 (fresh-eyes re-run)
+# Correctness audit — whole-codebase pass 1, fresh-eyes re-run
 
 - **Date:** 2026-09-06 · **Audited code:** `0420241` (the working tree is unchanged since — later commits touch audit docs only) · **Spec:** [issue #9](https://github.com/ShrekBytes/waqfah/issues/9)
 - **Method:** an independent second correctness pass over all **87** production source files (one method correction for the record: pass 1's report says 88; the count under `app/src/main` is 87). Read-and-report only — the committed tree is untouched by this pass; two throwaway probe tests were run and deleted, their output quoted below.
@@ -87,7 +87,7 @@ AuditProbeTest > probe_freshSessionAfterStartOver_rendersDefaultTranslation FAIL
 
 The UI side of the switcher is `var translationSwitcherOpen by remember { mutableStateOf(false) }` inside `key(state.ayahLabel)`, and `onResetTranslation()` — the only thing that clears the session's peek short of a verse change — fires **only on the tap that closes the switcher**. There is no `DisposableEffect` clearing it when the keyed subtree leaves composition. So: open compare mode on Home (peek set) → switch to the Settings tab (the `AnimatedContent` disposes the Home subtree; the flag is discarded) → return to Home. The flag rebuilds as `false` — switcher closed, arrows and source-name pill hidden — but the session's override is intact and nothing re-renders it away (even a re-render keeps it, see N-2's `:352`). The card now renders the peeked translation indistinguishably from the user's default. Same leak via compare-mode → "Surahs & ayahs" → back without jumping. Companion to N-2 (same violated contract, different site and mechanism — one is fixed in the session, one needs the composition side).
 
-**Verified by:** analysis of Compose composition semantics (remember scoping under `key` + subtree disposal on tab switch/push). Deterministic at the composition layer but not demonstrable at the JVM seam; confidence in the mechanism is high.
+**Verified by:** analysis of Compose composition semantics (remember scoping under `key` + subtree disposal on tab switch/push). Deterministic at the composition layer but not demonstrable at the JVM seam; **unverified on device** — the emulator could demonstrate it, but this pass did not run it. Confidence in the mechanism is high.
 
 **Fix sketch:** a `DisposableEffect` inside the keyed subtree that calls `onResetTranslation()` on dispose while the switcher is open — or hold the open/closed state in the session next to `translationOverrideId` so it cannot diverge.
 
@@ -103,7 +103,7 @@ The UI side of the switcher is `var translationSwitcherOpen by remember { mutabl
 
 The raw query is matched untrimmed. A trailing space — trivially produced by a soft keyboard or a paste — can never occur inside a label, so `apps` goes empty and the screen renders "no apps found" while matching apps are installed. The codebase has already decided what a search query means: the go-to screen trims before matching, with the comment "so stray keyboard whitespace can't blank the list", pinned by `GoToSurahFilterTest.whitespaceAroundQuery_stillMatchesNames` (`GoToViewModels.kt:113-121`), and commit `fe8fd5a` fixed exactly this failure mode there. The sibling search fields now disagree about the same input.
 
-**Verified by:** code reading; the string semantics are deterministic (`"label".contains("query ")` is false whenever the label lacks the space). Compile-level trivially; not probe-worthy beyond the quoted lines.
+**Verified by:** code reading; the string semantics are deterministic (`"label".contains("query ")` is false whenever the label lacks the space). On the evidence bar: the filter is inline in the ViewModel's `combine`, so — unlike the go-to side, which extracted a pure `filterSurahRows` precisely to be testable — there is no existing JVM seam that drives this line; the highest existing seam for the claim is the quoted semantics plus the sibling's test-pinned precedent. The fix sketch below is what creates the testable seam.
 
 **Fix sketch:** `query.trim()` before matching, mirroring `filterSurahRows` (a small pure filter function would let a test pin it the same way).
 
@@ -115,7 +115,7 @@ The raw query is matched untrimmed. A trailing space — trivially produced by a
 
 The Continue button calls `viewModel.completeOnboarding()` — `viewModelScope.launch { settingsRepository.setOnboardingComplete(true) }`, not awaited — and then `onComplete()` **synchronously** runs `backStack.clear(); backStack.add(Main(...))`. Clearing the stack disposes the onboarding entry and its ViewModelStore, cancelling the very scope the write was launched on. The write must survive at least one suspension inside DataStore's `edit` before it is enqueued; if the teardown wins that race, the write never lands and `MainActivity` re-runs onboarding on next launch (it branches on `hasCompletedOnboarding`).
 
-**Verified by:** analysis only, and honestly low-confidence on reproducibility — in practice the enqueue usually wins the scheduling race against the next frame. The defect is the missing happens-before between the persist and the scope teardown; a lost write is silent (the user just sees onboarding again).
+**Verified by:** analysis only, and honestly low-confidence on reproducibility — in practice the enqueue usually wins the scheduling race against the next frame; **unverified on device** (and not run anywhere — a deterministic repro would require forcing the scheduling race). The defect is the missing happens-before between the persist and the scope teardown; a lost write is silent (the user just sees onboarding again).
 
 **Fix sketch:** make the button's handler `suspend`-friendly — await the write (or expose a suspending `completeOnboarding()` and navigate from the same coroutine after it returns).
 
@@ -144,6 +144,16 @@ Each of pass 1's five findings was re-derived from the code here (full write-ups
 - **C-5 (pass-1 P3-4) — an unexpected Room/DataStore exception in a reading-session coroutine crashes the process.** Re-confirmed: every reading-machine mutation is a bare `scope.launch` (`ReadingSession.kt:107-159` and the verbs at `:167-219`), `viewModelScope` carries no handler, and the same shape exists in `BootReceiver.kt:35-52` and `MainActivity.kt:81-84`. This pass adds the observation that the reading card's **swipe handlers** await `session.next()/previous()` from Compose coroutine scopes, so the same exception family can surface there mid-gesture (same fix: one `CoroutineExceptionHandler` at the hosting scopes).
 
 ---
+
+## Tests as evidence
+
+Where the existing suites pin behavior versus merely exercise it, for each finding above — the unpinned seams are why these defects survived the green suite:
+
+- **N-1**: `TourSessionTest.skip_dismissesAndNeverPersists` pins the skip side of ADR-0003, but no test walks skip → manual reopen → Finish, so the finish-side half of the same ADR is unpinned.
+- **N-2**: `ReadingSessionTest.compareOverride_cyclingWraps_stepClearsIt_manualResetRestoresDefault` pins the peek clearing on **step** and on manual reset; `persistedDefaultChange_clearsCompareOverride` pins it on a default change. The fresh-session path (`startOver` / `switchModeAndRestart` / external reset) is unpinned — the probe had to be the first exercise of it.
+- **C-1**: `MonitorSessionTest` pins "the window still spans the whole interval" against a manual wall clock (`nowWall = { wallNow }`) that does not advance while events are processed — it exercises away exactly the gap it claims to guard, which is how the defect survives a green suite.
+- **N-4**: the apps filter has no seam at all (see the finding); `GoToSurahFilterTest.whitespaceAroundQuery_stillMatchesNames` pins the intended semantics on the go-to side only.
+- **N-5 / N-6 / C-2 / C-3 / C-4 / C-5**: no existing test touches these seams (scope-teardown timing, the permission flag's lifetime, the gate's unsynchronized `reset()`, platform launch-flag semantics, the handle-eviction interleaving, unhandled-coroutine failures) — analysis-only findings for that reason.
 
 ## Explicitly checked and found sound
 
