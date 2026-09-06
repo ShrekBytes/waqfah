@@ -269,7 +269,8 @@ class TranslationRepository @Inject constructor(
     // Cheap checks so a bad URL (404 page saved as "success", HTML redirect…)
     // fails with a clear error instead of surfacing later as a silent null or
     // a confusing Room crash.
-    private fun validateSqliteFile(file: File, id: String) {
+    // Internal for TranslationValidationInstrumentedTest.
+    internal fun validateSqliteFile(file: File, id: String) {
         val header = ByteArray(SQLITE_MAGIC.size)
         try {
             DataInputStream(file.inputStream()).use { it.readFully(header) }
