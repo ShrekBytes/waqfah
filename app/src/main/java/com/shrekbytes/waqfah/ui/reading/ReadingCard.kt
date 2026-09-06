@@ -1,5 +1,6 @@
 package com.shrekbytes.waqfah.ui.reading
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -51,6 +52,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -87,6 +89,7 @@ import com.shrekbytes.waqfah.ui.components.ChevronIcon
 import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 import com.shrekbytes.waqfah.ui.components.skeletonPulseAlpha
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -96,6 +99,13 @@ private val COMMIT_THRESHOLD_DISTANCE = 56.dp
 
 // Calm, bounce-free return to center on under-threshold release / cancellation.
 private val CANCEL_SPRING = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+
+// One handler for every gesture-launched coroutine in the card: the swipe and
+// arrow handlers await the session's suspend verbs, whose Room probes can fail
+// on a troubled disk — log and keep the last good card, never crash.
+private val gestureExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+    Log.e("ReadingCard", "Unhandled error in reading gesture", throwable)
+}
 
 @Composable
 fun ReadingCard(
@@ -113,7 +123,7 @@ fun ReadingCard(
     modifier: Modifier = Modifier,
 ) {
     val colors = WaqfahTheme.colors
-    val scope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope { gestureExceptionHandler }
 
     // Follows the finger 1:1 while dragging; springs back to 0 under threshold,
     // animates to a full page width past it.
@@ -128,6 +138,11 @@ fun ReadingCard(
 
     // Bumped on every mark-read so MarkReadPill can play its bounce each time.
     var markReadTrigger by remember { mutableIntStateOf(0) }
+
+    // Read fresh by the switcher's disposal effect in the keyed subtree below,
+    // so a recomposition that swaps the callback can't leave a stale capture
+    // behind.
+    val latestOnResetTranslation = rememberUpdatedState(onResetTranslation)
 
     val handleMarkRead: () -> Unit = {
         markReadTrigger++
@@ -278,6 +293,19 @@ fun ReadingCard(
                     // replayed its exit animation over the first frames of the incoming one.
                     key(state.ayahLabel) {
                         var translationSwitcherOpen by remember { mutableStateOf(false) }
+
+                        // The close-tap is not the only way this subtree ends:
+                        // a tab switch or a pushed screen disposes it outright.
+                        // Disposing with the switcher open must revert the peek,
+                        // or the next composition renders the peeked translation
+                        // styled exactly like the user's default. (Ayah swaps
+                        // dispose too, but step() already cleared the peek and
+                        // resetTranslationSource() no-ops on a null override.)
+                        DisposableEffect(Unit) {
+                            onDispose {
+                                if (translationSwitcherOpen) latestOnResetTranslation.value()
+                            }
+                        }
 
                         // heightIn(min = viewport height) lets Arrangement.Center center short
                         // content while long content still lays out top-to-bottom and scrolls.
@@ -546,7 +574,7 @@ private fun NumDivider(label: String) {
 // scope lives here so call sites stay plain.
 @Composable
 private fun RemArrow(direction: ChevronDirection, onClick: suspend () -> Unit, contentDescription: String) {
-    val scope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope { gestureExceptionHandler }
     IconButton(onClick = { scope.launch { onClick() } }, modifier = Modifier.size(44.dp)) {
         ChevronIcon(
             direction = direction,
