@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -25,6 +26,7 @@ import com.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 import com.shrekbytes.waqfah.ui.settings.permissions.PermissionsViewModel
 import com.shrekbytes.waqfah.ui.settings.permissions.rememberNotificationPermissionLauncher
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun OnboardPermissionsScreen(
@@ -36,6 +38,7 @@ fun OnboardPermissionsScreen(
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = WaqfahTheme.colors
+    val scope = rememberCoroutineScope()
     // Battery exemption was deliberately moved out of this gate: it improves
     // reliability (aggressive OEMs kill non-exempted monitors) but monitoring
     // works without it, so refusing onboarding over it would lock users out of
@@ -55,8 +58,14 @@ fun OnboardPermissionsScreen(
                 text = stringResource(R.string.continue_btn),
                 enabled = allGranted,
                 onClick = {
-                    viewModel.completeOnboarding()
-                    onComplete()
+                    // Await the write before navigating: onComplete clears the
+                    // back stack, which tears down this entry's ViewModel
+                    // scope — a fire-and-forget write could die with it (see
+                    // completeOnboarding).
+                    scope.launch {
+                        viewModel.completeOnboarding()
+                        onComplete()
+                    }
                 },
             )
         },

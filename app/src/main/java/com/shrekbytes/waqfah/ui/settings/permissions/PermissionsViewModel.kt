@@ -2,7 +2,6 @@ package com.shrekbytes.waqfah.ui.settings.permissions
 
 import android.content.Intent
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.shrekbytes.waqfah.data.model.PermissionKey
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
@@ -11,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class PermissionsUiState(
@@ -23,6 +21,8 @@ data class PermissionsUiState(
     val notificationsGranted: Boolean = false,
     // Set after a "Don't ask again" denial — the system launcher then silently
     // no-ops, so taps route to the app's notification settings page instead.
+    // refresh() clears it once the permission is observed granted, since a
+    // grant implies the don't-ask state was lifted.
     val notificationsPermanentlyDenied: Boolean = false,
 ) {
     fun isGranted(key: PermissionKey): Boolean = when (key) {
@@ -49,12 +49,18 @@ class PermissionsViewModel @Inject constructor(
     // Status can only change while the user is away in system settings, so the
     // screen calls this again on every resume (see PermissionsScreen).
     fun refresh() {
+        val notificationsGranted = permissionsRepository.hasNotificationPermission()
         _uiState.value = PermissionsUiState(
             usageAccessGranted = permissionsRepository.hasUsageAccess(),
             overlayGranted = permissionsRepository.canDrawOverlays(),
             batteryExempted = permissionsRepository.isIgnoringBatteryOptimizations(),
-            notificationsGranted = permissionsRepository.hasNotificationPermission(),
-            notificationsPermanentlyDenied = _uiState.value.notificationsPermanentlyDenied,
+            notificationsGranted = notificationsGranted,
+            // A grant means the OS's don't-ask state was lifted — the user
+            // enabled notifications from the very settings page this flag
+            // routes to — so it must not keep routing taps away from the
+            // (working) runtime launcher.
+            notificationsPermanentlyDenied =
+                _uiState.value.notificationsPermanentlyDenied && !notificationsGranted,
         )
     }
 
@@ -82,8 +88,13 @@ class PermissionsViewModel @Inject constructor(
     }
 
     // Onboarding-only: Gated in the UI (see OnboardPermissionsScreen's
-    // allGranted) — records completion once all permissions are actually granted.
-    fun completeOnboarding() = viewModelScope.launch {
+    // allGranted) — records completion once all permissions are actually
+    // granted. Suspending so the screen can await the write before
+    // navigating: navigation clears the back stack, which disposes this
+    // ViewModel's scope — a fire-and-forget write could be cancelled before
+    // DataStore even enqueues it, silently losing completion (onboarding
+    // would re-run on the next launch).
+    suspend fun completeOnboarding() {
         settingsRepository.setOnboardingComplete(true)
     }
 }
