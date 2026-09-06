@@ -4,6 +4,7 @@
 - **Method:** an independent second correctness pass over all **87** production source files (one method correction for the record: pass 1's report says 88; the count under `app/src/main` is 87). Read-and-report only — the committed tree is untouched by this pass; two throwaway probe tests were run and deleted, their output quoted below.
 - **Baseline:** `./gradlew :app:testDebugUnitTest` green (18 test classes) before the probes, and re-run green after deleting them.
 - **Companion report:** [pass 1](2026-09-06-correctness.md) is kept side by side with this one so the two passes can be diffed.
+- **Disposition (2026-09-07):** all findings fixed — N-1 in `094022b`, N-2 in `b0237f0`, N-3 in `d3d21b1`, N-4 in `c79485a`, N-5 and N-6 in `6a3e8fa`; C-1…C-5 are pass 1's findings and were fixed with them (see pass 1's disposition).
 
 ## Relationship to pass 1
 

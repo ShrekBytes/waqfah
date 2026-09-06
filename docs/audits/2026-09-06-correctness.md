@@ -3,6 +3,7 @@
 - **Date:** 2026-09-06 · **Audited commit:** `0420241` · **Spec:** [issue #9](https://github.com/ShrekBytes/waqfah/issues/9)
 - **Method:** exhaustive read of all 88 production source files through the correctness lens, against the contracts in `CONTEXT.md`, `docs/ARCHITECTURE.md`, and the ADRs. Read-and-report only — the working tree is untouched by this pass (one throwaway probe test was run and deleted; its output is quoted below).
 - **Baseline:** `./gradlew :app:testDebugUnitTest` green (18 test classes) at the audited commit.
+- **Disposition (2026-09-07):** all findings fixed — P2-1 in `914b18e`, P3-1 in `8cd364f`, P3-2 in `565c722`, P3-3 in `cf3dc64`, P3-4 in `89389ae` (its gesture-scope half noted by pass 2 landed in `d3d21b1`). After the fixes the suite is green (155 tests) and `assembleDebug` is clean.
 
 Severity: **P0** core promise broken or user data loss · **P1** user-visible wrong behavior in common paths · **P2** contract violated under plausible conditions · **P3** narrow-timing or robustness defect.
 
