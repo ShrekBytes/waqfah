@@ -1,6 +1,7 @@
 package com.shrekbytes.waqfah
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -19,6 +20,7 @@ import com.shrekbytes.waqfah.ui.theme.AccentColor
 import com.shrekbytes.waqfah.ui.theme.AppTheme
 import com.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -78,8 +80,18 @@ class MainActivity : AppCompatActivity() {
         // granted in system settings, and starting an already-running service
         // is a no-op. The supervisor owns the may-run rule; resume may only
         // start, so it can never resurrect a monitor the user toggled off.
-        lifecycleScope.launch {
+        // The handler keeps a failing DataStore read a logged no-op instead of
+        // crashing on the way into the app.
+        lifecycleScope.launch(
+            CoroutineExceptionHandler { _, throwable ->
+                Log.e(TAG, "Monitor resync on resume failed", throwable)
+            },
+        ) {
             supervisor.sync(MonitorSupervisor.Reason.APP_RESUME)
         }
+    }
+
+    private companion object {
+        private const val TAG = "MainActivity"
     }
 }

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,8 +32,14 @@ class BootReceiver : BroadcastReceiver() {
 
         // goAsync + a one-shot scope: reading DataStore needs a suspend context,
         // but blocking onReceive with runBlocking risks an ANR on a slow disk.
+        // The handler keeps a failing DataStore read a logged no-op instead of
+        // a boot-time crash; the finally below still finishes goAsync either way.
         val pendingResult = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(
+            Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
+                Log.e(TAG, "Boot sync failed", throwable)
+            },
+        ).launch {
             try {
                 when (val outcome = supervisor.sync(MonitorSupervisor.Reason.BOOT)) {
                     is MonitorSupervisor.Outcome.Started ->
