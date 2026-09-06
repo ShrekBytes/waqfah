@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
+import java.util.concurrent.atomic.AtomicBoolean
 
 // One watching session of foreground detection: the loop that holds the
 // monitor gate open, walks each poll window's resumed activities into the
@@ -23,6 +24,10 @@ import kotlinx.coroutines.isActive
 //  - Every wake-up opens a FRESH window starting at the wake: events that
 //    accumulated while suspended are never replayed, since stale resumes
 //    could false-trigger.
+//  - While the gate stays open, consecutive windows TILE the time: a window
+//    starts where the previous one ended, so the time spent querying and
+//    processing the previous window's events — and dispatching its verdicts —
+//    belongs to the next window instead of belonging to no window at all.
 //  - Each window is polled once per interval and EVERY resumed activity
 //    inside it is fed to the decision in order — not just the latest event,
 //    because a chooser flash shorter than one poll must still pair.
@@ -49,6 +54,11 @@ class MonitorSession(
     private val scope: CoroutineScope,
 ) {
     suspend fun run() {
+        // Written by the gate collector below, consumed by the loop — two
+        // coroutines of the host scope, which Dispatchers.Default runs on
+        // different threads, hence the atomic.
+        val freshWindow = AtomicBoolean(false)
+
         // Polling pauses whenever detection is impossible or pointless —
         // screen off, app paused via Settings, or no monitored apps selected.
         // The loop suspends on this combined gate instead of waking up each
@@ -67,17 +77,29 @@ class MonitorSession(
             // loop's window reset already drops old events; this drops their
             // remembered counterpart.
             .onEach { open ->
-                if (!open) decision.reset()
+                if (!open) {
+                    decision.reset()
+                    freshWindow.set(true)
+                }
             }
             .stateIn(scope, SharingStarted.Eagerly, false)
 
         var lastPermissionCheckAt = nowElapsed()
 
+        // Where the previous window ended; null until the first one closes.
+        // While the gate has stayed open, the next window starts here —
+        // see the tiling bullet in the class doc.
+        var lastWindowEnd: Long? = null
+
         while (scope.isActive) {
             monitorGate.first { it }
             // Fresh window after every wake-up: never replay events
             // accumulated while suspended — stale resumes could false-trigger.
-            val windowStart = nowWall()
+            val windowStart = if (freshWindow.getAndSet(false)) {
+                nowWall()
+            } else {
+                lastWindowEnd ?: nowWall()
+            }
             delay(POLL_INTERVAL_MS)
 
             // AppOps is a binder IPC — throttled instead of paid every second.
@@ -93,6 +115,7 @@ class MonitorSession(
             }
 
             val windowEnd = nowWall()
+            lastWindowEnd = windowEnd
             // Walk EVERY resume in the window instead of only the latest one:
             // a chooser flash shorter than one poll can sit between the
             // previous app and the target, and pairing consecutive events is

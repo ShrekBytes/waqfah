@@ -111,6 +111,37 @@ class MonitorSessionTest {
         job.cancel()
     }
 
+    // Real clocks keep running while a window's events are queried, decided
+    // and dispatched; the next window must start where the previous one
+    // ended, or every event landing in that processing slice belongs to no
+    // window and never reaches the decision.
+    @Test
+    fun `windows tile the time the gate stays open`() = runTest {
+        val job = launch { session().run() }
+
+        advanceTimeBy(POLL_MS)
+        runCurrent()
+        wallNow = 1_000_050L // time passes while window 1's events are processed
+        advanceTimeBy(POLL_MS)
+        runCurrent()
+        wallNow = 1_000_150L
+        advanceTimeBy(POLL_MS)
+        runCurrent()
+
+        // Each consecutive pair shares an endpoint: no slice of open-gate
+        // time is left uncovered.
+        assertEquals(
+            listOf(
+                1_000_000L to 1_000_000L,
+                1_000_000L to 1_000_050L,
+                1_000_050L to 1_000_150L,
+            ),
+            queriedWindows,
+        )
+
+        job.cancel()
+    }
+
     @Test
     fun `stays quiet while the gate is closed and wakes into a fresh window`() = runTest {
         appActive.value = false
