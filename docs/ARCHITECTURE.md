@@ -24,9 +24,13 @@ The rules, in the order the decision applies them:
    interrupted or the calling app's own screen, however many hops the
    return takes,
 5. never on indirect entries (picker-mediated or worker activities),
-6. never on a quick switch-back within `SWITCH_BACK_GAP_MS`, regardless of the
+6. a defensive re-read of the persisted toggle, between indirect-entry and
+   switch-back — the monitor gate should already have paused the loop when
+   the toggle flipped, so this is normally unreachable; the ignore is silent
+   either way,
+7. never on a quick switch-back within `SWITCH_BACK_GAP_MS`, regardless of the
    cooldown,
-7. otherwise the cooldown decides (`0` = "Off" triggers on every fresh
+8. otherwise the cooldown decides (`0` = "Off" triggers on every fresh
    open that gets this far); the `last_shown_at` anchor is stamped inside the
    module, exactly at trigger time, regardless of how the interstitial is
    later dismissed.

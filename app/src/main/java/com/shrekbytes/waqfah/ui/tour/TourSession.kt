@@ -10,6 +10,9 @@ import kotlinx.coroutines.launch
 // One TryIt practice on the live reading card.
 enum class TourTaskKind { MARK_READ, CHANGE_AYAH, SWITCH_TRANSLATION, GO_TO_AYAH }
 
+// Names the back-ordering contract — close the picker, then step back, then
+// skip. TourSessionTest asserts on it; the overlay's BackHandler discards the
+// result.
 enum class TourBackResult { CLOSE_PICKER, PREVIOUS_STEP, SKIPPED }
 
 // The reading-card facts the machine needs, pushed by the overlay on every

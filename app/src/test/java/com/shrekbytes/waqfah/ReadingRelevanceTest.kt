@@ -14,10 +14,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
-// Guards the render-relevance filter in ReadingViewModel: every field of
-// UserPreferences must either join the signature (because the reading card
-// renders it) or deliberately stay out (so its changes skip the full
-// re-render). These tests pin both sides of that decision — adding a new
+// Guards the render-relevance filter in the reading machine (ReadingSession):
+// every field of UserPreferences must either join the signature (because the
+// reading card renders it) or deliberately stay out (so its changes skip the
+// full re-render). These tests pin both sides of that decision — adding a new
 // preference without updating readingRenderSignature fails loudly here.
 // Note: appActive deliberately stays OUT — the on/off toggle governs detection
 // only and must never gate or re-render the reading card.

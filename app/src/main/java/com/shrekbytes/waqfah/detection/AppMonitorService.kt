@@ -24,6 +24,7 @@ import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppState
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +74,7 @@ class AppMonitorService : Service() {
     }
 
     // Lazily-built cache of each package's alternate entry-point activities
-    // (share targets, file/link viewers). Queried once per package on first
+    // (share sheets, file/link viewers). Queried once per package on first
     // encounter; the monitored set is small so no eviction is needed.
     private val indirectEntryClassCache = HashMap<String, Set<String>>()
 
@@ -158,7 +159,22 @@ class AppMonitorService : Service() {
         // so a service restart mid-screen-off doesn't poll for nothing.
         screenOn.value = (getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive
         startInForeground()
-        serviceScope.launch { monitorSession.run() }
+        // The session loop is the one coroutine whose death must never go
+        // unnoticed: the scope's handler only logs, so an uncaught failure in
+        // run() would leave this a live foreground service with its
+        // "monitoring" notification while detection is dead. Own the loop's
+        // lifetime here — a dead session stops the (honest) service; the
+        // supervisor's resume path may start it again.
+        serviceScope.launch {
+            try {
+                monitorSession.run()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                Log.e(TAG, "Monitor session died — stopping the service so the notification doesn't outlive detection", t)
+                stopSelf()
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY

@@ -19,6 +19,8 @@ data class MonitoredAppMembership(
 interface MonitoredAppState {
     val monitoredPackages: Flow<Set<String>>
 
+    // Production mutates membership only through toggle; add/remove are the
+    // fine-grained primitives the instrumented suite exercises directly.
     suspend fun add(packageName: String)
     suspend fun remove(packageName: String)
     suspend fun toggle(packageName: String)

@@ -45,12 +45,12 @@ import javax.inject.Inject
 //
 // The window is translucent (see Theme.Waqfah.Trigger) with every window-level
 // transition zeroed out — the interstitial fades itself in and out in Compose,
-// crossfading over the target app beneath. Doing it in Compose keeps the effect
-// identical on every OEM and immune to predictive-back/system animations.
-// Dismissing it — via back or the open-app button — fades out, then finishes,
-// revealing whatever screen of the target app is really paused directly
-// beneath (main UI, share sheet, file viewer), like a normal back press.
-// See ReadingScreen.
+// crossfading over the monitored app beneath. Doing it in Compose keeps the
+// effect identical on every OEM and immune to predictive-back/system
+// animations. Dismissing it — via back or the open-app button — fades out,
+// then finishes, revealing whatever screen of the monitored app is really
+// paused directly beneath (main UI, share sheet, file viewer), like a normal
+// back press. See ReadingScreen.
 // AppCompatActivity so AppCompatDelegate's per-app locales apply here.
 @AndroidEntryPoint
 class TriggerActivity : AppCompatActivity() {
@@ -168,7 +168,7 @@ class TriggerActivity : AppCompatActivity() {
         }
 
         InterstitialSession.markReassertUsed()
-        Log.d(TAG, "Target app covered the interstitial; re-asserting")
+        Log.d(TAG, "Monitored app covered the interstitial; re-asserting")
         startActivity(
             Intent(this, TriggerActivity::class.java).apply {
                 putExtra(EXTRA_TRIGGERED_PACKAGE, triggeredPackage)

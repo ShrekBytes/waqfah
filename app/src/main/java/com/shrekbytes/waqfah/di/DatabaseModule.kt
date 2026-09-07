@@ -2,13 +2,9 @@ package com.shrekbytes.waqfah.di
 
 import android.content.Context
 import androidx.room.Room
-import com.shrekbytes.waqfah.data.local.appstate.MonitoredAppDao
-import com.shrekbytes.waqfah.data.local.appstate.ReadVerseDao
 import com.shrekbytes.waqfah.data.local.appstate.AppStateMigrations
 import com.shrekbytes.waqfah.data.local.appstate.WaqfahAppDatabase
 import com.shrekbytes.waqfah.data.local.core.QuranDatabase
-import com.shrekbytes.waqfah.data.local.core.SurahDao
-import com.shrekbytes.waqfah.data.local.core.VerseDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,6 +12,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+// Databases only — the graph binds no DAOs. Repositories fetch their DAOs
+// from the injected database handle directly (QuranRepository, the appstate
+// repositories); no consumer has ever requested a bound one.
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
@@ -26,12 +25,6 @@ object DatabaseModule {
         QuranDatabase.build(context)
 
     @Provides
-    fun provideSurahDao(db: QuranDatabase): SurahDao = db.surahDao()
-
-    @Provides
-    fun provideVerseDao(db: QuranDatabase): VerseDao = db.verseDao()
-
-    @Provides
     @Singleton
     fun provideWaqfahAppDatabase(@ApplicationContext context: Context): WaqfahAppDatabase =
         // No destructive-migration fallback — read_verses is real user progress;
@@ -39,10 +32,4 @@ object DatabaseModule {
         Room.databaseBuilder(context, WaqfahAppDatabase::class.java, "waqfah_app.db")
             .addMigrations(AppStateMigrations.MIGRATION_1_2)
             .build()
-
-    @Provides
-    fun provideMonitoredAppDao(db: WaqfahAppDatabase): MonitoredAppDao = db.monitoredAppDao()
-
-    @Provides
-    fun provideReadVerseDao(db: WaqfahAppDatabase): ReadVerseDao = db.readVerseDao()
 }

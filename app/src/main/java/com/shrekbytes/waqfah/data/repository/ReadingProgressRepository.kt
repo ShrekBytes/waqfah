@@ -8,11 +8,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
 class ReadingProgressRepository @Inject constructor(
     private val appDatabase: WaqfahAppDatabase,
+    // Same injectable wall clock as MonitoredAppStateRepository — the data
+    // layer has one clock idiom, not one per repository.
+    @Named("wallClock") private val nowWall: () -> Long,
 ) {
     val readCount: Flow<Int> = appDatabase.readVerseDao().observeReadCount()
 
@@ -24,7 +28,7 @@ class ReadingProgressRepository @Inject constructor(
     val progressReset: StateFlow<Int> = _progressReset.asStateFlow()
 
     suspend fun markRead(verseId: Int) =
-        appDatabase.readVerseDao().markRead(ReadVerseEntity(verseId, readAt = System.currentTimeMillis()))
+        appDatabase.readVerseDao().markRead(ReadVerseEntity(verseId, readAt = nowWall()))
 
     suspend fun unmarkRead(verseId: Int) = appDatabase.readVerseDao().unmarkRead(verseId)
 

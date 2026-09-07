@@ -7,7 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 // The pure core of ResumedActivityReader: the latest-in-window derivation
-// behind the interstitial's buried-retry check.
+// behind the interstitial's re-assert check.
 class ResumedActivityReaderTest {
 
     private fun event(pkg: String, atMs: Long) =

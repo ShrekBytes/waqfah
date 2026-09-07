@@ -260,22 +260,13 @@ fun InlineField(label: String, showDivider: Boolean = true, onClick: (() -> Unit
     if (showDivider) HorizontalDivider(color = colors.line)
 }
 
-// Flat, edge-to-edge press highlight instead of a bounded ripple.
 @Composable
 fun SettingsNavRow(title: String, subtitle: String, onClick: () -> Unit, external: Boolean = false) {
     val colors = WaqfahTheme.colors
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val rowHighlight by animateColorAsState(
-        targetValue = if (isPressed) colors.line.copy(alpha = 0.6f) else Color.Transparent,
-        animationSpec = tween(durationMillis = if (isPressed) 60 else 220),
-        label = "settings_row_highlight",
-    )
     Row(
         Modifier
             .fillMaxWidth()
-            .background(rowHighlight)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .rowHighlight(onClick)
             .padding(horizontal = 6.dp, vertical = 13.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
