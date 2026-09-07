@@ -57,11 +57,11 @@ fun ReadingScreen(
 
     LaunchedEffect(triggeredPackage) { viewModel.setTriggeredPackage(triggeredPackage) }
 
-    // The interstitial sits directly on top of the target app's actual task, so
-    // finishing falls through to whatever screen was really opened (main UI,
-    // share sheet, file viewer) — exactly like a normal back press. No launch
-    // intent is needed; getLaunchIntentForPackage would only ever restart the
-    // app's main activity.
+    // The interstitial sits directly on top of the monitored app's actual
+    // task, so finishing falls through to whatever screen was really opened
+    // (main UI, share sheet, file viewer) — exactly like a normal back press.
+    // No launch intent is needed; getLaunchIntentForPackage would only ever
+    // restart the app's main activity.
     fun requestDismiss() {
         onDismissRequest?.invoke() ?: (context as? Activity)?.finish()
     }

@@ -7,7 +7,7 @@
     <style name="Theme.Waqfah" parent="Theme.AppCompat.DayNight.NoActionBar" />
 
     <!-- TriggerActivity: translucent, transparent-background window sitting
-         directly on the target app's task. The interstitial animates itself in
+         directly on the monitored app's task. The interstitial animates itself in
          Compose (see TriggerActivity), so its own content crossfades over the
          app underneath — no opaque window ever flashes, and no OEM/predictive-
          back animation can override the effect. -->

@@ -37,10 +37,10 @@ class InterstitialSessionTest {
 
     // ---- Re-assert verdict ----
 
-    // The buried case: the target app raised itself back over the
+    // The buried case: the monitored app raised itself back over the
     // interstitial without the foreground really changing.
     @Test
-    fun buriedByTheTargetApp_reasserts() {
+    fun buriedByTheMonitoredApp_reasserts() {
         val verdict = InterstitialSession.shouldReassert(
             reassertUsed = false,
             finishing = false,

@@ -48,11 +48,10 @@ the foreground — never what's displayed in it.
 
 While the screen is on, a foreground service checks which app moved to the
 foreground roughly once per second via the public Usage Stats API, and shows
-a translucent reading screen over the target app when one of your monitored
-apps opens. Dismissing the reading screen simply falls through into that
-app, exactly where you left off. Consecutive foreground events are paired so
-indirect entries (share sheet, "Open with", link grabbers) never count as an
-app open.
+a translucent reading screen over the monitored app when it opens. Dismissing
+the reading screen simply falls through into that app, exactly where you left
+off. Consecutive foreground events are paired so indirect entries (share
+sheet, "Open with", link grabbers) never count as an app open.
 
 ## Permissions
 

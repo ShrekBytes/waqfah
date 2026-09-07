@@ -14,7 +14,7 @@ thing the trigger rules decide.
 _Avoid_: fire, pause event
 
 **Interstitial**:
-The translucent reading pause (TriggerActivity) shown over the target app.
+The translucent reading pause (TriggerActivity) shown over the monitored app.
 Finishing it falls through to the app underneath.
 _Avoid_: overlay, dialog, reading screen
 

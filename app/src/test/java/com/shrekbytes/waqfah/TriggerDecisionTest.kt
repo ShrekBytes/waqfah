@@ -458,7 +458,7 @@ class TriggerDecisionTest {
     }
 
     // Share sheets and "Open with" dialogs surface a worker activity of the
-    // target app right after a system chooser — pausing there would make
+    // monitored app right after a system chooser — pausing there would make
     // sharing and forwarding painful without adding value.
     @Test
     fun entryThroughAChooser_isAnIndirectEntry() {

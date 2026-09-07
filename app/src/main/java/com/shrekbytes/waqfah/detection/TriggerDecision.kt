@@ -216,7 +216,7 @@ class TriggerDecision(
         if (isWithinCallGrace(candidate)) return Verdict.Ignore(Reason.CALL_GRACE)
 
         // Share sheets, "Open with" dialogs and download-grabbers surface a
-        // worker activity of the target app, not a user-initiated open —
+        // worker activity of the monitored app, not a user-initiated open —
         // pausing there makes sharing/forwarding painful without adding value.
         if (isIndirectEntry(previous, current)) return Verdict.Ignore(Reason.INDIRECT_ENTRY)
 
