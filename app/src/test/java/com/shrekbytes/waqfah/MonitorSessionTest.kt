@@ -8,6 +8,7 @@ import com.shrekbytes.waqfah.detection.TriggerPrefs
 import com.shrekbytes.waqfah.detection.Verdict
 import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppMembership
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -22,8 +23,12 @@ import org.junit.Test
 // Tests the MonitorSession at its interface: flows in, one run() loop, verdicts
 // and stop requests out. The decision is the real TriggerDecision with fake
 // probes behind its own ports, so the session is exercised against the genuine
-// module pair. Virtual time drives the loop's delays; the elapsed clock is the
-// test scheduler's clock (delays advance it), the wall clock is manual.
+// module pair. Virtual time drives the loop's delays; the session's elapsed
+// clock AND wall clock are both the test scheduler's clock — the wall one
+// plus a constant epoch offset — so the wall clock runs while a window's
+// events are queried, decided and dispatched. The manual wall clock this
+// harness replaced froze during that processing slice, the blind spot both
+// audits flagged: a poll-window gap could hide behind a green suite.
 @OptIn(ExperimentalCoroutinesApi::class)
 class MonitorSessionTest {
 
@@ -32,13 +37,29 @@ class MonitorSessionTest {
         // The session's poll interval, restated here as the spec: one window
         // per 1 000 ms of loop time.
         const val POLL_MS = 1_000L
+
+        // The wall clock's value at virtual time zero. Scheduler time starts
+        // at 0; a real wall clock doesn't — the offset keeps window bounds
+        // reading like timestamps instead of loop arithmetic.
+        const val WALL_EPOCH_MS = 1_000_000L
     }
 
     private val appActive = MutableStateFlow(true)
     private val monitoredApps = MutableStateFlow(setOf(MONITORED_APP))
     private val screenOn = MutableStateFlow(true)
 
-    private var wallNow = 1_000_000L
+    // A mid-session wall-clock jump (an NTP resync): added on top of virtual
+    // time, so a test can move the wall clock without moving the loop — the
+    // wall jumps while the poll sleeps.
+    private var wallJumpMs = 0L
+
+    // What one window's processing costs in virtual time: the UsageStats
+    // query — and, when the window carries events, the decision and verdict
+    // dispatch behind it. A real clock runs through that slice between one
+    // window's end and the next one's start; zero everywhere except the
+    // tiling pin, which needs the slice to exist.
+    private var processingCostMs = 0L
+
     private var queuedEvents: List<ResumedActivity> = emptyList()
     private val queriedWindows = mutableListOf<Pair<Long, Long>>()
 
@@ -47,28 +68,19 @@ class MonitorSessionTest {
     private var permissionProbeCalls = 0
     private var permissionsGranted = true
 
-    // TriggerDecision's own fake probes. decisionElapsed drives its internal
-    // windows (switch-back, call grace); nothing advances it unless a test does.
+    // TriggerDecision's own fake probes, wired inside session() so its wall
+    // clock can share the session's scheduler-driven one. decisionElapsed
+    // drives its internal windows (switch-back, call grace); nothing advances
+    // it unless a test does.
     private val stamped = mutableListOf<String>()
     private val monitored = mutableSetOf(MONITORED_APP)
     private var callAudio = false
     private var decisionElapsed = 0L
-    private val decision = TriggerDecision(
-        isMonitored = { it in monitored },
-        callAudioActive = { callAudio },
-        indirectEntryClasses = { emptySet() },
-        prefs = { TriggerPrefs(true, 0) },
-        monitoredMembership = { pkg ->
-            if (pkg in monitored) MonitoredAppMembership(pkg, "membership-$pkg", null, 0L) else null
-        },
-        claimTrigger = { membership, _ ->
-            stamped += membership.packageName
-            true
-        },
-        interstitialClassName = "com.shrekbytes.waqfah.TriggerActivity",
-        nowElapsed = { decisionElapsed },
-        nowWall = { wallNow },
-    )
+
+    // The wall clock both halves read: virtual time plus the epoch plus any
+    // jump. Unlike the manual var it replaces, it advances while a window's
+    // events are processed, because virtual time does.
+    private fun TestScope.wallNow() = WALL_EPOCH_MS + wallJumpMs + testScheduler.currentTime
 
     private fun TestScope.session() = MonitorSession(
         appActive = appActive,
@@ -76,17 +88,33 @@ class MonitorSessionTest {
         screenOn = screenOn,
         resumedActivities = { from, to ->
             queriedWindows += from to to
+            delay(processingCostMs)
             queuedEvents
         },
         hasPermissions = {
             permissionProbeCalls++
             permissionsGranted
         },
-        decision = decision,
+        decision = TriggerDecision(
+            isMonitored = { it in monitored },
+            callAudioActive = { callAudio },
+            indirectEntryClasses = { emptySet() },
+            prefs = { TriggerPrefs(true, 0) },
+            monitoredMembership = { pkg ->
+                if (pkg in monitored) MonitoredAppMembership(pkg, "membership-$pkg", null, 0L) else null
+            },
+            claimTrigger = { membership, _ ->
+                stamped += membership.packageName
+                true
+            },
+            interstitialClassName = "com.shrekbytes.waqfah.TriggerActivity",
+            nowElapsed = { decisionElapsed },
+            nowWall = { wallNow() },
+        ),
         onVerdict = { verdict, activity -> verdicts += verdict to activity },
         onStopRequested = { stopRequests++ },
         nowElapsed = { testScheduler.currentTime },
-        nowWall = { wallNow },
+        nowWall = { wallNow() },
         scope = backgroundScope,
     )
 
@@ -96,15 +124,18 @@ class MonitorSessionTest {
 
         advanceTimeBy(POLL_MS)
         runCurrent()
-        assertEquals(listOf(1_000_000L to 1_000_000L), queriedWindows)
+        val firstEnd = WALL_EPOCH_MS + POLL_MS
+        // The wall clock runs while the poll sleeps, so the window spans the
+        // whole interval.
+        assertEquals(listOf(WALL_EPOCH_MS to firstEnd), queriedWindows)
 
-        wallNow = 1_000_500L
+        // The wall clock jumps while the poll sleeps: the next window still
+        // starts where the last one ended and ends at now, jump included.
+        wallJumpMs = 500L
         advanceTimeBy(POLL_MS)
         runCurrent()
-        // The wall clock jumped while the poll slept: the window still spans
-        // the whole interval — start where the last window ended, end at now.
         assertEquals(
-            listOf(1_000_000L to 1_000_000L, 1_000_000L to 1_000_500L),
+            listOf(WALL_EPOCH_MS to firstEnd, firstEnd to firstEnd + POLL_MS + 500L),
             queriedWindows,
         )
 
@@ -114,27 +145,31 @@ class MonitorSessionTest {
     // Real clocks keep running while a window's events are queried, decided
     // and dispatched; the next window must start where the previous one
     // ended, or every event landing in that processing slice belongs to no
-    // window and never reaches the decision.
+    // window and never reaches the decision. The scheduler-driven wall clock
+    // runs through the slice — the manual clock it replaced froze there — so
+    // this pin actually sees the gap: against a window that restarts at the
+    // current clock reading instead of the previous window's end, it fails.
     @Test
     fun `windows tile the time the gate stays open`() = runTest {
+        processingCostMs = 50L
         val job = launch { session().run() }
 
-        advanceTimeBy(POLL_MS)
-        runCurrent()
-        wallNow = 1_000_050L // time passes while window 1's events are processed
-        advanceTimeBy(POLL_MS)
-        runCurrent()
-        wallNow = 1_000_150L
-        advanceTimeBy(POLL_MS)
-        runCurrent()
+        repeat(3) {
+            advanceTimeBy(POLL_MS + processingCostMs)
+            runCurrent()
+        }
 
-        // Each consecutive pair shares an endpoint: no slice of open-gate
-        // time is left uncovered.
+        // Each consecutive pair shares an endpoint — the processing slice
+        // between one window's end and the next poll's wake included — so
+        // no slice of open-gate time is left uncovered.
+        val firstEnd = WALL_EPOCH_MS + POLL_MS
+        val secondEnd = WALL_EPOCH_MS + 2 * POLL_MS + processingCostMs
+        val thirdEnd = WALL_EPOCH_MS + 3 * POLL_MS + 2 * processingCostMs
         assertEquals(
             listOf(
-                1_000_000L to 1_000_000L,
-                1_000_000L to 1_000_050L,
-                1_000_050L to 1_000_150L,
+                WALL_EPOCH_MS to firstEnd,
+                firstEnd to secondEnd,
+                secondEnd to thirdEnd,
             ),
             queriedWindows,
         )
@@ -151,14 +186,17 @@ class MonitorSessionTest {
         runCurrent()
         assertTrue(queriedWindows.isEmpty())
 
-        // Wake: everything the wall clock ran past while closed is stale —
-        // the fresh window starts at the wake, not at the last polled window.
-        wallNow = 1_500_000L
+        // Wake: everything the wall clock ran past while closed — the same
+        // 10 s, since both clocks are the scheduler's — is stale. The fresh
+        // window starts at the wake, not at the last polled window.
         appActive.value = true
         advanceTimeBy(POLL_MS)
         runCurrent()
 
-        assertEquals(listOf(1_500_000L to 1_500_000L), queriedWindows)
+        assertEquals(
+            listOf(WALL_EPOCH_MS + 10_000L to WALL_EPOCH_MS + 10_000L + POLL_MS),
+            queriedWindows,
+        )
 
         job.cancel()
     }
