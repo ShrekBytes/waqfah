@@ -76,6 +76,15 @@ android {
         compose = true
         buildConfig = true
     }
+
+    sourceSets {
+        // Room's migration test helper reads the exported schema JSONs from
+        // androidTest assets; without this AppStateMigrationTest fails on load
+        // before running a single test.
+        getByName("androidTest") {
+            assets.srcDir("$projectDir/schemas")
+        }
+    }
 }
 
 ksp {

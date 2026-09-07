@@ -60,6 +60,17 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # github-hosted ubuntu-24.04 runners periodically boot without KVM access
+      # for the runner user, leaving the emulator in software rendering that
+      # cannot finish booting within the timeout (2026-09-07: ProbeKVM
+      # permission errors + adb exit 1 until the 600s boot timeout, twice).
+      # The udev rule grants access immediately — no re-login needed.
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       # Newest stable system image (no API 37 image is published yet); bump
       # the pin deliberately when targetSdk bumps.
       - name: Run instrumented tests on an emulator
