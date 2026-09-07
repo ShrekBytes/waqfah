@@ -96,6 +96,38 @@ minSdk 28 (Android 9) · targetSdk 37.
 Built with Kotlin and Jetpack Compose (Material 3); persistence via Room and
 DataStore; dependency injection with Hilt.
 
+### Releasing
+
+`./gradlew :app:assembleRelease` only produces an installable APK when a
+release keystore is configured — otherwise the build still succeeds (CI's
+compile check relies on that) but emits `app-release-unsigned.apk`. Signing is
+wired into the release build type and reads from either:
+
+- a **`keystore.properties`** file at the repo root (gitignored):
+
+  ```properties
+  storeFile=path/to/waqfah-release.jks   # relative to the repo root, or absolute
+  storePassword=…
+  keyAlias=waqfah
+  keyPassword=…
+  ```
+
+- or **environment variables** — `WAQFAH_STORE_FILE`, `WAQFAH_STORE_PASSWORD`,
+  `WAQFAH_KEY_ALIAS`, `WAQFAH_KEY_PASSWORD` — which override the file, so CI
+  can inject the secrets without writing it to disk.
+
+With either source complete, `assembleRelease` emits a signed, installable
+`app-release.apk`. A half-configured source — some properties set, others
+missing — fails the build instead of quietly emitting an unsignable artifact.
+
+Create a keystore once (keep it out of the repository and back it up safely —
+losing the key means no future update can install over the released app):
+
+```bash
+keytool -genkeypair -v -keystore waqfah-release.jks -alias waqfah \
+  -keyalg RSA -keysize 4096 -validity 10000
+```
+
 ## Contributing
 
 Bug reports, feature ideas, and pull requests are welcome — please open an

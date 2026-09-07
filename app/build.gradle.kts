@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -5,6 +7,20 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.serialization)
 }
+
+// Release signing — see README "Releasing". Read from keystore.properties at
+// the repo root (gitignored), with WAQFAH_* environment variables as overrides
+// so CI can inject secrets without a file on disk. No configuration at all
+// leaves the release build unsigned (CI's compile-only assembleRelease relies
+// on that); a PARTIAL configuration fails the build instead of quietly
+// producing an artifact that can't install or update.
+val keystoreProperties = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }
+        ?.inputStream()?.use { load(it) }
+}
+
+fun releaseSigningProperty(property: String, envVar: String): String? =
+    System.getenv(envVar) ?: keystoreProperties.getProperty(property)
 
 android {
     namespace = "com.shrekbytes.waqfah"
@@ -23,11 +39,31 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseSigningProperty("storeFile", "WAQFAH_STORE_FILE") != null) {
+            create("release") {
+                storeFile = releaseSigningProperty("storeFile", "WAQFAH_STORE_FILE")
+                    ?.let { rootProject.file(it) }
+                storePassword = releaseSigningProperty("storePassword", "WAQFAH_STORE_PASSWORD")
+                keyAlias = releaseSigningProperty("keyAlias", "WAQFAH_KEY_ALIAS")
+                keyPassword = releaseSigningProperty("keyPassword", "WAQFAH_KEY_PASSWORD")
+                require(storePassword != null && keyAlias != null && keyPassword != null) {
+                    "Release signing is half-configured: set all of storeFile, " +
+                        "storePassword, keyAlias, and keyPassword in keystore.properties " +
+                        "or as WAQFAH_* environment variables (see README \"Releasing\")"
+                }
+            }
+        }
+    }
+
     buildTypes {
         release {
             optimization {
                 enable = true
             }
+            // Signed only when a keystore is configured (see signingConfigs);
+            // otherwise assembleRelease emits app-release-unsigned.apk.
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

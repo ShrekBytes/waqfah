@@ -25,3 +25,5 @@ captures/
 # Keystores — never commit signing material
 *.jks
 *.keystore
+# Points at that material (paths + passwords) — machine-specific too
+/keystore.properties

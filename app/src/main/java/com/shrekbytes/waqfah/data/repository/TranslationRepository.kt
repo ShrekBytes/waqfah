@@ -46,14 +46,6 @@ class TranslationRepository @Inject constructor(
     private val _downloadedIds = MutableStateFlow<Set<String>>(emptySet())
     val downloadedIds: StateFlow<Set<String>> = _downloadedIds.asStateFlow()
 
-    // Repository is an app-lifetime singleton, so this scope lives for the
-    // process — it exists only to run the initial refresh.
-    private val initScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    init {
-        initScope.launch { refreshDownloadedIds() }
-    }
-
     // Republishes disk truth. Serialized so an early refresh can never finish
     // after a later one and publish a stale set (a finished download would
     // then read as missing until the next change).
@@ -76,6 +68,21 @@ class TranslationRepository @Inject constructor(
     // racing threads rename each other's temp file away mid-write, then fail
     // with NoSuchFileException ("Failed to copy bundled translation …").
     private val downloadLocks = ConcurrentHashMap<String, Mutex>()
+
+    // Repository is an app-lifetime singleton, so this scope lives for the
+    // process — it exists only to run the initial refresh.
+    //
+    // Declared after every field the refresh reads: Kotlin runs property
+    // initializers in declaration order, and the launch publishes `this` to
+    // the IO dispatcher before the constructor finishes writing the fields
+    // below — a worker could then read a lock in its pre-write (null) state,
+    // crashing intermittently on release cold starts
+    // (2026-09-06 release-readiness audit, blocker 1).
+    private val initScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        initScope.launch { refreshDownloadedIds() }
+    }
 
     // Suspend + IO: callers poll this per-row inside render paths that run on
     // the main dispatcher; File.exists() is disk I/O. Private — callers read
