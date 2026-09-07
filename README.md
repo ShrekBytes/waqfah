@@ -34,9 +34,12 @@ and Google Play.
 ## Privacy
 
 Waqfah collects nothing and sends nothing anywhere. Monitored apps, reading
-progress, and preferences stay on the device. The only network traffic is
-downloading an optional Quran translation that you explicitly request —
-fetched over HTTPS from the [waqfah-translations][translations-repo]
+progress, and preferences stay on the device. The one exception is Android's
+own device backup: if it is turned on, Android includes that data in your
+device's backup, stored in your Google account or transferred directly to a
+new device — Waqfah itself never sends anything anywhere. The only network
+traffic is downloading an optional Quran translation that you explicitly
+request — fetched over HTTPS from the [waqfah-translations][translations-repo]
 repository and verified against pinned SHA-256 checksums before use. There
 are no ads, no analytics, no trackers, and no accounts.
 

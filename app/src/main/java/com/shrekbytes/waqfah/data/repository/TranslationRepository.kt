@@ -25,6 +25,8 @@ import java.io.DataInputStream
 import java.io.EOFException
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URI
 import java.security.MessageDigest
@@ -214,30 +216,9 @@ class TranslationRepository @Inject constructor(
             }
 
             val totalBytes = connection.contentLengthLong // -1 if not sent
-            var bytesRead = 0L
-            // Hash while streaming so integrity needs no second file read.
-            val sha256 = MessageDigest.getInstance("SHA-256")
-            // Report at most once per whole percent — the raw per-chunk cadence
-            // (every DOWNLOAD_BUFFER_BYTES) would flood StateFlow with thousands
-            // of updates and recompose the translations screen for each.
-            var lastReportedPercent = -1
-            connection.inputStream.use { input ->
+            val sha256 = connection.inputStream.use { input ->
                 tmp.outputStream().use { output ->
-                    val buffer = ByteArray(DOWNLOAD_BUFFER_BYTES)
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read == -1) break
-                        output.write(buffer, 0, read)
-                        sha256.update(buffer, 0, read)
-                        bytesRead += read
-                        if (totalBytes > 0) {
-                            val percent = ((bytesRead * 100) / totalBytes).toInt()
-                            if (percent != lastReportedPercent) {
-                                lastReportedPercent = percent
-                                onProgress((percent / 100f).coerceIn(0f, 1f))
-                            }
-                        }
-                    }
+                    copyBodyCapped(input, output, totalBytes, onProgress = onProgress)
                 }
             }
 
@@ -255,22 +236,6 @@ class TranslationRepository @Inject constructor(
             throw e
         } finally {
             connection?.disconnect()
-        }
-    }
-
-    // Rejects files whose bytes don't match the SHA-256 pinned in
-    // TranslationCatalog — runs BEFORE the atomic rename, so a tampered or
-    // silently-changed published file can never land at the target path.
-    // Bundled asset copies skip this (APK signing covers their integrity).
-    private fun verifyChecksum(meta: TranslationMeta, digest: MessageDigest) {
-        val expected = meta.checksumSha256 ?: return
-        val actual = digest.digest().joinToString("") { "%02x".format(it) }
-        if (!actual.equals(expected, ignoreCase = true)) {
-            throw IOException(
-                "Downloaded database for '${meta.id}' failed its integrity check (SHA-256 mismatch). " +
-                    "If translations/${meta.language.code}/${meta.id}.db changed in the repo, " +
-                    "update its checksum in TranslationCatalog.",
-            )
         }
     }
 
@@ -353,6 +318,78 @@ class TranslationRepository @Inject constructor(
         const val READ_TIMEOUT_MS = 30_000
         const val DOWNLOAD_BUFFER_BYTES = 8 * 1024
         val SQLITE_MAGIC = "SQLite format 3\u0000".toByteArray(Charsets.US_ASCII)
+
+        // Refuses any download body over this size (declared or actually read)
+        // so a hostile server can't fill internal storage before the checksum
+        // gate runs. Real translations are a few MB.
+        const val MAX_DOWNLOAD_BYTES = 64L * 1024 * 1024
+
+        // Streams the response body into [output] while hashing it, refusing
+        // anything over [maxBytes] — either up front when the declared
+        // [totalBytes] says so (-1 when the server sends no length), or as
+        // soon as the bytes actually read cross the line. Aborting mid-stream
+        // is fine: the caller deletes the tmp file on throw. Progress reports
+        // at most once per whole percent against totalBytes — the raw
+        // per-chunk cadence (every DOWNLOAD_BUFFER_BYTES) would flood
+        // StateFlow with thousands of updates and recompose the translations
+        // screen for each. Internal for TranslationIntegrityTest.
+        internal fun copyBodyCapped(
+            input: InputStream,
+            output: OutputStream,
+            totalBytes: Long,
+            maxBytes: Long = MAX_DOWNLOAD_BYTES,
+            onProgress: (Float) -> Unit,
+        ): MessageDigest {
+            if (totalBytes > maxBytes) {
+                throw IOException(
+                    "Translation download reports $totalBytes bytes — over the $maxBytes-byte limit, refusing to save it",
+                )
+            }
+            val sha256 = MessageDigest.getInstance("SHA-256")
+            val buffer = ByteArray(DOWNLOAD_BUFFER_BYTES)
+            var bytesRead = 0L
+            var lastReportedPercent = -1
+            while (true) {
+                val read = input.read(buffer)
+                if (read == -1) break
+                output.write(buffer, 0, read)
+                sha256.update(buffer, 0, read)
+                bytesRead += read
+                if (bytesRead > maxBytes) {
+                    throw IOException(
+                        "Translation download exceeded the $maxBytes-byte limit after $bytesRead bytes — refusing to save it",
+                    )
+                }
+                if (totalBytes > 0) {
+                    val percent = ((bytesRead * 100) / totalBytes).toInt()
+                    if (percent != lastReportedPercent) {
+                        lastReportedPercent = percent
+                        onProgress((percent / 100f).coerceIn(0f, 1f))
+                    }
+                }
+            }
+            return sha256
+        }
+
+        // Rejects files whose bytes don't match the SHA-256 pinned in
+        // TranslationCatalog — runs BEFORE the atomic rename, so a tampered or
+        // silently-changed published file can never land at the target path.
+        // Bundled asset copies skip this (APK signing covers their integrity).
+        // Fails closed: a downloadable entry without a pinned checksum must
+        // never install unverified bytes of scripture, so it throws instead of
+        // skipping verification. Internal for TranslationIntegrityTest.
+        internal fun verifyChecksum(meta: TranslationMeta, digest: MessageDigest) {
+            val expected = meta.checksumSha256
+                ?: error("Downloadable translation '${meta.id}' has no pinned SHA-256 in TranslationCatalog")
+            val actual = digest.digest().joinToString("") { "%02x".format(it) }
+            if (!actual.equals(expected, ignoreCase = true)) {
+                throw IOException(
+                    "Downloaded database for '${meta.id}' failed its integrity check (SHA-256 mismatch). " +
+                        "If translations/${meta.language.code}/${meta.id}.db changed in the repo, " +
+                        "update its checksum in TranslationCatalog.",
+                )
+            }
+        }
 
         // Decides whether a failed read should DELETE the translation file
         // (forcing a re-copy/re-download) or just drop the cached handle.

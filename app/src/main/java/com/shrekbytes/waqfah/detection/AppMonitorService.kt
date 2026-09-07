@@ -18,6 +18,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import com.shrekbytes.waqfah.BuildConfig
 import com.shrekbytes.waqfah.R
 import com.shrekbytes.waqfah.TriggerActivity
 import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppState
@@ -213,18 +214,27 @@ class AppMonitorService : Service() {
     private fun handleVerdict(verdict: Verdict, activity: ResumedActivity) {
         when (verdict) {
             is Verdict.Trigger -> {
-                Log.d(TAG, "Triggering reading screen for ${verdict.packageName} (${activity.className})")
+                debugLog { "Triggering reading screen for ${verdict.packageName} (${activity.className})" }
                 launchReadingScreen(verdict.packageName)
             }
             is Verdict.Ignore -> when (verdict.reason) {
-                Reason.CALL -> Log.d(TAG, "Call detected (${activity.packageName}/${activity.className}) — suppressing detection")
-                Reason.INTERSTITIAL_RETURN -> Log.d(TAG, "Skipping ${activity.packageName} — resumed from Waqfah's interstitial")
-                Reason.CALL_GRACE -> Log.d(TAG, "Skipping ${activity.packageName} — within post-call grace window")
-                Reason.INDIRECT_ENTRY -> Log.d(TAG, "Skipping ${activity.className} for ${activity.packageName} — indirect entry")
-                Reason.TRIGGER_CLAIM_REJECTED -> Log.d(TAG, "Skipping ${activity.packageName} — monitored-app membership changed")
+                Reason.CALL -> debugLog { "Call detected (${activity.packageName}/${activity.className}) — suppressing detection" }
+                Reason.INTERSTITIAL_RETURN -> debugLog { "Skipping ${activity.packageName} — resumed from Waqfah's interstitial" }
+                Reason.CALL_GRACE -> debugLog { "Skipping ${activity.packageName} — within post-call grace window" }
+                Reason.INDIRECT_ENTRY -> debugLog { "Skipping ${activity.className} for ${activity.packageName} — indirect entry" }
+                Reason.TRIGGER_CLAIM_REJECTED -> debugLog { "Skipping ${activity.packageName} — monitored-app membership changed" }
                 Reason.SAME_FOREGROUND, Reason.NOT_MONITORED, Reason.INACTIVE, Reason.SWITCH_BACK, Reason.COOLDOWN -> {}
             }
         }
+    }
+
+    // Verdict details name the user's apps, and logcat is adb-readable on any
+    // device — the trail stays in debug builds only, matching the in-app
+    // policy's "never records your app history" claim. Error-level logs stay
+    // unguarded: they never carry package or class names. The lambda keeps
+    // release builds from even building the strings.
+    private fun debugLog(message: () -> String) {
+        if (BuildConfig.DEBUG) Log.d(TAG, message())
     }
 
     private fun indirectEntryClasses(packageName: String): Set<String> =
@@ -267,7 +277,9 @@ class AppMonitorService : Service() {
         try {
             startActivity(intent)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to launch TriggerActivity for $packageName", e)
+            // No package name here: release logcat must not name the user's
+            // apps (see debugLog).
+            Log.e(TAG, "Failed to launch TriggerActivity", e)
         }
     }
 
