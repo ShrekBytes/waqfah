@@ -1,6 +1,8 @@
 package com.shrekbytes.waqfah.detection
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -9,7 +11,30 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
+
+// Owns the session loop's lifetime at its launch site — the adapter's
+// counterpart to the loop's rhythm, extracted so the JVM can pin it without
+// constructing the service (2026-09-06 health audit, P2-1). The host scope's
+// CoroutineExceptionHandler only logs, so an uncaught failure in run() would
+// leave the adapter — a foreground service showing a "monitoring"
+// notification — alive while detection is dead. The loop's death is captured
+// here and handed to onFailure, which the adapter uses to stop the service; a
+// dead session must never outlive the honest notification. Cancellation is
+// the host's own teardown, not a death, and propagates untouched.
+internal fun CoroutineScope.launchMonitorSession(
+    session: suspend () -> Unit,
+    onFailure: (Throwable) -> Unit,
+): Job = launch {
+    try {
+        session()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (t: Throwable) {
+        onFailure(t)
+    }
+}
 
 // One watching session of foreground detection: the loop that holds the
 // monitor gate open, walks each poll window's resumed activities into the

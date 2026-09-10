@@ -25,7 +25,6 @@ import com.shrekbytes.waqfah.data.monitoredapp.MonitoredAppState
 import com.shrekbytes.waqfah.data.repository.PermissionsRepository
 import com.shrekbytes.waqfah.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +36,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 // Watches which app is in the foreground and launches TriggerActivity when a
@@ -160,22 +158,18 @@ class AppMonitorService : Service() {
         // so a service restart mid-screen-off doesn't poll for nothing.
         screenOn.value = (getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive
         startInForeground()
-        // The session loop is the one coroutine whose death must never go
-        // unnoticed: the scope's handler only logs, so an uncaught failure in
-        // run() would leave this a live foreground service with its
-        // "monitoring" notification while detection is dead. Own the loop's
-        // lifetime here — a dead session stops the (honest) service; the
-        // supervisor's resume path may start it again.
-        serviceScope.launch {
-            try {
-                monitorSession.run()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (t: Throwable) {
+        // The session loop's lifetime is owned by launchMonitorSession: its
+        // death must never go unnoticed — an uncaught failure would leave
+        // this a live foreground service with its "monitoring" notification
+        // while detection is dead. A dead session stops the (honest) service
+        // here; the supervisor's resume path may start it again.
+        serviceScope.launchMonitorSession(
+            session = monitorSession::run,
+            onFailure = { t ->
                 Log.e(TAG, "Monitor session died — stopping the service so the notification doesn't outlive detection", t)
                 stopSelf()
-            }
-        }
+            },
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
