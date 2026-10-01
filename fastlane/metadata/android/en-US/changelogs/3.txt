@@ -1,0 +1,9 @@
+First F-Droid release.
+
+* Read a Quranic ayah before chosen apps open
+* Sequential or random reading, with progress across the whole Quran
+* Indopak and Uthmani scripts, several Arabic fonts, adjustable sizes
+* Optional transliteration and English or Bengali translations, with more as downloads
+* Per-app cooldown interval, or off
+* English and Bengali interface, or follow the system language
+* No accounts, no ads, no trackers; works offline apart from optional translation downloads

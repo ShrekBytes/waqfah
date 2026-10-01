@@ -1,0 +1,24 @@
+Waqfah shows a single Quranic ayah before the apps you choose. When you open a monitored app, the reading screen appears first. Read the ayah or skip it, continue into the app, and get on with your day.
+
+Waqfah does not block apps, set limits, or track usage. There are no accounts and no servers: everything works offline except the optional download of an extra translation.
+
+Features
+
+* Sequential reading (resuming at the lowest unread ayah) or random reading, with progress tracked across the whole Quran.
+* Indopak and Uthmani scripts, several bundled Arabic fonts, and adjustable text sizes.
+* Optional transliteration and translations in English or Bengali, with more available as downloads.
+* At most one reading screen per app open, with a configurable per-app cooldown interval, or off.
+* English and Bengali interface, or follow the system language.
+* Share-sheet and "Open with" entries never trigger the reading screen.
+
+Privacy
+
+Waqfah collects nothing and sends nothing anywhere. Monitored apps, reading progress, and preferences stay on the device. There are no ads, no analytics, and no trackers. The only network request is an optional translation download that you explicitly start, fetched over HTTPS and verified against a pinned checksum before use.
+
+Waqfah cannot read what is inside other apps: it requests no accessibility or screen-content permissions.
+
+Permissions
+
+Usage access tells Waqfah which app moved to the foreground, so the reading screen appears at the right moment. Display over other apps lets the reading screen appear over the app that is opening. Notifications keep the required background-service notification visible. Run at startup restarts the monitor after a reboot, but only if Waqfah is toggled on and its permissions are still granted.
+
+Waqfah is licensed under the GNU Affero General Public License v3.0.
