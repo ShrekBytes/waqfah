@@ -116,7 +116,7 @@ Two more are recommended, but optional and never required:
   notification visible on Android 13+.
 
 <p align="center">
-  <img src="docs/img/onboarding_permissions.png" width="32%" alt="Waqfah's in-app permissions screen: Usage access and Display over other apps listed under Required, and unrestricted battery and notifications under Recommended">
+  <img src="docs/img/onboarding_permissions.png" width="25%" alt="Waqfah's in-app permissions screen: Usage access and Display over other apps listed under Required, and unrestricted battery and notifications under Recommended">
 </p>
 
 The rest Android grants on its own, each with a single purpose:
