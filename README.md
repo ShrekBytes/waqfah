@@ -26,10 +26,15 @@ app opens, nothing more.
 
 ## Download
 
-Waqfah's APK is available now from
-[GitHub Releases](https://github.com/ShrekBytes/waqfah/releases).
-It is also coming soon — in shaa Allah — to [F-Droid](https://f-droid.org/packages/com.shrekbytes.waqfah)
-and Google Play.
+Waqfah is coming soon — in shaa Allah — to
+[F-Droid](https://f-droid.org/packages/dev.shrekbytes.waqfah.fdroid) and Google
+Play.
+
+The two channels ship separate builds with separate application IDs
+(`dev.shrekbytes.waqfah` for Google Play, `dev.shrekbytes.waqfah.fdroid` for
+F-Droid), so both can be installed side by side. Because F-Droid signs with its
+own key, the two builds are not interchangeable — switching between them means
+uninstalling first, and each keeps its own data.
 
 ## Privacy
 
@@ -83,10 +88,14 @@ sheet, "Open with", link grabbers) never count as an app open.
 ## Building
 
 ```bash
-./gradlew :app:assembleDebug      # debug APK
-./gradlew :app:assembleRelease    # release APK
-./gradlew :app:testDebugUnitTest  # unit tests
+./gradlew :app:assemblePlayDebug      # Play debug APK
+./gradlew :app:assembleFdroidDebug    # F-Droid debug APK
+./gradlew :app:assemblePlayRelease    # Play release APK
+./gradlew :app:testPlayDebugUnitTest  # unit tests
 ```
+
+The two flavours are `play` and `fdroid`; every variant task is prefixed with
+one of them, so `assembleDebug` and `testDebugUnitTest` no longer exist.
 
 Requirements: Android SDK platform 37 (AGP 9.x-compatible tooling, e.g.
 a current Android Studio). Gradle auto-provisions its daemon JDK, pinned
@@ -98,10 +107,10 @@ DataStore; dependency injection with Hilt.
 
 ### Releasing
 
-`./gradlew :app:assembleRelease` only produces an installable APK when a
+`./gradlew :app:assemblePlayRelease` only produces an installable APK when a
 release keystore is configured — otherwise the build still succeeds (CI's
-compile check relies on that) but emits `app-release-unsigned.apk`. Signing is
-wired into the release build type and reads from either:
+compile check relies on that) but emits an unsigned APK. Signing is wired into
+the release build type and reads from either:
 
 - a **`keystore.properties`** file at the repo root (gitignored):
 
@@ -116,9 +125,15 @@ wired into the release build type and reads from either:
   `WAQFAH_KEY_ALIAS`, `WAQFAH_KEY_PASSWORD` — which override the file, so CI
   can inject the secrets without writing it to disk.
 
-With either source complete, `assembleRelease` emits a signed, installable
-`app-release.apk`. A half-configured source — some properties set, others
-missing — fails the build instead of quietly emitting an unsignable artifact.
+With either source complete, the release task emits a signed, installable APK at
+`app/build/outputs/apk/<flavour>/release/`. A half-configured source — some
+properties set, others missing — fails the build instead of quietly emitting an
+unsignable artifact.
+
+That keystore is the **Google Play** signing key. The F-Droid build is not
+signed with it: F-Droid builds from source with no keystore present and signs
+the result with its own key, which is why the two flavours carry different
+application IDs.
 
 Create a keystore once (keep it out of the repository and back it up safely —
 losing the key means no future update can install over the released app):

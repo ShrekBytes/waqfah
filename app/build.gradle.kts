@@ -30,13 +30,36 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.shrekbytes.waqfah"
+        applicationId = "dev.shrekbytes.waqfah"
         minSdk = 28
         targetSdk = 37
         versionCode = 3
         versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // Two store channels, two application IDs. F-Droid signs with its own key,
+    // which can never match the Play signing key, so the two builds must not
+    // share an application ID — otherwise installing one over the other is
+    // impossible and the user has to uninstall first. The `play` flavour keeps
+    // the bare ID; `fdroid` takes the conventional `.fdroid` suffix.
+    //
+    // `namespace` deliberately stays com.shrekbytes.waqfah. It is independent of
+    // the application ID, and the Kotlin packages, the generated R class, the
+    // Hilt wiring, the Room schema directory and TriggerActivity::class.java.name
+    // (which the interstitial-return rule matches on) all key off it. None of
+    // that needs to move for a store ID change.
+    flavorDimensions += "store"
+
+    productFlavors {
+        create("play") {
+            dimension = "store"
+        }
+        create("fdroid") {
+            dimension = "store"
+            applicationIdSuffix = ".fdroid"
+        }
     }
 
     signingConfigs {

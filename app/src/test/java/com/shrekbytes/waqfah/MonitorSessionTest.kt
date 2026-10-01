@@ -230,7 +230,9 @@ class MonitorSessionTest {
         // activity. If that remembered event survives the pause, the
         // interstitial-return rule pairs it against the next resume and
         // swallows the fresh open.
-        val interstitialEvent = ResumedActivity("com.shrekbytes.waqfah", "com.shrekbytes.waqfah.TriggerActivity")
+        // The package half of Waqfah's own identity is the application ID, which
+        // varies per store flavour; the class half comes from the namespace.
+        val interstitialEvent = ResumedActivity(BuildConfig.APPLICATION_ID, "com.shrekbytes.waqfah.TriggerActivity")
         queuedEvents = listOf(
             ResumedActivity("com.other.app", "com.other.app.OtherActivity"),
             interstitialEvent,

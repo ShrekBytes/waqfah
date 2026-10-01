@@ -21,25 +21,27 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Lint and unit tests run against `play` only: the two flavours differ by
+      # nothing but the application ID suffix, so the compiled code is identical.
       - name: Lint
-        run: ./gradlew :app:lintDebug --console=plain
+        run: ./gradlew :app:lintPlayDebug --console=plain
 
       - name: Unit tests
-        run: ./gradlew :app:testDebugUnitTest --console=plain
+        run: ./gradlew :app:testPlayDebugUnitTest --console=plain
 
-      - name: Assemble debug APK
-        run: ./gradlew :app:assembleDebug --console=plain
+      - name: Assemble debug APKs
+        run: ./gradlew :app:assemblePlayDebug :app:assembleFdroidDebug --console=plain
 
-      # Proves the R8/resource-shrinking release path compiles; an R8 failure
-      # would otherwise surface only at release time.
-      - name: Assemble release APK (R8 check)
-        run: ./gradlew :app:assembleRelease --console=plain
+      # Proves the R8/resource-shrinking release path compiles for both store
+      # channels; an R8 failure would otherwise surface only at release time.
+      - name: Assemble release APKs (R8 check)
+        run: ./gradlew :app:assemblePlayRelease :app:assembleFdroidRelease --console=plain
 
-      - name: Upload debug APK
+      - name: Upload play debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-play-debug
+          path: app/build/outputs/apk/play/debug/app-play-debug.apk
 
   # The five androidTest suites (Room migration safety net, download gate,
   # package policy, corruption heuristic, repository contracts) run nowhere
@@ -79,4 +81,4 @@ jobs:
           api-level: 36
           target: google_apis
           arch: x86_64
-          script: ./gradlew :app:connectedDebugAndroidTest --console=plain
+          script: ./gradlew :app:connectedPlayDebugAndroidTest --console=plain

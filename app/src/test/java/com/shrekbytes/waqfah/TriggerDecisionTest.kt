@@ -73,25 +73,20 @@ class TriggerDecisionTest {
     // package.
     @Test
     fun resumingFromTheInterstitial_isAnInterstitialReturn() {
-        val ownPackage = "com.shrekbytes.waqfah"
-        val triggerClass = "com.shrekbytes.waqfah.TriggerActivity"
-
-        assertTrue(TriggerDecision.isReturnFromInterstitial(ownPackage, triggerClass, INTERSTITIAL_CLASS))
+        assertTrue(TriggerDecision.isReturnFromInterstitial(BuildConfig.APPLICATION_ID, INTERSTITIAL_CLASS, INTERSTITIAL_CLASS))
     }
 
     @Test
     fun openingAfterUsingWaqfahItself_isAFreshOpen_notAnInterstitialReturn() {
-        val ownPackage = "com.shrekbytes.waqfah"
-
-        // Waqfah's main screen shares the package name — only the trigger
+        // Waqfah's main screen shares the application ID — only the trigger
         // activity's class marks an interstitial return.
-        assertFalse(TriggerDecision.isReturnFromInterstitial(ownPackage, "com.shrekbytes.waqfah.MainActivity", INTERSTITIAL_CLASS))
-        assertFalse(TriggerDecision.isReturnFromInterstitial(ownPackage, null, INTERSTITIAL_CLASS))
+        assertFalse(TriggerDecision.isReturnFromInterstitial(BuildConfig.APPLICATION_ID, MAIN_ACTIVITY_CLASS, INTERSTITIAL_CLASS))
+        assertFalse(TriggerDecision.isReturnFromInterstitial(BuildConfig.APPLICATION_ID, null, INTERSTITIAL_CLASS))
     }
 
     @Test
     fun comingFromAnyOtherApp_isAFreshOpen() {
-        assertFalse(TriggerDecision.isReturnFromInterstitial("com.android.systemui", "com.shrekbytes.waqfah.TriggerActivity", INTERSTITIAL_CLASS))
+        assertFalse(TriggerDecision.isReturnFromInterstitial("com.android.systemui", INTERSTITIAL_CLASS, INTERSTITIAL_CLASS))
         assertFalse(TriggerDecision.isReturnFromInterstitial("com.android.launcher3", null, INTERSTITIAL_CLASS))
     }
 
@@ -150,8 +145,15 @@ class TriggerDecisionTest {
     private val A = "com.target.a"
     private val B = "com.target.b"
     private val L = "com.android.launcher3" // not monitored
+
+    // The two halves of "is this Waqfah's own activity?" come from different
+    // places, so they are spelled differently here on purpose. The resumed
+    // event's *package* is the application ID, which varies per store flavour
+    // (BuildConfig.APPLICATION_ID, as production compares against). The *class
+    // name* comes from the namespace, which the flavours do not touch.
     private val INTERSTITIAL_CLASS = "com.shrekbytes.waqfah.TriggerActivity"
-    private val TRIGGER = ResumedActivity("com.shrekbytes.waqfah", INTERSTITIAL_CLASS)
+    private val MAIN_ACTIVITY_CLASS = "com.shrekbytes.waqfah.MainActivity"
+    private val TRIGGER = ResumedActivity(BuildConfig.APPLICATION_ID, INTERSTITIAL_CLASS)
 
     private var elapsedMs = 0L
     private var wallMs = 0L

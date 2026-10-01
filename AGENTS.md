@@ -70,15 +70,20 @@ Waqfah is a single-module Android app (Kotlin, Jetpack Compose, Material 3; Room
 
 ### Build & verify
 
+Two flavours build the two store channels — `play` (`dev.shrekbytes.waqfah`)
+and `fdroid` (`dev.shrekbytes.waqfah.fdroid`) — so every variant task is
+prefixed with one of them:
+
 ```bash
-./gradlew :app:testDebugUnitTest   # unit tests — no emulator needed
-./gradlew :app:assembleDebug       # compile check
+./gradlew :app:testPlayDebugUnitTest   # unit tests — no emulator needed
+./gradlew :app:assemblePlayDebug       # compile check
 ```
 
-- Headless-safe: the two commands above. CI (`.github/workflows/android-ci.yml`) additionally runs `:app:lintDebug` and `:app:assembleRelease` (proves the R8 release path compiles).
+- Headless-safe: the two commands above. CI (`.github/workflows/android-ci.yml`) additionally runs `:app:lintPlayDebug` and `:app:assemblePlayRelease` (proves the R8 release path compiles).
 - `androidTest` (incl. Room migration tests) needs a device/emulator; CI runs them on an API 36 emulator.
-- Extra setup: Android SDK platform 37. Release signing reads `keystore.properties` (gitignored) or `WAQFAH_*` env vars; without it `assembleRelease` still succeeds but emits an unsigned APK — CI's R8 check relies on that.
+- Extra setup: Android SDK platform 37. Release signing reads `keystore.properties` (gitignored) or `WAQFAH_*` env vars; without it the release task still succeeds but emits an unsigned APK — CI's R8 check relies on that. That keystore is the Google Play key; F-Droid signs its own build.
 - Toolchain: Gradle auto-provisions its daemon JDK (pinned in `gradle/gradle-daemon-jvm.properties`); dependency versions live in `gradle/libs.versions.toml`, fetched by the wrapper on first build.
+- `namespace` stays `com.shrekbytes.waqfah` and is independent of the application ID — the Kotlin packages, generated `R`, Hilt wiring, the Room schema directory under `app/schemas/`, and `TriggerActivity::class.java.name` (which the interstitial-return rule matches on) all key off it. Don't rename it as part of a store-ID change.
 
 ### Project-specific rules
 

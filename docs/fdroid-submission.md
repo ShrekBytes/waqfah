@@ -2,18 +2,25 @@
 
 Working notes for getting Waqfah into the F-Droid main repository.
 
-- **Application ID:** `com.shrekbytes.waqfah`
+- **Application ID (F-Droid build):** `dev.shrekbytes.waqfah.fdroid`
+- **Application ID (Play build):** `dev.shrekbytes.waqfah`
 - **Reference:** <https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/>,
   <https://f-droid.org/docs/Inclusion_Policy/>
 - **Metadata already in this repo:** `fastlane/metadata/android/en-US/`
   (short description, full description, icon, changelog `3.txt` for `versionCode 3`).
+
+The two store channels are separate Gradle flavours with separate application
+IDs, so both can be installed side by side. F-Droid signs its own build with its
+own key, which can never match the Play signing key — the IDs must differ or
+neither build could ever update over the other. Note that this also means the
+two builds keep separate data, and switching between them requires an uninstall.
 
 F-Droid's own advice is to package the app yourself with a merge request to
 `fdroiddata`, which skips the RFP round trip. Both routes are drafted below.
 
 ---
 
-## 1. `fdroiddata` metadata — `metadata/com.shrekbytes.waqfah.yml`
+## 1. `fdroiddata` metadata — `metadata/dev.shrekbytes.waqfah.fdroid.yml`
 
 ```yaml
 Categories:
@@ -35,7 +42,7 @@ Builds:
     versionCode: 3
     commit: 2a557871360b8d51fbb4840bb84fccd40c0bf99f
     gradle:
-      - yes
+      - fdroid
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
@@ -50,10 +57,13 @@ Notes on the fields:
 
 - `commit` is the **full hash** of the `v1.1.0` tag. Every release must be tagged
   upstream (`v<versionName>`) before a build block can reference it.
-- `gradle: - yes` because the app has no product flavours.
+- `gradle: - fdroid` selects the `fdroid` flavour, so F-Droid runs
+  `assembleFdroidRelease` and picks up the `.fdroid` application ID. The `play`
+  flavour is not built here.
 - `UpdateCheckMode: Tags` + `AutoUpdateMode: Version` works because `versionName`
   and `versionCode` live in the standard `android { }` block of
-  `app/build.gradle.kts` — no `UpdateCheckData` regex needed.
+  `app/build.gradle.kts` — no `UpdateCheckData` regex needed. The flavours share
+  one `versionCode`, which is fine: they are different application IDs.
 - `License` is `AGPL-3.0-only` (SPDX). `LICENSE` is the verbatim AGPL-3.0 text with
   no "or later" clause.
 - `NonFreeAssets` is declared deliberately — the bKash logo is a trademarked
@@ -61,7 +71,7 @@ Notes on the fields:
   is the *only* remaining basis for the flag: the non-free font is gone and the
   bundled translations are Tanzil-covered. Drop the three payment icons and this
   line goes away entirely.
-- Commit the metadata MR with the message `New App: com.shrekbytes.waqfah`.
+- Commit the metadata MR with the message `New App: dev.shrekbytes.waqfah.fdroid`.
 
 ## 2. RFP issue body (alternative route)
 
@@ -75,7 +85,7 @@ Open at <https://gitlab.com/fdroid/rfp/issues/new>:
       (summary/description/images/changelog/etc) in a Fastlane folder structure.
 * [x] The original app author has been notified, and does not oppose the inclusion.
 
-#### APPLICATION ID: com.shrekbytes.waqfah
+#### APPLICATION ID: dev.shrekbytes.waqfah.fdroid
 
 ```yaml
 Categories:
@@ -160,24 +170,33 @@ third party rights, including ... copyright and trade marks."
    311 fully explained, 0 unexplained). It also states plainly that no generator
    script exists in the repo.
 
+5. ~~Signing conflict~~ — **resolved by splitting the channels.** The GitHub
+   Releases APK is being dropped, and the two store builds now carry different
+   application IDs (`dev.shrekbytes.waqfah` for Play, `dev.shrekbytes.waqfah.fdroid`
+   for F-Droid), so F-Droid's signing key and the Play signing key never have to
+   agree. No reproducible-build setup is needed.
+   Two consequences to keep in mind: the v1.1.0 APK on GitHub Releases was
+   `com.shrekbytes.waqfah`, an ID nothing will use again — anyone who installed it
+   must reinstall and cannot carry their data across. And the two store builds are
+   separate apps to Android, so Play users and F-Droid users each keep their own
+   monitored-app list and reading progress.
+
 **Still open:**
 
-5. **Signing conflict.** The APK on GitHub Releases is self-signed with
-   `CN=Waqfah Release, O=ShrekBytes, C=BD`
-   (SHA-256 `f446c35fbe09a11a9851e55ccf7355718c02e44d90c4f2e8a02c2c249b679c1b`).
-   F-Droid signs with its own key, so users cannot move between the two builds
-   without uninstalling. Either stop publishing the self-signed APK, or set up
-   reproducible builds and add `Binaries` + `AllowedAPKSigningKeys` to the
-   metadata so F-Droid ships your signature.
 6. **`ic_bkash.webp` is a trademarked logo** (the policy names trade marks
    explicitly), and `ic_nagad.webp` / `ic_rocket.webp` are unused but tracked —
    lint reports them as `UnusedResources`. Kept deliberately; expect
    `NonFreeAssets` unless they go.
 7. **Upload `bn/taisirul.db` to `waqfah-translations`.** It is not in that repo
    yet, so its new download URL 404s until it is. The pinned checksum is
-   `d79f5fc49c072c6432f8521f5ad4dd2f742e98a8a94bad95672b45e6532112d9`; recover the
-   exact bytes with `git show HEAD:app/src/main/assets/translations/bn/taisirul.db > taisirul.db`
-   before deleting the asset, and upload that file unchanged.
+   `d79f5fc49c072c6432f8521f5ad4dd2f742e98a8a94bad95672b45e6532112d9`. Recover the
+   exact bytes from the commit *before* the asset was deleted (`c05e3fd`), then
+   upload that file unchanged:
+
+   ```bash
+   git show c05e3fd^:app/src/main/assets/translations/bn/taisirul.db > taisirul.db
+   sha256sum taisirul.db   # must print d79f5fc49c072c6432f8521f5ad4dd2f742e98a8a94bad95672b45e6532112d9
+   ```
 
 ## 4. Remaining manual step
 
