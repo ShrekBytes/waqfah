@@ -7,7 +7,9 @@ Working notes for getting Waqfah into the F-Droid main repository.
 - **Reference:** <https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/>,
   <https://f-droid.org/docs/Inclusion_Policy/>
 - **Metadata already in this repo:** `fastlane/metadata/android/en-US/`
-  (short description, full description, icon, changelog `3.txt` for `versionCode 3`).
+  (short description, full description, icon, changelog `4.txt` for `versionCode 4`).
+- **Release being submitted:** `2.0.0` / `versionCode 4` — the first version with
+  the flavour split, so it is the first one F-Droid can actually build.
 
 The two store channels are separate Gradle flavours with separate application
 IDs, so both can be installed side by side. F-Droid signs its own build with its
@@ -38,16 +40,16 @@ RepoType: git
 Repo: https://github.com/ShrekBytes/waqfah.git
 
 Builds:
-  - versionName: 1.1.0
-    versionCode: 3
-    commit: 2a557871360b8d51fbb4840bb84fccd40c0bf99f
+  - versionName: 2.0.0
+    versionCode: 4
+    commit: <full hash of the v2.0.0 tag — see the note below>
     gradle:
       - fdroid
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.1.0
-CurrentVersionCode: 3
+CurrentVersion: 2.0.0
+CurrentVersionCode: 4
 
 AntiFeatures:
   - NonFreeAssets
@@ -55,8 +57,22 @@ AntiFeatures:
 
 Notes on the fields:
 
-- `commit` is the **full hash** of the `v1.1.0` tag. Every release must be tagged
-  upstream (`v<versionName>`) before a build block can reference it.
+- `commit` must be the **full hash** of the `v2.0.0` tag, not the tag name. It is
+  deliberately left blank: the tag does not exist yet, and it must not be created
+  until the repo is final, because F-Droid reads the fastlane metadata from the
+  tagged source — tagging before the screenshots are committed would bake in a
+  release with no screenshots. Order of operations:
+
+  ```bash
+  # 1. commit the screenshots, then tag and push
+  git tag v2.0.0
+  git push origin main --tags
+  # 2. fill the hash in
+  git rev-parse v2.0.0
+  ```
+
+  Every release must be tagged upstream (`v<versionName>`) before a build block
+  can reference it.
 - `gradle: - fdroid` selects the `fdroid` flavour, so F-Droid runs
   `assembleFdroidRelease` and picks up the `.fdroid` application ID. The `play`
   flavour is not built here.

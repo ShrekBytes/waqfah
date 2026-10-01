@@ -1,0 +1,7 @@
+First release under the new package name, so this version installs alongside
+an older one rather than updating it.
+
+* Arabic fonts are now Digital Khatt Indopak and Amiri
+* The bundled Bengali translation is now Muhiuddin Khan; Taisirul Quran is
+  still available as a download
+* Everything else is unchanged
