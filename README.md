@@ -7,6 +7,10 @@
 </p>
 
 <p align="center">
+  <img src="docs/img/showcase.gif" width="210" alt="Recording of the live pause: a monitored app opens, Waqfah's reading screen appears over it, and skipping continues straight into the app">
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue" alt="License: AGPL-3.0-only">
   <img src="https://img.shields.io/badge/platform-Android%209%2B-3DDC84" alt="Platform: Android 9 or newer">
 </p>
@@ -51,6 +55,14 @@ already have — one ayah at a time, without asking you to build a new routine.
 - Seven themes, five accent colours.
 - English or Bengali interface, or follow the system language.
 
+<p align="center">
+  <img src="docs/img/theme1.png" width="160" alt="Waqfah reading screen in one of its themes (1 of 5)">
+  <img src="docs/img/theme2.png" width="160" alt="Waqfah reading screen in one of its themes (2 of 5)">
+  <img src="docs/img/theme3.png" width="160" alt="Waqfah reading screen in one of its themes (3 of 5)">
+  <img src="docs/img/theme4.png" width="160" alt="Waqfah reading screen in one of its themes (4 of 5)">
+  <img src="docs/img/theme5.png" width="160" alt="Waqfah reading screen in one of its themes (5 of 5)">
+</p>
+
 ## Getting started
 
 1. **Install and open.** A short tour walks you through your first reading —
@@ -58,6 +70,10 @@ already have — one ayah at a time, without asking you to build a new routine.
 2. **Grant two permissions** through Android's own screens — what each one
    does is described under [Permissions](#permissions) below.
 3. **Pick your apps** and set each app's pause gap. Done.
+
+<p align="center">
+  <img src="docs/img/permissions.png" width="210" alt="Onboarding screen asking for the two permissions: Usage access and Display over other apps">
+</p>
 
 Onboarding also suggests two settings — *unrestricted battery* and
 *notifications* — that keep the monitor reliable. They're optional:
