@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge" alt="License: AGPL v3">
+  <img src="https://img.shields.io/badge/License-AGPL_v3-white?style=for-the-badge" alt="License: AGPL v3">
   <img src="https://img.shields.io/badge/platform-Android%209%2B-3DDC84?style=for-the-badge&logo=android" alt="Platform: Android 9 or newer">
 </p>
 
