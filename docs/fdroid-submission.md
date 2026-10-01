@@ -157,9 +157,13 @@ and Bengali, or follows the system language.
   with a backlink required only above three translations. Both credits are on the
   in-app Gratitude screen.
 - Build toolchain is current: Gradle 9.5.0, AGP 9.3.2, `compileSdk`/`targetSdk` 37.
-  `gradle/gradle-daemon-jvm.properties` pins a JDK 25 toolchain that Gradle
-  downloads on first build; say the word if you would prefer a pinned local JDK
-  instead and I will add it.
+  `gradle/gradle-daemon-jvm.properties` pins the daemon JVM to 21. The buildserver
+  is Debian trixie with `default-jdk-headless`, i.e. JDK 21, and sets
+  `org.gradle.java.installations.auto-download=false`, so the pin must not exceed
+  the JDK the image already ships — a newer pin fails there with "Toolchain
+  auto-provisioning is not enabled" while a local build hides it, because Gradle
+  silently downloads the JDK. `compileSdk` 37 is not a problem: the buildserver
+  leaves `platforms/` and `build-tools/` group-writable so Gradle fetches it.
 - Bundled `quran_core.db` is read-only Quran text data rebuilt each release. Its
   contents and provenance are written up in `docs/quran-core-db.md`, including a
   verse-by-verse check showing the Uthmani column is Tanzil's text verbatim.
