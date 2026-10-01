@@ -13,167 +13,131 @@
 </p>
 
 **Waqfah** (وقفة — "a pause") shows a single Quranic ayah before the apps you
-choose. When you open a monitored app — a social network, a game, a calculator,
-any app at all — Waqfah's reading screen appears first. Read the ayah or skip
-it, continue into the app, and get on with your day.
+choose. When you open a monitored app — a social network, a game, a
+calculator, any app at all — Waqfah's reading screen appears first. Read the
+ayah or skip it, continue into the app, and get on with your day.
 
-That's the whole idea. Waqfah isn't trying to stop you from doing anything, fix
-a habit, or change how you use your phone. There's no blocking, no limits, no
-tracking, no accounts, and no servers — just an ayah, shown before a selected
-app opens.
+That's the whole idea. Waqfah isn't trying to stop you from doing anything,
+fix a habit, or change how you use your phone. It fits Quran into the day you
+already have — one ayah at a time, without asking you to build a new routine.
+
+- **A pause, never an obstacle.** No blocking, no limits, no lectures.
+- **Private by design.** No tracking, no accounts, no servers, no ads.
+- **Set up once.** Pick your apps, and you're done.
 
 ## Features
 
 **Reading**
 
-- Sequential (resume at the lowest unread ayah) or random (any unread ayah),
-  with progress tracked across all 6,236 ayat.
-- Indopak and Uthmani scripts, two bundled Arabic fonts, and adjustable text
-  sizes.
-- Optional transliteration, plus translations in English and Bengali — more
-  available as downloads.
-- Browse every surah with per-surah read counts, and jump to any ayah. Your
-  sequential or random position stays where it was.
+- Read in order — Waqfah resumes at your lowest unread ayah — or dip in
+  randomly. Either way, your progress is tracked across all 6,236 ayat.
+- Choose Indopak or Uthmani script, pick between two bundled Arabic fonts,
+  and set the text size that suits your eyes.
+- Optional transliteration if you don't read Arabic script. English and
+  Bengali translations are built in; more are available as downloads.
+- Browse every surah, see how much of each you've read, and jump to any
+  ayah. Your sequential or random position stays where it was.
 
-**Apps and timing**
+**The pause**
 
-- Pick exactly which apps Waqfah appears before.
-- A per-app cooldown — or Off — sets the minimum gap before it appears again
-  for that app.
-- At most one reading screen per app open. Share-sheet and "Open with" entries
-  never trigger it.
+- You choose exactly which apps Waqfah appears before.
+- A per-app cooldown — or Off — sets the minimum gap before the same app is
+  paused again.
+- Restraint is built in: at most one reading screen per app open, never
+  during calls, never when you briefly switch away and back. Share-sheet and
+  "Open with" entries never count as opening an app.
+- Skipping is always one tap, and it's never held against you.
 
 **Appearance and language**
 
-- Seven themes: system default, Light, Dark, Cream, Stone, Midnight, Indigo.
-- Five accent colours — Sage, Clay, Slate, Plum, Ochre — for the three base
-  themes.
-- Interface in English or Bengali, or follow the system language.
+- Seven themes — system default, Light, Dark, Cream, Stone, Midnight,
+  Indigo — plus five accent colours for the three base themes.
+- Interface in English or Bengali, or follow your system language.
+
+## Getting started
+
+1. **Install Waqfah and open it.** A short guided tour walks you through
+   your first reading on a real reading card — you can skip it.
+2. **Grant two permissions.** *Usage access* lets Waqfah know which app just
+   opened; *Display over other apps* lets the reading screen appear on top
+   of it. Both are granted through Android's own screens, and Waqfah never
+   learns anything beyond which app is in the foreground — never what's
+   displayed in it.
+3. **Pick your apps.** Choose the ones you want a pause before, and set how
+   long Waqfah should wait before pausing each one again.
+
+Two more settings are recommended, but optional: marking Waqfah as
+*Unrestricted* in your phone's battery settings, so aggressive battery
+managers don't stop the monitor, and allowing *Notifications*, so Android 13+
+keeps the monitor's silent notification visible. Declining either never
+blocks anything.
 
 ## Download
 
 Waqfah is coming soon — in shaa Allah — to F-Droid and Google Play. The store
-listings aren't live yet, so there is nothing to link to until they are. Until
-then you can [build it yourself](#building).
+listings aren't live yet, so there is nothing to link to until they are.
+Until then you can [build it yourself](#development).
 
-The two channels ship separate builds with separate application IDs
-(`dev.shrekbytes.waqfah` for Google Play, `dev.shrekbytes.waqfah.fdroid` for
-F-Droid), so both can be installed side by side. Because F-Droid signs with its
-own key, the two builds are not interchangeable — switching between them means
-uninstalling first, and each keeps its own data.
+The two stores will carry separate builds, signed by different keys, so they
+install side by side but can't update each other — switching between them
+means reinstalling, and each keeps its own data.
 
 ## Privacy
 
 Waqfah collects nothing and sends nothing anywhere. Monitored apps, reading
 progress, and preferences stay on the device.
 
-There are no ads, no analytics, no trackers, and no accounts. The only network
-traffic is downloading an optional Quran translation that you explicitly
-request — fetched over HTTPS from the [waqfah-translations][translations-repo]
-repository and verified against pinned SHA-256 checksums before use.
+There are no ads, no analytics, no trackers, and no accounts. The only
+network traffic is an optional Quran translation download that you explicitly
+request — fetched over HTTPS from the
+[waqfah-translations][translations-repo] repository and verified against
+pinned SHA-256 checksums before use.
 
 Waqfah also cannot read what's inside other apps: it has no accessibility or
-screen-content permissions. Usage access only tells it *which* app moved to the
-foreground — never what's displayed in it.
+screen-content permissions. Usage access only tells it *which* app moved to
+the foreground — never what's displayed in it.
 
-The one exception to "nothing leaves your device" is Android's own device
-backup. If it's turned on, Android includes Waqfah's data in your device
-backup, stored in your Google account or transferred directly to a new device.
-Waqfah itself never sends anything anywhere.
+One honest exception: if Android's own device backup is turned on, Android
+includes Waqfah's data in your device backup. Waqfah itself never sends
+anything anywhere.
 
 ## How it works
 
-While the screen is on, a foreground service checks which app moved to the
-foreground roughly once per second via the public Usage Stats API, and shows a
-translucent reading screen over the monitored app when it opens. Dismissing the
-reading screen simply falls through into that app, exactly where you left off.
+While your screen is on, Waqfah quietly keeps track of which app is in the
+foreground — nothing more. When a monitored app opens, a translucent reading
+screen appears over it. Dismiss it, and you land in the app exactly where you
+left off.
 
-Consecutive foreground events are paired so indirect entries — share sheets,
-"Open with", link grabbers — never count as an app open.
+If you're curious about the machinery behind that — the service, the trigger
+rules, the data model — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) is the
+full map.
 
 ## Permissions
 
 Waqfah asks for two permissions during onboarding. Everything else is either
-optional or declared by the system on its behalf.
+optional or handled by Android on its behalf.
 
-**Required**
+**Asked during onboarding**
 
-| Permission | Why |
+| What Android asks for | What it's for |
 |---|---|
-| Usage access (`PACKAGE_USAGE_STATS`) | See which app moved to the foreground, so the reading screen appears at the right moment. Checked via AppOps; granted through system settings. |
-| Display over other apps (`SYSTEM_ALERT_WINDOW`) | Let the reading screen appear over the opening app from the background on Android 10+. |
+| Usage access | Know which app moved to the foreground, so the reading screen appears at the right moment — and nothing else. |
+| Display over other apps | Let the reading screen appear over the app that's opening. |
 
-**Recommended** — optional, and denying them never blocks anything
+**Recommended — optional, and declining never blocks anything**
 
-| Setting / permission | Why |
+| Setting | What it's for |
 |---|---|
-| Unrestricted battery *(a system setting, not a permission)* | Stops aggressive OEM battery managers from killing the background monitor. Waqfah deep-links you to its own system app page, where you choose Battery → Unrestricted — no special permission is requested or needed. |
-| Notifications (`POST_NOTIFICATIONS`) | Keeps the mandatory foreground-service notification visible on Android 13+. |
+| Unrestricted battery *(a system setting, not a permission)* | Stops aggressive battery managers from killing the background monitor. Waqfah takes you straight to the right system screen; you stay in control. |
+| Notifications | Keeps the monitor's silent, lowest-priority notification visible on Android 13+. |
 
-**Declared by the system or implied by the above**
+**Handled by Android**
 
-| Permission | Why |
+| Permission | What it's for |
 |---|---|
-| Internet (`INTERNET`) | Only used for downloading optional translations; no other requests are made. |
-| Run at startup (`RECEIVE_BOOT_COMPLETED`) | Restarts the monitor after reboot, but only if Waqfah is toggled on and its permissions are still granted. |
-| Foreground service (`FOREGROUND_SERVICE_SPECIAL_USE`) | Android's required mechanism for the continuous background monitor; it runs behind a silent, lowest-priority notification. |
-
-## Building
-
-Requirements: Android SDK platform 37 and AGP 9.x-compatible tooling, such as a
-current Android Studio. Gradle provisions its own daemon JDK, pinned in
-`gradle/gradle-daemon-jvm.properties`. minSdk 28 (Android 9) · targetSdk 37.
-
-```bash
-./gradlew :app:assemblePlayDebug      # Play debug APK
-./gradlew :app:assembleFdroidDebug    # F-Droid debug APK
-./gradlew :app:assemblePlayRelease    # Play release APK
-./gradlew :app:testPlayDebugUnitTest  # unit tests
-```
-
-The two flavours are `play` and `fdroid`; every variant task is prefixed with
-one of them, so `assembleDebug` and `testDebugUnitTest` no longer exist.
-
-Built with Kotlin and Jetpack Compose (Material 3); persistence via Room and
-DataStore; dependency injection with Hilt.
-
-### Releasing
-
-`./gradlew :app:assemblePlayRelease` only produces an installable APK when a
-release keystore is configured — otherwise the build still succeeds (CI's
-compile check relies on that) but emits an unsigned APK. Signing is wired into
-the release build type and reads from either:
-
-- a **`keystore.properties`** file at the repo root (gitignored):
-
-  ```properties
-  storeFile=path/to/waqfah-release.jks   # relative to the repo root, or absolute
-  storePassword=…
-  keyAlias=waqfah
-  keyPassword=…
-  ```
-
-- or **environment variables** — `WAQFAH_STORE_FILE`, `WAQFAH_STORE_PASSWORD`,
-  `WAQFAH_KEY_ALIAS`, `WAQFAH_KEY_PASSWORD` — which override the file, so CI
-  can inject the secrets without writing it to disk.
-
-With either source complete, the release task emits a signed, installable APK at
-`app/build/outputs/apk/<flavour>/release/`. A half-configured source — some
-properties set, others missing — fails the build instead of quietly emitting an
-unsignable artifact.
-
-That keystore is the **Google Play** signing key. The F-Droid build is not
-signed with it: F-Droid builds from source with no keystore present and signs
-the result with its own key, which is why the two flavours carry different
-application IDs.
-
-Create a keystore once (keep it out of the repository and back it up safely —
-losing the key means no future update can install over the released app):
-
-```bash
-keytool -genkeypair -v -keystore waqfah-release.jks -alias waqfah \
-  -keyalg RSA -keysize 4096 -validity 10000
-```
+| Internet | Only used for downloading optional translations you explicitly choose; no other requests are made. |
+| Run at startup | Restarts the monitor after a reboot — but only if Waqfah is toggled on and its permissions are still granted. |
+| Foreground service | Android's required mechanism for the continuous background monitor; it runs behind a silent notification. |
 
 ## Contributing
 
@@ -203,6 +167,56 @@ opened read-only by Room. A valid file must have:
 
 Files are verified (SQLite header + schema + version + checksum) before being
 accepted; anything else fails fast with an error shown on the download row.
+
+## Development
+
+Requirements: Android SDK platform 37 and AGP 9.x-compatible tooling, such as
+a current Android Studio. Gradle provisions its own daemon JDK, pinned in
+`gradle/gradle-daemon-jvm.properties`. minSdk 28 (Android 9) · targetSdk 37.
+
+```bash
+./gradlew :app:assemblePlayDebug      # Play debug APK
+./gradlew :app:assembleFdroidDebug    # F-Droid debug APK
+./gradlew :app:assemblePlayRelease    # Play release APK
+./gradlew :app:testPlayDebugUnitTest  # unit tests
+```
+
+The two flavours are `play` and `fdroid`; every variant task is prefixed with
+one of them, so `assembleDebug` and `testDebugUnitTest` no longer exist.
+
+Built with Kotlin and Jetpack Compose (Material 3); persistence via Room and
+DataStore; dependency injection with Hilt.
+
+### Releasing
+
+`./gradlew :app:assemblePlayRelease` only produces an installable APK when a
+release keystore is configured — otherwise the build still succeeds (CI's
+compile check relies on that) but emits an unsigned APK. Signing reads from
+either a **`keystore.properties`** file at the repo root (gitignored):
+
+```properties
+storeFile=path/to/waqfah-release.jks   # relative to the repo root, or absolute
+storePassword=…
+keyAlias=waqfah
+keyPassword=…
+```
+
+or **environment variables** — `WAQFAH_STORE_FILE`, `WAQFAH_STORE_PASSWORD`,
+`WAQFAH_KEY_ALIAS`, `WAQFAH_KEY_PASSWORD` — which override the file. A
+half-configured source fails the build instead of quietly emitting an
+unsignable artifact.
+
+That keystore is the **Google Play** signing key. The F-Droid build is signed
+by F-Droid itself, from source, which is why the two flavours carry different
+application IDs.
+
+Create a keystore once (keep it out of the repository and back it up safely —
+losing the key means no future update can install over the released app):
+
+```bash
+keytool -genkeypair -v -keystore waqfah-release.jks -alias waqfah \
+  -keyalg RSA -keysize 4096 -validity 10000
+```
 
 ## Credits
 
