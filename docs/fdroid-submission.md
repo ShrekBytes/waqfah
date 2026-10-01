@@ -86,12 +86,10 @@ Notes on the fields:
   object, and not the tag name. Beware: for an annotated tag, `git rev-parse v2.0.0`
   returns the *tag object* (`git cat-file -t` says `tag`), and F-Droid cannot check
   that out. Use the peeled form:
-
   ```bash
   git rev-parse v2.0.0^{commit}   # -> 160271ebe38a57826b620be0bb1136aa5612e666
   git rev-list -n 1 v2.0.0        # same thing
   ```
-
   `v2.0.0` was re-pointed twice before submission, both times because a build
   fix had to live inside the tagged commit: first from `31f92fd` to `4f99d70`
   (the JDK 25 daemon toolchain pin, see §2), then to `160271e` (dropping the
@@ -140,75 +138,109 @@ order (`AntiFeatures` first, `Categories` sorted). That is normalisation, not an
 error.
 
 
-## 2. RFP issue body (alternative route)
+## 2. Merge request — title and description
 
-Open at <https://gitlab.com/fdroid/rfp/issues/new>:
+Open against `fdroid/fdroiddata` from `ShrekBytes/fdroiddata:master`, using the
+**App inclusion** template. The RFP issue route was not used.
 
-````markdown
-* [x] The app complies with the inclusion criteria.
-* [x] The app is not already listed in the repo or issue tracker.
-* [x] The app has not already been requested.
-* [x] The upstream app source code repo contains the app metadata
-      (summary/description/images/changelog/etc) in a Fastlane folder structure.
-* [x] The original app author has been notified, and does not oppose the inclusion.
-
-#### APPLICATION ID: dev.shrekbytes.waqfah.fdroid
-
-```yaml
-Categories:
-  - Religion
-  - Reading
-License: AGPL-3.0-only
-AuthorName: ShrekBytes
-AuthorEmail: shrekbytes@duck.com
-SourceCode: https://github.com/ShrekBytes/waqfah
-IssueTracker: https://github.com/ShrekBytes/waqfah/issues
-AutoName: Waqfah
-RepoType: git
-Repo: https://github.com/ShrekBytes/waqfah.git
-````
-
-Why do you want this app added to F-Droid: I am the author. Waqfah is free
-software under AGPL-3.0 with no ads, no tracking, and no proprietary
-dependencies, and it is useful precisely to people who deliberately run
-de-Googled devices, so F-Droid is where it belongs.
-
-Summary: Read a Quranic ayah before the apps you choose to open
-
-Description: Waqfah shows a single Quranic ayah before the apps you choose.
-When you open a monitored app, the reading screen appears first; read the ayah
-or skip it, then continue into the app. It does not block apps, set limits, or
-track usage. There are no accounts and no servers — everything works offline
-except the optional download of an extra translation. Reading can be sequential
-or random, with progress tracked across the whole Quran, and the Arabic text can
-be shown in Indopak or Uthmani script with several bundled fonts and adjustable
-sizes. Translations and transliteration are optional and available in English or
-Bengali, with more available as downloads. The interface is available in English
-and Bengali, or follows the system language.
-
-#### Notes for the reviewer
-
-- `NonFreeAssets` — the app bundles the bKash logo, a trademarked asset. The two
-  bundled Arabic fonts (`amiri.ttf`, `digital_khatt_indopak.otf`) are both
-  OFL-1.1.
-- Both bundled translations are covered by Tanzil's terms: the Quran text license
-  permits use in any application with attribution and a link to tanzil.net, and
-  the translation terms permit non-commercial use (Waqfah is free and ad-free),
-  with a backlink required only above three translations. Both credits are on the
-  in-app Gratitude screen.
-- Build toolchain is current: Gradle 9.5.0, AGP 9.3.2, `compileSdk`/`targetSdk` 37.
-  `gradle/gradle-daemon-jvm.properties` pins the daemon JVM to 21. The buildserver
-  is Debian trixie with `default-jdk-headless`, i.e. JDK 21, and sets
-  `org.gradle.java.installations.auto-download=false`, so the pin must not exceed
-  the JDK the image already ships — a newer pin fails there with "Toolchain
-  auto-provisioning is not enabled" while a local build hides it, because Gradle
-  silently downloads the JDK. `compileSdk` 37 is not a problem: the buildserver
-  leaves `platforms/` and `build-tools/` group-writable so Gradle fetches it.
-- Bundled `quran_core.db` is read-only Quran text data rebuilt each release. Its
-  contents and provenance are written up in `docs/quran-core-db.md`, including a
-  verse-by-verse check showing the Uthmani column is Tanzil's text verbatim.
+**Title**
 
 ```
+New app: Waqfah
+```
+
+**Description**
+
+```markdown
+## App
+
+**Waqfah** — `dev.shrekbytes.waqfah.fdroid`. I am the author.
+
+Waqfah shows a single Quranic ayah before the apps you choose. When you open a
+monitored app a translucent reading screen appears first: read the ayah or skip
+it, and you continue into the app. It does not block apps, set limits, or track
+usage.
+
+- **Reading** — sequential (resume at the lowest unread ayah) or random, with
+  progress tracked across all 6,236 ayat. Indopak and Uthmani scripts, two
+  bundled Arabic fonts, adjustable sizes, optional transliteration, and
+  translations in English and Bengali with more available as downloads.
+- **Control** — pick which apps trigger it; a per-app cooldown (or Off) sets the
+  minimum gap between triggers.
+- **Interface** — English or Bengali, seven themes, five accent colours.
+- **No accounts, no servers, no ads, no analytics.** Everything works offline
+  except an optional translation download, fetched over HTTPS and verified
+  against pinned SHA-256 checksums.
+
+Source: <https://github.com/ShrekBytes/waqfah>
+
+## Checklist
+
+### Policy
+
+* [x] The app complies with the [inclusion criteria](https://f-droid.org/docs/Inclusion_Policy).
+* [x] The original app author has been notified (and does not oppose the inclusion). — I am the author.
+* [x] The upstream app source code repo contains the app metadata in a [Fastlane](https://gitlab.com/snippets/1895688) folder structure. — `fastlane/metadata/android/en-US/` has the summary, full description, a 512×512 icon, five phone screenshots, and `changelogs/4.txt` for versionCode 4.
+
+### Docs
+
+* [x] Please read [the guide](https://gitlab.com/fdroid/fdroiddata/-/blob/master/CONTRIBUTING.md) first if this is your first contribution.
+* [x] Please make sure your metadata follows the best practice in [our templates](https://gitlab.com/fdroid/fdroiddata/tree/master/templates).
+* [x] Please read the [Build Metadata Reference](https://f-droid.org/docs/Build_Metadata_Reference/) and make sure your metadata is valid.
+* [x] Please read the [Quick Start Guide](https://f-droid.org/en/docs/Submitting_to_F-Droid_Quick_Start_Guide/).
+
+### Merge Request Setup
+
+* [x] The title of this merge request should follow "New app: app name" format.
+* [x] Please make sure your fdroiddata fork is public and your branch is not protected.
+* [x] Please read [our Git guide](https://gitlab.com/fdroid/wiki/-/wikis/Tips-for-fdroiddata-contributors/Git-Usage) if you don't know how to rebase your branch. Don't rebase your branch if there is no conflict. — not rebased; no conflict.
+* [ ] All related [fdroiddata](https://gitlab.com/fdroid/fdroiddata/issues) and [RFP issues](https://gitlab.com/fdroid/rfp/issues) have been referenced in this merge request — none exist for this app.
+* [x] Please only submit one app in one MR.
+
+### Metadata
+
+* [x] Metadata must be put in `metadata/<applicationId>.yml`. — `metadata/dev.shrekbytes.waqfah.fdroid.yml`
+* [x] Metadata must be a valid YAML file.
+* [x] Metadata must use LF as line ending.
+* [x] Don't add summary/description/changelog/images or anything that should be provided in upstream repo. — the MR adds exactly one file; the Changes tab has nothing else.
+* [x] Releases are tagged and auto update is enabled unless there is a special reason. — `v2.0.0` tagged upstream; `UpdateCheckMode: Tags` and `AutoUpdateMode: Version`.
+* [x] There is an issue tracker and contact info of the author.
+* [x] An AuthorName must be added. It doesn't need to be the real name.
+* [x] External repos are added as git submodules instead of srclibs. — n/a, no external repos.
+* [ ] Enable [Reproducible Builds](https://f-droid.org/docs/Reproducible_Builds). — **not enabled; reason below.**
+* [ ] Setup abi split if the APK is large and the splitted ones can be much smaller. — n/a, the APK is about 6.5 MB.
+* [x] Only the latest versions should be kept in the metadata before it's merged.
+* [x] Don't add any disabled versions in the metadata.
+* [x] The `commit` field should be the full hash. Please don't use tag or branch in commit.
+
+### Pipeline
+
+* [x] All pipelines should pass.
+* [x] All warnings and errors in the Reports tab should be fixed or explained.
+* [x] F-Droid CI runners are under GitLab's FOSS program, so there's no need for you to pay for any CI time.
+
+## Notes for the reviewer
+
+**Reproducible Builds are deliberately not enabled.** The two store channels use
+different application IDs on purpose — `dev.shrekbytes.waqfah` for Google Play,
+`dev.shrekbytes.waqfah.fdroid` for F-Droid — so F-Droid's signing key never has
+to match the Play key and there is no published signature to reuse. F-Droid
+should sign with its own key.
+
+**`NonFreeAssets` is declared deliberately.** The app bundles the bKash logo, a
+trademarked asset, in its donation screen. Both bundled Arabic fonts — Amiri and
+Digital Khatt Indopak — are OFL-1.1, and their licence texts ship inside the APK
+in `app/src/main/assets/licenses/`.
+
+**Bundled Quran text and translations** are used under the Tanzil Project's
+terms, which permit use in any application with attribution and a link to
+tanzil.net; both are credited on the in-app Gratitude screen. The provenance of
+`quran_core.db` is written up in `docs/quran-core-db.md`, including a
+verse-by-verse check showing the Uthmani column is Tanzil's text verbatim.
+
+**Build notes.** Two product flavours select the store channel; `subdir: app` is
+required because the Android module lives in `app/`. `compileSdk`/`targetSdk` 37,
+`minSdk` 28, Gradle 9.5.0, AGP 9.3.2, Kotlin 2.2.10.
 ```
 
 
@@ -269,17 +301,18 @@ third party rights, including ... copyright and trade marks."
 
 **Done:**
 
-2. ~~Upload `bn/taisirul.db` to `waqfah-translations`~~ — **uploaded and
+1. ~~Upload `bn/taisirul.db` to `waqfah-translations`~~ — **uploaded and
    verified.** The file is now in that repo (5,062,656 bytes) and its SHA-256 is
    `d79f5fc49c072c6432f8521f5ad4dd2f742e98a8a94bad95672b45e6532112d9`, matching the
    pinned value exactly, so the catalog's download path resolves.
-3. ~~Phone screenshots~~ — **installed.** Five 1080×2400 PNGs at
+2. ~~Phone screenshots~~ — **installed.** Five 1080×2400 PNGs at
    `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` … `5.png`
    (reading screen, monitored apps, the pause over another app, settings, surah
    list).
-4. ~~Stale APKs~~ — deleted. The pre-flavour `app-debug.apk` and
+3. ~~Stale APKs~~ — deleted. The pre-flavour `app-debug.apk` and
    `app-release.apk` still carried the dead `com.shrekbytes.waqfah` ID and would
    never have been regenerated.
+
 
 ## 4. Remaining steps
 
@@ -341,6 +374,7 @@ whose only content was `\ No newline at end of file`. See the warning in §1: th
 newline is the easiest part to lose when pasting from a rendered Markdown view,
 and it fails the job by itself.
 
+
 ### `fdroid build` — the foojay toolchain plugin
 
 The job aborted during source scanning, before compiling anything:
@@ -373,6 +407,7 @@ Two things worth knowing:
   `gradle/wrapper/gradle-wrapper.jar` from the source tree before building, and
   uses its own `gradlew-fdroid`. So the daemon pin does not apply on the
   buildserver at all — it matters for local and CI builds, not for F-Droid's.
+
 
 ### `fdroid build`, second attempt — `subdir: app`
 
