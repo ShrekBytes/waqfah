@@ -217,12 +217,20 @@ third party rights, including ... copyright and trade marks."
    separate apps to Android, so Play users and F-Droid users each keep their own
    monitored-app list and reading progress.
 
-**Still open:**
+**Decided — accepted, no action:**
 
-1. **`ic_bkash.webp` is a trademarked logo** (the policy names trade marks
-   explicitly), and `ic_nagad.webp` / `ic_rocket.webp` are unused but tracked —
-   lint reports them as `UnusedResources`. Kept deliberately; expect
-   `NonFreeAssets` unless they go.
+1. **`ic_bkash.webp` is a trademarked logo, and the app ships it deliberately.**
+   The policy names trade marks explicitly, so the metadata declares
+   `NonFreeAssets` and the badge is expected. That is a filterable label rather
+   than a rejection, and using a payment brand's mark to say which method is
+   accepted is ordinary nominative use — plenty of F-Droid apps carry this badge.
+   The brand recognition is worth more on a donate screen than a clean listing,
+   so the logo stays. If it is ever dropped, remove the `AntiFeatures:` block in
+   §1 as well: it is the only remaining basis for the flag.
+   `ic_nagad.webp` and `ic_rocket.webp` are placeholders for accounts that will
+   be added later, so they stay too. Lint reports both as `UnusedResources` until
+   the rows referencing them are uncommented — two warnings, neither fatal, and
+   resource shrinking already keeps them out of the release APK.
 
 **Done:**
 
@@ -247,14 +255,11 @@ build the way the buildserver builds it — a clean clone with no
 toolchain auto-download disabled, produces `app-fdroid-release-unsigned.apk`.
 What is left:
 
-1. Push `main` and the re-pointed tag — `git push origin main`, then
-   `git push --force origin v2.0.0`. The force is needed because the tag was
-   moved; a tag that exists only locally, or that still points at the old commit
-   on the remote, is invisible to or wrong for F-Droid.
+1. ~~Push `main` and the re-pointed tag~~ — **done.** The remote tag peels to
+   `4f99d70`. The force-push was needed because the tag was moved: a tag that
+   exists only locally, or that still points at the old commit on the remote, is
+   invisible to or wrong for F-Droid.
 2. Open the `fdroiddata` merge request with the file from §1, committed as
    `New App: dev.shrekbytes.waqfah.fdroid`.
 3. Expect review feedback in that MR rather than by email. Once merged, the app
    takes roughly 24–48 hours to appear, because signing is a human step.
-
-If the bundled payment icons are dropped later, remove the `AntiFeatures:` block
-in §1 as well — the bKash logo is its only remaining basis.
