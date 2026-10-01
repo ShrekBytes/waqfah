@@ -1,5 +1,15 @@
 name: Android CI
 
+# Runner and action pinning notes:
+#
+# - `ubuntu-24.04` is pinned rather than `ubuntu-latest`, which migrates to
+#   Ubuntu 26 on 2026-10-19. The instrumented job depends on a KVM workaround
+#   tuned to this image; move it deliberately, after testing, not by surprise.
+# - `gradle/actions/setup-gradle` stays on v5 and must NOT go to v6. v6 extracts
+#   the caching component into `gradle-actions-caching`, which is proprietary and
+#   not MIT-licensed. v5's only change over v4 is the Node 24 runtime.
+# - The other actions are on their current majors, whose only breaking change
+#   over v4 is the Node 24 runtime.
 on:
   push:
     branches: [main]
@@ -7,19 +17,19 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       # Lint and unit tests run against `play` only: the two flavours differ by
       # nothing but the application ID suffix, so the compiled code is identical.
@@ -38,7 +48,7 @@ jobs:
         run: ./gradlew :app:assemblePlayRelease :app:assembleFdroidRelease --console=plain
 
       - name: Upload play debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: app-play-debug
           path: app/build/outputs/apk/play/debug/app-play-debug.apk
@@ -47,20 +57,20 @@ jobs:
   # package policy, corruption heuristic, repository contracts) run nowhere
   # else — see docs/audits/2026-09-06-health.md §5, recommendation 3.
   instrumented:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       # github-hosted ubuntu-24.04 runners periodically boot without KVM access
       # for the runner user, leaving the emulator in software rendering that
