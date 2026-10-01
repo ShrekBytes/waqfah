@@ -288,20 +288,35 @@ licence position, and `v2.0.0` tagged at `160271e`. That tag has been verified t
 build the way the buildserver builds it — a clean clone with no
 `keystore.properties` and no `local.properties`, JDK 21 only, and Gradle's
 toolchain auto-download disabled, produces `app-fdroid-release-unsigned.apk`.
+
+On the fork the metadata is in place and **the pipeline is fully green** — all
+nine jobs pass, `fdroid build` and `check apk` included.
+
 What is left:
 
 1. ~~Push `main` and the re-pointed tag~~ — **done.** The remote tag peels to
-   `160271e`. The force-push was needed because the tag was moved: a tag that
-   exists only locally, or that still points at the old commit on the remote, is
-   invisible to or wrong for F-Droid.
-2. ~~Open the `fdroiddata` merge request~~ — **opened**, and iterated twice on
-   pipeline failures. See §5.
-3. **Update the metadata file in the fork to match §1 exactly** — the only
-   outstanding action. It is byte-identical to the output of `fdroid rewritemeta`
-   on that file, so copying it verbatim is safe. The deltas that matter are the
-   `subdir: app` line, the `commit:` hash, and the key order.
-4. Expect review feedback in that MR rather than by email. Once merged, the app
-   takes roughly 24–48 hours to appear, because signing is a human step.
+   `160271e`.
+2. ~~Get the fork's pipeline green~~ — **done.** Four failures, each in a
+   different layer; see §5.
+3. **Open the merge request — this is the outstanding action.** The metadata is
+   committed to `ShrekBytes/fdroiddata` `master` (four commits on top of
+   upstream), but no MR exists on `fdroid/fdroiddata` yet. A green pipeline only
+   proves the branch is sound; nothing reaches a reviewer until the MR is
+   opened. Use the *App inclusion* template and:
+   - **Title:** `New app: Waqfah` — the template asks for that format, with a
+     lowercase "app".
+   - **Source/target:** `ShrekBytes/fdroiddata` `master` → `fdroid/fdroiddata`
+     `master`.
+   - Make sure it is **not** a Draft.
+   - **Answer the Reproducible Builds item.** It is deliberately not enabled:
+     the two channels use different application IDs on purpose, so F-Droid's
+     signing key never has to match the Play key and there is no published
+     signature to reuse. The template asks for the reason if you cannot enable
+     it — give it rather than leaving the box unchecked.
+   - **Do not squash or rebase.** The template says not to rebase when there is
+     no conflict; the four commits are fine as they are.
+4. Wait for a packager. Review happens in the MR, not by email. Once merged, the
+   app takes roughly 24–48 hours to appear, because signing is a human step.
 
 ## 5. Pipeline runs — what failed, and why
 
