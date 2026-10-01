@@ -68,13 +68,16 @@ already have — one ayah at a time, without asking you to build a new routine.
    does is described under [Permissions](#permissions) below.
 3. **Pick your apps** and set each app's pause gap. Done.
 
-<p align="center">
-  <img src="docs/img/permissions.png" width="210" alt="Onboarding screen asking for the two permissions: Usage access and Display over other apps">
-</p>
-
 Onboarding also suggests two settings — *unrestricted battery* and
 *notifications* — that keep the monitor reliable. They're optional:
 declining them never blocks anything.
+
+<p align="center">
+  <img src="docs/img/onboarding_preferences.png" width="24%" alt="Onboarding screen showing preferences choice">
+  <img src="docs/img/onboarding_selectapps.png" width="24%" alt="Onboarding screen showing app selection">
+  <img src="docs/img/onboarding_permissions.png" width="24%" alt="Onboarding screen asking for the two permissions: Usage access and Display over other apps">
+</p>
+
 
 ## Download
 
