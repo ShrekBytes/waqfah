@@ -7,7 +7,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ShrekBytes/waqfah/actions/workflows/android-ci.yml"><img src="https://github.com/ShrekBytes/waqfah/actions/workflows/android-ci.yml/badge.svg" alt="Android CI status"></a>
   <img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue" alt="License: AGPL-3.0-only">
   <img src="https://img.shields.io/badge/platform-Android%209%2B-3DDC84" alt="Platform: Android 9 or newer">
 </p>
@@ -15,14 +14,15 @@
 **Waqfah** (وقفة — "a pause") shows a single Quranic ayah before the apps you
 choose. When you open a monitored app — a social network, a game, a
 calculator, any app at all — Waqfah's reading screen appears first. Read the
-ayah or skip it, continue into the app, and get on with your day.
+ayah or skip it, continue into the app exactly where you left off, and get on
+with your day.
 
 That's the whole idea. Waqfah isn't trying to stop you from doing anything,
 fix a habit, or change how you use your phone. It fits Quran into the day you
 already have — one ayah at a time, without asking you to build a new routine.
 
-- **A pause, never an obstacle.** No blocking, no limits, no lectures.
-- **Private by design.** No tracking, no accounts, no servers, no ads.
+- **A pause, never an obstacle.** Waqfah never blocks, limits, or nags.
+- **Private by design.** Your data never leaves your device.
 - **Set up once.** Pick your apps, and you're done.
 
 ## Features
@@ -55,24 +55,18 @@ already have — one ayah at a time, without asking you to build a new routine.
 
 1. **Install and open.** A short tour walks you through your first reading —
    skippable.
-2. **Grant two permissions** through Android's own screens: *Usage access*,
-   so Waqfah knows which app just opened, and *Display over other apps*, so
-   the reading screen can appear above it.
+2. **Grant two permissions** through Android's own screens — what each one
+   does is described under [Permissions](#permissions) below.
 3. **Pick your apps** and set each app's pause gap. Done.
 
-Two settings are recommended but optional — declining them never blocks
-anything:
-
-- **Unrestricted battery** — stops aggressive battery managers from stopping
-  the monitor.
-- **Notifications** — keeps the monitor's silent notification visible on
-  Android 13+.
+Onboarding also suggests two settings — *unrestricted battery* and
+*notifications* — that keep the monitor reliable. They're optional:
+declining them never blocks anything.
 
 ## Download
 
-Waqfah is coming soon — in shaa Allah — to F-Droid and Google Play. The store
-listings aren't live yet, so there is nothing to link to until they are.
-Until then you can [build it yourself](#development).
+Waqfah is coming soon — in shaa Allah — to F-Droid and Google Play. Until
+then, you can [build it yourself](#development).
 
 The F-Droid and Play builds are separate — signed by different keys and
 installed side by side, but one can't update the other. Switching between
@@ -89,28 +83,19 @@ Waqfah collects nothing and sends nothing anywhere.
   fetched over HTTPS from the
   [waqfah-translations][translations-repo] repository and verified against a
   pinned SHA-256 checksum.
-- Waqfah has no accessibility or screen-content permissions. Usage access
-  only reveals *which* app is in the foreground — never what's shown in it.
+- No accessibility or screen-content permissions — Waqfah cannot see inside
+  other apps.
 - One honest exception: with Android's device backup turned on, Android
   itself includes Waqfah's data in your backup. Waqfah never sends anything
   anywhere.
-
-## How it works
-
-While your screen is on, Waqfah quietly keeps track of which app is in the
-foreground — nothing more. When a monitored app opens, a translucent reading
-screen appears over it. Dismiss it, and you land in the app exactly where you
-left off.
-
-Curious about the machinery — the service, the trigger rules, the data
-model? [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) is the full map.
 
 ## Permissions
 
 Two permissions are asked during onboarding — nothing more:
 
 - **Usage access** — to know which app moved to the foreground, so the
-  reading screen appears at the right moment.
+  reading screen appears at the right moment. Waqfah learns nothing beyond
+  which app that is — never what's shown in it.
 - **Display over other apps** — so the reading screen can appear over the
   app that's opening.
 
