@@ -43,7 +43,7 @@ Repo: https://github.com/ShrekBytes/waqfah.git
 Builds:
   - versionName: 2.0.0
     versionCode: 4
-    commit: 31f92fdbea1afcffafbc9247575917ad83c91ca8
+    commit: 4f99d704ef7da3228a13c19e62a004a662a82a72
     gradle:
       - fdroid
 
@@ -64,9 +64,14 @@ Notes on the fields:
   that out. Use the peeled form:
 
   ```bash
-  git rev-parse v2.0.0^{commit}   # -> 31f92fdbea1afcffafbc9247575917ad83c91ca8
+  git rev-parse v2.0.0^{commit}   # -> 4f99d704ef7da3228a13c19e62a004a662a82a72
   git rev-list -n 1 v2.0.0        # same thing
   ```
+
+  `v2.0.0` was re-pointed from `31f92fd` to `4f99d70` before submission, because
+  `31f92fd` pinned a JDK 25 daemon toolchain that the F-Droid buildserver cannot
+  provide (see the toolchain note in §2). The tag is annotated in both cases, so
+  the peeled form is the only safe way to read it.
 
   Every release must be tagged upstream (`v<versionName>`) before a build block
   can reference it, and the tag must be created only once the repo is final —
@@ -236,10 +241,16 @@ third party rights, including ... copyright and trade marks."
 ## 4. Remaining steps
 
 Everything the repo has to supply is in place: metadata, screenshots, a clean
-licence position, and `v2.0.0` tagged at `31f92fd`. What is left:
+licence position, and `v2.0.0` tagged at `4f99d70`. That tag has been verified to
+build the way the buildserver builds it — a clean clone with no
+`keystore.properties` and no `local.properties`, JDK 21 only, and Gradle's
+toolchain auto-download disabled, produces `app-fdroid-release-unsigned.apk`.
+What is left:
 
-1. Push the tag (`git push origin main --tags`) if it is not up yet — a tag that
-   only exists locally is invisible to F-Droid.
+1. Push `main` and the re-pointed tag — `git push origin main`, then
+   `git push --force origin v2.0.0`. The force is needed because the tag was
+   moved; a tag that exists only locally, or that still points at the old commit
+   on the remote, is invisible to or wrong for F-Droid.
 2. Open the `fdroiddata` merge request with the file from §1, committed as
    `New App: dev.shrekbytes.waqfah.fdroid`.
 3. Expect review feedback in that MR rather than by email. Once merged, the app
