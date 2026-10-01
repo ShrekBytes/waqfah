@@ -43,7 +43,7 @@ Repo: https://github.com/ShrekBytes/waqfah.git
 Builds:
   - versionName: 2.0.0
     versionCode: 4
-    commit: <full hash of the v2.0.0 tag — see the note below>
+    commit: 31f92fdbea1afcffafbc9247575917ad83c91ca8
     gradle:
       - fdroid
 
@@ -58,20 +58,20 @@ AntiFeatures:
 
 Notes on the fields:
 
-- `commit` must be the **full hash** of the `v2.0.0` tag, not the tag name. It is
-  deliberately left blank: the tag does not exist yet, and it must not be created
-  until the repo is final, because F-Droid reads the fastlane metadata from the
-  tagged source — tagging before the screenshots are committed would bake in a
-  release with no screenshots. Order of operations:
+- `commit` is the **commit** the annotated `v2.0.0` tag points at — not the tag
+  object, and not the tag name. Beware: for an annotated tag, `git rev-parse v2.0.0`
+  returns the *tag object* (`git cat-file -t` says `tag`), and F-Droid cannot check
+  that out. Use the peeled form:
+
   ```bash
-  # 1. commit the screenshots, then tag and push
-  git tag v2.0.0
-  git push origin main --tags
-  # 2. fill the hash in
-  git rev-parse v2.0.0
+  git rev-parse v2.0.0^{commit}   # -> 31f92fdbea1afcffafbc9247575917ad83c91ca8
+  git rev-list -n 1 v2.0.0        # same thing
   ```
+
   Every release must be tagged upstream (`v<versionName>`) before a build block
-  can reference it.
+  can reference it, and the tag must be created only once the repo is final —
+  F-Droid reads the fastlane metadata from the tagged source, so tagging before
+  the screenshots are committed would bake in a release without them.
 - `gradle: - fdroid` selects the `fdroid` flavour, so F-Droid runs
   `assembleFdroidRelease` and picks up the `.fdroid` application ID. The `play`
   flavour is not built here.
@@ -220,12 +220,15 @@ third party rights, including ... copyright and trade marks."
 
 ## 4. Remaining steps
 
-The repo is ready. What is left is the tag and the MR:
+Everything the repo has to supply is in place: metadata, screenshots, a clean
+licence position, and `v2.0.0` tagged at `31f92fd`. What is left:
 
-```bash
-git tag v2.0.0
-git push origin main --tags
-git rev-parse v2.0.0   # paste the result into `commit:` in §1
-```
+1. Push the tag (`git push origin main --tags`) if it is not up yet — a tag that
+   only exists locally is invisible to F-Droid.
+2. Open the `fdroiddata` merge request with the file from §1, committed as
+   `New App: dev.shrekbytes.waqfah.fdroid`.
+3. Expect review feedback in that MR rather than by email. Once merged, the app
+   takes roughly 24–48 hours to appear, because signing is a human step.
 
-Then open the `fdroiddata` merge request with the file from §1.
+If the bundled payment icons are dropped later, remove the `AntiFeatures:` block
+in §1 as well — the bKash logo is its only remaining basis.
