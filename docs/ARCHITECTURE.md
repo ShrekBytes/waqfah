@@ -66,7 +66,8 @@ TriggerDecision as a constructor probe.
 ## Layers
 
 - `data/local/core` — read-only Quran text (`quran_core.db`, bundled asset,
-  rebuilt wholesale each release; destructive migration by design).
+  rebuilt wholesale each release; destructive migration by design). Its contents
+  and provenance are documented in `docs/quran-core-db.md`.
 - `data/local/appstate` — user data (`monitored_apps`, `read_verses`);
   **no** destructive fallback here, migrations must be written if schema changes.
 - **MonitoredAppState** (`data/monitoredapp/MonitoredAppState.kt`) owns the

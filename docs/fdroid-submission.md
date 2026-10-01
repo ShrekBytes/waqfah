@@ -123,9 +123,9 @@ and Bengali, or follows the system language.
   `gradle/gradle-daemon-jvm.properties` pins a JDK 25 toolchain that Gradle
   downloads on first build; say the word if you would prefer a pinned local JDK
   instead and I will add it.
-* Bundled `quran_core.db` is generated from upstream Quran text sources (Tanzil /
-  Quranic Universal Library) and rebuilt each release; provenance can be
-  documented on request.
+* Bundled `quran_core.db` is read-only Quran text data rebuilt each release. Its
+  contents and provenance are written up in `docs/quran-core-db.md`, including a
+  verse-by-verse check showing the Uthmani column is Tanzil's text verbatim.
 ```
 
 ## 3. Asset and licensing status
@@ -154,21 +154,25 @@ third party rights, including ... copyright and trade marks."
    with the copies. `app/src/main/assets/licenses/` now ships each font's
    upstream OFL file verbatim, so they are inside the APK as well as the repo.
 
+4. ~~`quran_core.db` provenance~~ — **documented.** `docs/quran-core-db.md`
+   records the schema, the verified invariants, and a verse-by-verse check
+   proving the Uthmani column is Tanzil's text verbatim (5,925 byte-identical,
+   311 fully explained, 0 unexplained). It also states plainly that no generator
+   script exists in the repo.
+
 **Still open:**
 
-4. **Signing conflict.** The APK on GitHub Releases is self-signed with
+5. **Signing conflict.** The APK on GitHub Releases is self-signed with
    `CN=Waqfah Release, O=ShrekBytes, C=BD`
    (SHA-256 `f446c35fbe09a11a9851e55ccf7355718c02e44d90c4f2e8a02c2c249b679c1b`).
    F-Droid signs with its own key, so users cannot move between the two builds
    without uninstalling. Either stop publishing the self-signed APK, or set up
    reproducible builds and add `Binaries` + `AllowedAPKSigningKeys` to the
    metadata so F-Droid ships your signature.
-5. **`ic_bkash.webp` is a trademarked logo** (the policy names trade marks
+6. **`ic_bkash.webp` is a trademarked logo** (the policy names trade marks
    explicitly), and `ic_nagad.webp` / `ic_rocket.webp` are unused but tracked —
    lint reports them as `UnusedResources`. Kept deliberately; expect
    `NonFreeAssets` unless they go.
-6. **Document `quran_core.db` provenance.** A 12 MB binary blob with no in-repo
-   generation script invites questions.
 7. **Upload `bn/taisirul.db` to `waqfah-translations`.** It is not in that repo
    yet, so its new download URL 404s until it is. The pinned checksum is
    `d79f5fc49c072c6432f8521f5ad4dd2f742e98a8a94bad95672b45e6532112d9`; recover the
