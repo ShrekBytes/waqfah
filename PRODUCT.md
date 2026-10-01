@@ -86,7 +86,7 @@ no tracking, no lectures. Digital-wellbeing blockers prevent; Waqfah pauses.
   rulings (trigger stamp at trigger time; toggle governs detection only;
   skipped tour persists nothing; interstitial identity is the class name).
 - Bundled data: `app/src/main/assets/databases/quran_core.db`, bundled
-  translation DBs (en/sahih, bn/taisirul); UI strings in
+  translation DBs (en/sahih, bn/muhiuddinkhan); UI strings in
   `values/strings.xml` (~246 strings) with a `values-bn` variant; launcher
   icons in `mipmap-anydpi`.
 - Absences future work must not fabricate: no testimonials, no press, no

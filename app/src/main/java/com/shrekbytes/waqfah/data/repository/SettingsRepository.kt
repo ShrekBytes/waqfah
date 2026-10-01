@@ -83,14 +83,14 @@ internal fun Preferences.toUserPreferences() = UserPreferences(
     readingMode = enumOrDefault(SettingsKeys.READING_MODE, ReadingMode.SEQUENTIAL),
     surahNameLanguage = enumOrDefault(SettingsKeys.SURAH_NAME_LANG, NameDisplayLanguage.ENGLISH),
     arabicScript = enumOrDefault(SettingsKeys.ARABIC_SCRIPT, ArabicScript.INDOPAK),
-    arabicFont = enumOrDefault(SettingsKeys.ARABIC_FONT, ArabicFont.DIGITAL_KHATT_INDOPAK),
+    arabicFont = arabicFontOrFallback(this[SettingsKeys.ARABIC_FONT]),
     arabicFontSize = this[SettingsKeys.ARABIC_FONT_SIZE] ?: 26,
     pronunciation = enumOrDefault(SettingsKeys.PRONUNCIATION, AidLanguage.ENGLISH),
     translitFontSize = this[SettingsKeys.TRANSLIT_FONT_SIZE] ?: 18,
     translationDisplay = enumOrDefault(SettingsKeys.TRANSLATION_DISPLAY, AidLanguage.ENGLISH),
     translationFontSize = this[SettingsKeys.TRANSLATION_FONT_SIZE] ?: 18,
     activeTranslationEnglish = this[SettingsKeys.ACTIVE_TRANSLATION_EN] ?: "sahih",
-    activeTranslationBengali = this[SettingsKeys.ACTIVE_TRANSLATION_BN] ?: "taisirul",
+    activeTranslationBengali = this[SettingsKeys.ACTIVE_TRANSLATION_BN] ?: "muhiuddinkhan",
     cooldownMinutes = this[SettingsKeys.COOLDOWN_MINUTES] ?: 30,
     appActive = this[SettingsKeys.APP_ACTIVE] ?: true,
     hasCompletedOnboarding = this[SettingsKeys.ONBOARDING_COMPLETE] ?: false,
@@ -101,6 +101,17 @@ internal fun Preferences.toUserPreferences() = UserPreferences(
 // longer matches any enum constant (e.g. after a rename).
 internal inline fun <reified T : Enum<T>> Preferences.enumOrDefault(key: Preferences.Key<String>, default: T): T =
     this[key]?.let { stored -> enumValues<T>().firstOrNull { it.name == stored } } ?: default
+
+// MEQURAN was dropped from ArabicFont because its license forbids
+// redistribution. Anyone who had it selected is moved to AMIRI — the surviving
+// Uthmani font — instead of falling through to the Indopak default, which would
+// silently switch the script their Arabic text renders in. Unknown names still
+// take the plain default, matching enumOrDefault.
+internal fun arabicFontOrFallback(stored: String?): ArabicFont = when (stored) {
+    null -> ArabicFont.DIGITAL_KHATT_INDOPAK
+    "MEQURAN" -> ArabicFont.AMIRI
+    else -> ArabicFont.entries.firstOrNull { it.name == stored } ?: ArabicFont.DIGITAL_KHATT_INDOPAK
+}
 
 // The typed "not yet loaded" seam: null before the upstream's first value,
 // the value after, updates carried through. Eagerly, so the app's one shared

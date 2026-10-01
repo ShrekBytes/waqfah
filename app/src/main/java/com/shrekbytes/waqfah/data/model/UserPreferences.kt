@@ -25,7 +25,6 @@ enum class ArabicScript { INDOPAK, UTHMANI }
 
 enum class ArabicFont(val script: ArabicScript) {
     DIGITAL_KHATT_INDOPAK(ArabicScript.INDOPAK),
-    MEQURAN(ArabicScript.UTHMANI),
     AMIRI(ArabicScript.UTHMANI),
 }
 
@@ -43,7 +42,7 @@ data class UserPreferences(
     val translationDisplay: AidLanguage = AidLanguage.ENGLISH,
     val translationFontSize: Int = 18,
     val activeTranslationEnglish: String = "sahih",
-    val activeTranslationBengali: String = "taisirul",
+    val activeTranslationBengali: String = "muhiuddinkhan",
     val cooldownMinutes: Int = 30,
     val appActive: Boolean = true,
     val hasCompletedOnboarding: Boolean = false,

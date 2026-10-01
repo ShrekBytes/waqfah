@@ -151,8 +151,8 @@ hand-written value, because derivation visibly drifts in dark themes.
 **Display Font:** none — the UI scale tops out at Title; the system default
 sans (Roboto) carries every UI string.
 **Body Font:** system default sans, with fallback.
-**Content Fonts:** Digital Khatt Indopak, MeQuran, Amiri — the three bundled
-Arabic faces, user-selectable per script (Indopak/Uthmani).
+**Content Fonts:** Digital Khatt Indopak and Amiri — the two bundled Arabic
+faces, user-selectable per script (Indopak/Uthmani).
 
 **Character:** The UI type is deliberately invisible — small, close-set,
 system-native — so the user's chosen Arabic face is always the largest,

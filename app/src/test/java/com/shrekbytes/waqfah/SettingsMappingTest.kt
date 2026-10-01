@@ -56,6 +56,17 @@ class SettingsMappingTest {
     }
 
     @Test
+    fun retiredMequranFont_keepsTheUthmaniScript() = runBlocking {
+        val store = newStore()
+        store.edit { it[SettingsKeys.ARABIC_FONT] = "MEQURAN" }
+        val prefs = store.data.first().toUserPreferences()
+        // AMIRI, not the Indopak default: the removed font was the other Uthmani
+        // one, so falling through would silently change the rendered script.
+        assertEquals(ArabicFont.AMIRI, prefs.arabicFont)
+        assertEquals(ArabicScript.UTHMANI, prefs.arabicFont.script)
+    }
+
+    @Test
     fun knownValues_mapThrough() = runBlocking {
         val store = newStore()
         store.edit {

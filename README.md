@@ -14,7 +14,7 @@ app opens, nothing more.
 
 - **Reading modes:** sequential (resume at the lowest unread ayah) or random
   (any unread ayah), with progress tracking across the whole Quran.
-- **Arabic display:** Indopak and Uthmani scripts, several bundled fonts,
+- **Arabic display:** Indopak and Uthmani scripts, two bundled fonts,
   adjustable sizes, plus optional transliteration and translations in English
   or Bengali — with more available as downloads.
 - **App language:** English or Bengali, or follow the system language.
@@ -166,5 +166,9 @@ row.
 
 Waqfah is free software: licensed under the
 [GNU Affero General Public License v3.0](LICENSE).
+
+The bundled Arabic fonts are third-party works under the SIL Open Font License
+1.1; their full licenses ship in
+[`app/src/main/assets/licenses/`](app/src/main/assets/licenses/FONTS.md).
 
 [translations-repo]: https://github.com/ShrekBytes/waqfah-translations

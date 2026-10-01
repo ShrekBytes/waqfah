@@ -11,7 +11,8 @@ import org.junit.Test
 // Spec for the translation library, worked against the shipped catalog:
 // sahih is the bundled English entry; pickthall, yusufali and
 // maududi are English downloads; rawaialbayan is a Bengali download; taisirul
-// is the bundled Bengali entry.
+// is a Bengali download (it was bundled until its licence was reviewed);
+// muhiuddinkhan is the bundled Bengali entry.
 class TranslationLibraryTest {
 
     // ---- available(): what the language can render right now ----
@@ -46,7 +47,7 @@ class TranslationLibraryTest {
     @Test
     fun available_bengaliWithNothingOnDisk_isJustTheBundledOne() {
         val ids = TranslationLibrary.available(TranslationLanguage.BENGALI, emptySet()).map { it.id }
-        assertEquals(listOf("taisirul"), ids)
+        assertEquals(listOf("muhiuddinkhan"), ids)
     }
 
     // ---- resolveActive(): stored translation when usable, else bundled ----
@@ -71,8 +72,17 @@ class TranslationLibraryTest {
 
     @Test
     fun resolveActive_storedBundled_needsNoDiskTruth() {
+        val active = TranslationLibrary.resolveActive(TranslationLanguage.BENGALI, "muhiuddinkhan", emptySet())
+        assertEquals("muhiuddinkhan", active.id)
+    }
+
+    @Test
+    fun resolveActive_bengaliStoredTaisirulNotDownloaded_fallsBackToBundled() {
+        // taisirul was bundled until its licence was reviewed; anyone who had it
+        // selected and never downloaded it lands on the bundled Bengali entry
+        // rather than a blank card.
         val active = TranslationLibrary.resolveActive(TranslationLanguage.BENGALI, "taisirul", emptySet())
-        assertEquals("taisirul", active.id)
+        assertEquals("muhiuddinkhan", active.id)
     }
 
     @Test
@@ -80,6 +90,6 @@ class TranslationLibraryTest {
         // pickthall exists in the catalog but is an English translation —
         // never usable for Bengali.
         val active = TranslationLibrary.resolveActive(TranslationLanguage.BENGALI, "pickthall", setOf("pickthall"))
-        assertEquals("taisirul", active.id)
+        assertEquals("muhiuddinkhan", active.id)
     }
 }
