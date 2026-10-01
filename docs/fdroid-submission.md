@@ -88,6 +88,17 @@ Notes on the fields:
   line goes away entirely.
 - Commit the metadata MR with the message `New App: dev.shrekbytes.waqfah.fdroid`.
 
+This file has been checked with F-Droid's own tooling, not just by eye. `fdroid lint`
+passes with no findings, and `fdroid checkupdates` was run against the real
+repository: given deliberately wrong `CurrentVersion`/`CurrentVersionCode` values it
+cloned the repo, walked the tags, and corrected them to `2.0.0 (4)` — so
+`UpdateCheckMode: Tags` + `AutoUpdateMode: Version` genuinely work, and future
+releases only need tagging to be picked up.
+
+One note if you re-run it: fdroidserver rewrites the file with keys in alphabetical
+order (`AntiFeatures` first, `Categories` sorted). That is normalisation, not an
+error.
+
 
 ## 2. RFP issue body (alternative route)
 
