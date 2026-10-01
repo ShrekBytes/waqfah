@@ -1,13 +1,10 @@
 # Waqfah
 
 <p align="center">
-  <img src="docs/img/showcase.gif" width="210" alt="Recording of the live pause: a monitored app opens, Waqfah's reading screen appears over it, and skipping continues straight into the app">
-</p>
-
-<p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="210" alt="The reading screen: an ayah in Arabic script with transliteration and an English translation, above a Mark Read button">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="210" alt="The same reading screen shown over another app, with a button to continue into that app">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="210" alt="The Apps screen: a searchable list of installed apps with toggles, and a Wait before showing again control">
+  <img src="docs/img/showcase.gif" width="25%" alt="Recording of the live pause: a monitored app opens, Waqfah's reading screen appears over it, and skipping continues straight into the app">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="25%" alt="The reading screen: an ayah in Arabic script with transliteration and an English translation, above a Mark Read button">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="24%" alt="The same reading screen shown over another app, with a button to continue into that app">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="25%" alt="The Apps screen: a searchable list of installed apps with toggles, and a Wait before showing again control">
 </p>
 
 <p align="center">
