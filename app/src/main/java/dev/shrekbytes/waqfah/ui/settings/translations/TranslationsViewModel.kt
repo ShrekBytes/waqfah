@@ -1,0 +1,146 @@
+package dev.shrekbytes.waqfah.ui.settings.translations
+
+import android.content.Context
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.shrekbytes.waqfah.R
+import dev.shrekbytes.waqfah.data.model.TranslationCatalog
+import dev.shrekbytes.waqfah.data.model.TranslationLanguage
+import dev.shrekbytes.waqfah.data.model.TranslationLibrary
+import dev.shrekbytes.waqfah.data.model.TranslationMeta
+import dev.shrekbytes.waqfah.data.repository.SettingsRepository
+import dev.shrekbytes.waqfah.data.repository.TranslationRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class TranslationRowState(
+    val meta: TranslationMeta,
+    // Usable right now: bundled always counts (even before its lazy
+    // first-copy), otherwise the file must be on disk. Same rule the reading
+    // card uses — TranslationLibrary.available.
+    val isUsable: Boolean,
+    val isActive: Boolean,
+    val isDownloading: Boolean,
+    // 0f..1f while downloading with a known Content-Length; null otherwise.
+    val downloadProgress: Float?,
+    // Set after a failed download, cleared when a retry starts.
+    val errorMessage: String?,
+)
+
+@HiltViewModel
+class TranslationsViewModel @Inject constructor(
+    private val translationRepository: TranslationRepository,
+    private val settingsRepository: SettingsRepository,
+    @ApplicationContext context: Context,
+) : ViewModel() {
+
+    // Resolved once: a plain ViewModel can't call stringResource(), and this
+    // text never changes while the ViewModel lives.
+    private val downloadFailedMessage = context.getString(R.string.download_failed_message)
+
+    // Keyed by id — downloads for different translations run concurrently.
+    private val downloadingIds = MutableStateFlow<Set<String>>(emptySet())
+    private val downloadProgress = MutableStateFlow<Map<String, Float>>(emptyMap())
+    private val downloadErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    private val rowFlows = mutableMapOf<TranslationLanguage, StateFlow<List<TranslationRowState>>>()
+
+    fun rowsFor(language: TranslationLanguage): StateFlow<List<TranslationRowState>> =
+        rowFlows.getOrPut(language) {
+            combine(
+                // filterNotNull: rows stay empty until prefs are loaded —
+                // exactly what the cold flow's silent wait did.
+                settingsRepository.loadedPreferences.filterNotNull(),
+                // Repository-published disk truth: restated after every
+                // download/delete/first-copy, deduped so progress ticks and
+                // failed attempts never re-run this combine for no change.
+                translationRepository.downloadedIds,
+                downloadingIds,
+                downloadProgress,
+                downloadErrors,
+            ) { prefs, downloadedIds, downloading, progress, errors ->
+                // "Active" means what the reading card actually renders — the
+                // stored translation when usable, else the bundled fallback —
+                // so the label can never disagree with the card.
+                val activeId = TranslationLibrary.resolveActive(language, prefs.storedTranslationId(language), downloadedIds).id
+                TranslationCatalog.all.filter { it.language == language }.map { meta ->
+                    TranslationRowState(
+                        meta = meta,
+                        isUsable = TranslationLibrary.isAvailable(meta, downloadedIds),
+                        isActive = meta.id == activeId,
+                        isDownloading = meta.id in downloading,
+                        downloadProgress = progress[meta.id],
+                        errorMessage = errors[meta.id],
+                    )
+                }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }
+
+    fun select(meta: TranslationMeta) = viewModelScope.launch {
+        settingsRepository.setActiveTranslation(meta.language, meta.id)
+    }
+
+    fun download(meta: TranslationMeta) = viewModelScope.launch {
+        downloadingIds.update { it + meta.id }
+        downloadErrors.update { it - meta.id }
+        downloadProgress.update { it - meta.id }
+        try {
+            // Bounded automatic retry: transient network blips are the common
+            // failure mode. Deterministic failures (bad URL, schema mismatch)
+            // fail fast server-side-agnostically too, so a short fixed backoff
+            // is safe across the board; the manual "Failed — Retry" row action
+            // still exists on top of this.
+            var attempt = 0
+            while (true) {
+                try {
+                    translationRepository.download(meta) { fraction ->
+                        downloadProgress.update { it + (meta.id to fraction) }
+                    }
+                    break
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    attempt++
+                    if (attempt >= DOWNLOAD_MAX_ATTEMPTS) throw e
+                    downloadProgress.update { it - meta.id } // restart the bar cleanly
+                    delay(DOWNLOAD_RETRY_DELAY_MS * attempt)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A user-facing, localized message rather than e.message: exception
+            // text is developer-oriented and always in English regardless of
+            // the app's language. The detailed cause is still logged by
+            // TranslationRepository for debugging.
+            downloadErrors.update { it + (meta.id to downloadFailedMessage) }
+        } finally {
+            downloadingIds.update { it - meta.id }
+            downloadProgress.update { it - meta.id }
+        }
+    }
+
+    fun delete(meta: TranslationMeta) = viewModelScope.launch {
+        // The UI never offers Delete for bundled translations, but guard here
+        // too so a bundled fallback can never be wiped.
+        if (meta.isBundled) return@launch
+        translationRepository.delete(meta)
+    }
+
+    private companion object {
+        // 1st try + 2 automatic retries with 1s/2s backoff.
+        const val DOWNLOAD_MAX_ATTEMPTS = 3
+        const val DOWNLOAD_RETRY_DELAY_MS = 1_000L
+    }
+}

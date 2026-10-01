@@ -1,0 +1,136 @@
+package dev.shrekbytes.waqfah.ui.about
+
+import android.content.Intent
+import androidx.compose.foundation.clickable
+import androidx.core.net.toUri
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.shrekbytes.waqfah.R
+import dev.shrekbytes.waqfah.ui.components.launchExternal
+import dev.shrekbytes.waqfah.ui.components.ChevronDirection
+import dev.shrekbytes.waqfah.ui.components.ChevronIcon
+import dev.shrekbytes.waqfah.ui.components.SectionTitle
+import dev.shrekbytes.waqfah.ui.components.SettingsScaffold
+import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
+
+@Composable
+fun GratitudeScreen(onBack: () -> Unit) {
+    val colors = WaqfahTheme.colors
+    val context = LocalContext.current
+
+    SettingsScaffold(title = stringResource(R.string.gratitude_title), onBack = onBack) {
+        Text(
+            stringResource(R.string.gratitude_intro),
+            color = colors.inkMuted,
+            fontSize = 14.sp,
+            lineHeight = 21.sp,
+        )
+        Spacer(Modifier.height(18.dp))
+        SupportInfo.contributors.forEachIndexed { index, contributor ->
+            if (index > 0) HorizontalDivider(color = colors.line)
+            val url = contributor.url
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .let {
+                        if (url != null) {
+                            it.clickable {
+                                context.launchExternal(Intent(Intent.ACTION_VIEW, url.toUri()))
+                            }
+                        } else {
+                            it
+                        }
+                    }
+                    .padding(vertical = 13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(contributor.name, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+                    Text(contributor.role, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
+                }
+                if (url != null) {
+                    // Outward-tilted chevron signals "opens a link".
+                    ChevronIcon(
+                        direction = ChevronDirection.RIGHT,
+                        tint = colors.inkSoft,
+                        modifier = Modifier.size(14.dp).rotate(-45f),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(22.dp))
+        SectionTitle(stringResource(R.string.credits_section))
+        Text(
+            stringResource(R.string.credits_body),
+            color = colors.inkMuted,
+            fontSize = 13.sp,
+            lineHeight = 19.sp,
+        )
+        Spacer(Modifier.height(12.dp))
+        SourceCredit(
+            title = stringResource(R.string.credit_qul_title),
+            subtitle = stringResource(R.string.credit_qul_sub),
+            url = "https://qul.tarteel.ai/",
+        )
+        SourceCredit(
+            title = stringResource(R.string.credit_tanzil_title),
+            subtitle = stringResource(R.string.credit_tanzil_sub),
+            url = "https://tanzil.net/",
+        )
+        Spacer(Modifier.height(22.dp))
+        Text(
+            stringResource(R.string.gratitude_users_note),
+            color = colors.inkMuted,
+            fontSize = 13.sp,
+            fontStyle = FontStyle.Italic,
+            lineHeight = 19.sp,
+        )
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+// Linked source-attribution row for the Credits section.
+@Composable
+private fun SourceCredit(title: String, subtitle: String, url: String) {
+    val colors = WaqfahTheme.colors
+    val context = LocalContext.current
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable { context.launchExternal(Intent(Intent.ACTION_VIEW, url.toUri())) }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.credit_url_suffix_format, subtitle, url.removePrefix("https://").removeSuffix("/")),
+                color = colors.inkMuted,
+                fontSize = 12.5.sp,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        ChevronIcon(
+            direction = ChevronDirection.RIGHT,
+            tint = colors.inkSoft,
+            modifier = Modifier.size(14.dp).rotate(-45f),
+        )
+    }
+}

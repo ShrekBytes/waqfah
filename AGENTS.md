@@ -83,7 +83,7 @@ prefixed with one of them:
 - `androidTest` (incl. Room migration tests) needs a device/emulator; CI runs them on an API 36 emulator.
 - Extra setup: Android SDK platform 37. Release signing reads `keystore.properties` (gitignored) or `WAQFAH_*` env vars; without it the release task still succeeds but emits an unsigned APK — CI's R8 check relies on that. That keystore is the Google Play key; F-Droid signs its own build.
 - Toolchain: Gradle auto-provisions its daemon JDK (pinned in `gradle/gradle-daemon-jvm.properties`); dependency versions live in `gradle/libs.versions.toml`, fetched by the wrapper on first build.
-- `namespace` stays `com.shrekbytes.waqfah` and is independent of the application ID — the Kotlin packages, generated `R`, Hilt wiring, the Room schema directory under `app/schemas/`, and `TriggerActivity::class.java.name` (which the interstitial-return rule matches on) all key off it. Don't rename it as part of a store-ID change.
+- `namespace` and `applicationId` are both `dev.shrekbytes.waqfah` (the flavours add `.fdroid` to the ID only), but they are independent knobs. The Kotlin packages, generated `R`, Hilt wiring, the Room schema directory under `app/schemas/` — which is named after the fully-qualified database class — and `TriggerActivity::class.java.name` (which the interstitial-return rule matches on) all key off the namespace. A store-ID change does not require touching it; a namespace change does require moving that schema directory in step.
 
 ### Project-specific rules
 

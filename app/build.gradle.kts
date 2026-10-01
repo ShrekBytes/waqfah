@@ -23,7 +23,7 @@ fun releaseSigningProperty(property: String, envVar: String): String? =
     System.getenv(envVar) ?: keystoreProperties.getProperty(property)
 
 android {
-    namespace = "com.shrekbytes.waqfah"
+    namespace = "dev.shrekbytes.waqfah"
 
     compileSdk {
         version = release(37)
@@ -45,11 +45,14 @@ android {
     // impossible and the user has to uninstall first. The `play` flavour keeps
     // the bare ID; `fdroid` takes the conventional `.fdroid` suffix.
     //
-    // `namespace` deliberately stays com.shrekbytes.waqfah. It is independent of
-    // the application ID, and the Kotlin packages, the generated R class, the
-    // Hilt wiring, the Room schema directory and TriggerActivity::class.java.name
-    // (which the interstitial-return rule matches on) all key off it. None of
-    // that needs to move for a store ID change.
+    // `namespace` and `applicationId` are the same string again, but they are
+    // still independent knobs: the namespace is what the Kotlin packages, the
+    // generated R class, the Hilt wiring, the Room schema directory and
+    // TriggerActivity::class.java.name (which the interstitial-return rule
+    // matches on) key off, while the application ID is the install identity the
+    // flavours vary. Changing one does not require changing the other — see the
+    // note in AGENTS.md before moving the namespace, because the Room schema
+    // directory under app/schemas/ is named after it.
     flavorDimensions += "store"
 
     productFlavors {

@@ -1,0 +1,432 @@
+package dev.shrekbytes.waqfah.ui.reading
+
+import dev.shrekbytes.waqfah.data.local.core.SurahEntity
+import dev.shrekbytes.waqfah.data.local.core.VerseEntity
+import dev.shrekbytes.waqfah.data.model.AidLanguage
+import dev.shrekbytes.waqfah.data.model.NameDisplayLanguage
+import dev.shrekbytes.waqfah.data.model.ReadingMode
+import dev.shrekbytes.waqfah.data.model.TranslationLanguage
+import dev.shrekbytes.waqfah.data.model.TranslationLibrary
+import dev.shrekbytes.waqfah.data.model.TranslationMeta
+import dev.shrekbytes.waqfah.data.model.UserPreferences
+import dev.shrekbytes.waqfah.data.model.toTranslationLanguage
+import dev.shrekbytes.waqfah.data.repository.VerseSelection
+import androidx.compose.ui.unit.LayoutDirection
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+// The reading machine shared by both hosts — the Home tab and the interstitial
+// (see CONTEXT.md). It owns the whole reading loop: stepping between verses,
+// rendering the current one, marking verses read, the compare-translations
+// peek, and the completion state — plus the ordering that keeps all of it
+// consistent: every read and write of currentVerse, latestPrefs,
+// translationOverrideId, completionDismissed and the render-signature
+// bookkeeping happens behind one mutex — this module's internal invariant,
+// not a convention callers must know about.
+//
+// Everything impure arrives through the constructor: the three signals it
+// subscribes to (preferences, downloaded translation ids, the progress-reset
+// nudge) as flows, verse movement as VerseSelection, and the remaining
+// verse/progress/translation probes behind one interface — ReadingPorts —
+// that DefaultReadingPorts adapts the repositories to. The whole machine is
+// unit-testable with a fake ReadingPorts, a fake VerseLookups behind a real
+// VerseSelection, and virtual time (see ReadingSessionTest).
+class ReadingSession(
+    private val preferences: Flow<UserPreferences>,
+    private val downloadedIds: StateFlow<Set<String>>,
+    // A monotonic counter the adapter bumps on every external progress wipe
+    // (ReadingProgressRepository.progressReset). The session reads the value
+    // to recognise the echo of its own resets — see lastSelfInitiatedReset.
+    private val progressReset: StateFlow<Int>,
+    private val ports: ReadingPorts,
+    private val verseSelection: VerseSelection,
+    private val scope: CoroutineScope,
+) {
+
+    // One-line delegates so the machine body keeps calling the probes by
+    // name — the seam's plumbing stays out of the mutex and render logic. These
+    // live in the class body rather than the constructor because constructor
+    // vals require explicit types on this compiler, which would resurrect the
+    // function-type block this seam removed.
+    private val verseById = ports::verseById
+    private val surah = ports::surah
+    private val totalVerseCount = ports::totalVerseCount
+    private val readVerseIds = ports::readVerseIds
+    private val isRead = ports::isRead
+    private val markRead = ports::markRead
+    private val unmarkRead = ports::unmarkRead
+    private val countRead = ports::countRead
+    private val resetAll = ports::resetAll
+    private val translationText = ports::translationText
+    private val setReadingMode = ports::setReadingMode
+
+    // Serializes every mutation of currentVerse / translationOverrideId and the
+    // renders that read them. next()/previous() are awaited mid-gesture from
+    // the UI's own coroutine scope, so rapid swipes — or a preferences emission
+    // landing mid-step — would otherwise interleave step()/render() calls and
+    // let a stale render overwrite the newer verse.
+    private val mutationMutex = Mutex()
+
+    private var currentVerse: VerseEntity? = null
+    private var latestPrefs = UserPreferences()
+
+    // Signature of the last rendered preferences (see readingRenderSignature);
+    // null until the first emission. Emissions that don't change it skip the
+    // full render.
+    private var lastRenderSignature: List<Any?>? = null
+
+    // Session-local "compare translations" override for the current ayah; null
+    // means show the real default. Cleared on every step() so it never outlives
+    // the ayah it was opened on.
+    private var translationOverrideId: String? = null
+
+    // Session-local dismissal of the Quran-completed popup; Close keeps it
+    // hidden until progress actually changes again.
+    private var completionDismissed = false
+
+    // The progressReset counter's value right after the session's own last
+    // resetAll(); the collector skips emissions at or below it so the reset's
+    // echo never reloads again. Guarded by mutationMutex. Monotonic-counter
+    // arithmetic makes this conflations-safe: an external reset that bumps
+    // past the recorded value always lands above it.
+    private var lastSelfInitiatedReset = Int.MIN_VALUE
+
+    private val _uiState = MutableStateFlow(ReadingUiState())
+    val uiState: StateFlow<ReadingUiState> = _uiState.asStateFlow()
+
+    init {
+        scope.launch {
+            preferences.collect { prefs ->
+                mutationMutex.withLock {
+                    // Changing the persisted default must win over any session-local
+                    // compare-mode peek — otherwise switching translations looks
+                    // like it "didn't update" while the old override still renders.
+                    val defaultChanged = prefs.activeTranslationEnglish != latestPrefs.activeTranslationEnglish ||
+                        prefs.activeTranslationBengali != latestPrefs.activeTranslationBengali
+                    // The first emission always renders (it loads the starting
+                    // verse); later ones only when something the card displays
+                    // changed — unrelated writes (theme ticks, cooldown stepper,
+                    // locale mirror…) skip the render instead of paying ~6 DB
+                    // queries per emission.
+                    val firstLoad = currentVerse == null
+                    val signature = readingRenderSignature(prefs)
+                    latestPrefs = prefs
+                    if (!firstLoad && signature == lastRenderSignature) return@withLock
+                    lastRenderSignature = signature
+                    if (defaultChanged) translationOverrideId = null
+                    if (currentVerse == null) currentVerse = loadStartingVerse(prefs)
+                    render(prefs)
+                }
+            }
+        }
+        // A download/delete/first-copy can land while this screen is already
+        // alive (e.g. a translation finishes downloading in Settings, then the
+        // user returns Home). The set dedupes, so this only fires when
+        // availability actually changed — re-render so compare-switcher
+        // availability reflects the new file instead of staying stale until
+        // the next ayah change.
+        scope.launch {
+            downloadedIds.drop(1).collect {
+                mutationMutex.withLock {
+                    if (currentVerse != null) render(latestPrefs)
+                }
+            }
+        }
+        // Same idea for "Reset progress" in Settings: if this screen is already
+        // showing an ayah, jump to a fresh starting verse instead of leaving
+        // stale read/completion state on screen until a restart. The session's
+        // own resets (startOver / switchModeAndRestart) echo through this same
+        // signal — but they reload synchronously under the lock and record the
+        // echo below, so the collector skips their emission instead of paying
+        // a second reload.
+        scope.launch {
+            progressReset.drop(1).collect { value ->
+                mutationMutex.withLock {
+                    if (value <= lastSelfInitiatedReset) return@withLock
+                    if (currentVerse != null) beginFreshSessionLocked()
+                }
+            }
+        }
+    }
+
+    // Suspend so the card can await these mid-gesture to sequence the swipe
+    // animation, verse swap, and offset reset strictly.
+    suspend fun next() = mutationMutex.withLock { step { verseSelection.next(it) } }
+    suspend fun previous() = mutationMutex.withLock { step { verseSelection.previous(it) } }
+
+    fun markCurrentRead() = scope.launch {
+        mutationMutex.withLock {
+            // Decision and target verse are captured under the same lock the
+            // DB write uses. Computing the toggle from uiState OUTSIDE the
+            // lock let a swipe committing mid-gesture apply ayah A's tap to
+            // whichever ayah B had just become current. DB truth (one cheap
+            // EXISTS) is the source instead of possibly-stale ui state.
+            val verse = currentVerse ?: return@withLock
+            val newIsRead = !isRead(verse.id)
+            // Optimistic UI update before the write keeps feedback instant.
+            _uiState.update { it.copy(isMarkedRead = newIsRead) }
+            if (newIsRead) {
+                markRead(verse.id)
+            } else {
+                unmarkRead(verse.id)
+            }
+            refreshCompletionState()
+        }
+    }
+
+    // Launched so the flag flips under the same mutex render() reads it from.
+    fun dismissCompletion() = scope.launch {
+        mutationMutex.withLock {
+            completionDismissed = true
+            _uiState.update { it.copy(isCompleted = false) }
+        }
+    }
+
+    // Both completion-popup reset paths wipe read history and land on a fresh
+    // starting ayah — Start Again keeps the current mode, the switch moves to
+    // the other mode first. Both reload synchronously under the lock and then
+    // swallow the progressReset echo of their own resetAll(), so exactly one
+    // reload happens; switchModeAndRestart also writes the mode echo into
+    // latestPrefs under the same lock, so the fresh session picks it up
+    // whichever collector runs first.
+    fun startOver() = scope.launch {
+        mutationMutex.withLock {
+            resetAll()
+            lastSelfInitiatedReset = progressReset.value
+            beginFreshSessionLocked()
+        }
+    }
+
+    fun switchModeAndRestart() = scope.launch {
+        mutationMutex.withLock {
+            val newMode = if (latestPrefs.readingMode == ReadingMode.SEQUENTIAL) ReadingMode.RANDOM else ReadingMode.SEQUENTIAL
+            setReadingMode(newMode)
+            latestPrefs = latestPrefs.copy(readingMode = newMode)
+            resetAll()
+            lastSelfInitiatedReset = progressReset.value
+            beginFreshSessionLocked()
+        }
+    }
+
+    // The interstitial's "you opened <app>" label is host garnish, not reading
+    // state — the adapter resolves the label and hands it over; render()
+    // deliberately never touches this field.
+    fun setTriggeredAppLabel(label: String?) {
+        _uiState.update { it.copy(triggeredAppLabel = label) }
+    }
+
+    // Caller must hold mutationMutex.
+    private suspend fun beginFreshSessionLocked() {
+        // The fresh session lands on a new ayah: the compare peek never
+        // outlives the ayah it was opened on — the same rule step() and
+        // jumpToVerse() apply.
+        translationOverrideId = null
+        completionDismissed = false
+        currentVerse = loadStartingVerse(latestPrefs)
+        render(latestPrefs)
+    }
+
+    // Jumps to an explicit verse without touching read history or sequential/
+    // random position — "Surahs & ayahs" works for read or unread, and
+    // next/previous still step by global id after the jump. Like a fresh
+    // session but with an explicit target and a cleared translation peek.
+    // Home-only by design; TriggerActivity keeps its own instance via a
+    // separate Activity.
+    suspend fun jumpToVerse(verseId: Int) {
+        mutationMutex.withLock {
+            val target = verseById(verseId) ?: return@withLock
+            currentVerse = target
+            translationOverrideId = null
+            render(latestPrefs)
+        }
+    }
+
+    private suspend fun isEverythingRead(): Boolean =
+        countRead() >= totalVerses()
+
+    // The bundled Quran database ships whole with every app update, so its size
+    // never changes at runtime — fetch it once instead of on every render.
+    private var cachedTotalVerseCount: Int? = null
+
+    private suspend fun totalVerses(): Int =
+        cachedTotalVerseCount ?: totalVerseCount().also { cachedTotalVerseCount = it }
+
+    // Marking the last unread ayah completes the Quran mid-session too.
+    private suspend fun refreshCompletionState() {
+        val allRead = isEverythingRead()
+        _uiState.update { it.copy(isCompleted = allRead && !completionDismissed) }
+    }
+
+    // Steps the preview to the next/previous downloaded translation for the
+    // active display language, wrapping around. Never touches the persisted
+    // default — pure "peek at another wording" for this ayah only.
+    fun cycleTranslationSource(forward: Boolean) = scope.launch {
+        mutationMutex.withLock {
+            val lang = latestPrefs.translationDisplay.toTranslationLanguage() ?: return@withLock
+            val downloaded = downloadedIds.value
+            val available = TranslationLibrary.available(lang, downloaded)
+            if (available.size < 2) return@withLock
+            val currentId = translationOverrideId
+                ?: activeTranslation(lang, latestPrefs, downloaded).id
+            val currentIndex = available.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
+            val stepDir = if (forward) 1 else -1
+            translationOverrideId = available[(currentIndex + stepDir + available.size) % available.size].id
+            render(latestPrefs)
+        }
+    }
+
+    // Drops the preview back to the real default when the switcher closes.
+    fun resetTranslationSource() = scope.launch {
+        mutationMutex.withLock {
+            if (translationOverrideId == null) return@withLock
+            translationOverrideId = null
+            render(latestPrefs)
+        }
+    }
+
+    // Caller must hold mutationMutex.
+    private suspend fun step(load: suspend (Int) -> VerseEntity?) {
+        val fromId = currentVerse?.id ?: return
+        currentVerse = load(fromId)
+        // A fresh ayah always starts on the real default translation.
+        translationOverrideId = null
+        render(latestPrefs)
+    }
+
+    // Picks the *starting* verse of a fresh session only; prev/next always step
+    // sequentially by id regardless of mode. Which verse that is — including
+    // every everything-read fallback — is verse selection's decision, not a
+    // branch here.
+    private suspend fun loadStartingVerse(prefs: UserPreferences): VerseEntity? =
+        verseSelection.start(prefs.readingMode, readVerseIds().toHashSet())
+
+    // Pronunciation aid for a verse, or null when the user turned it off.
+    private fun translitFor(verse: VerseEntity, prefs: UserPreferences): String? =
+        when (prefs.pronunciation) {
+            AidLanguage.NONE -> null
+            AidLanguage.ENGLISH -> verse.enTransliteration
+            AidLanguage.BENGALI -> verse.bnTransliteration
+        }
+
+    // The card's active translation for the display language — the stored
+    // default when available, otherwise the language's bundled one (the one
+    // question TranslationLibrary answers). Never null for a real language;
+    // callers pair it with toTranslationLanguage()'s null for "no aid text".
+    private fun activeTranslation(
+        language: TranslationLanguage,
+        prefs: UserPreferences,
+        downloaded: Set<String>,
+    ): TranslationMeta = TranslationLibrary.resolveActive(language, prefs.storedTranslationId(language), downloaded)
+
+    // Caller must hold mutationMutex.
+    private suspend fun render(prefs: UserPreferences) {
+        val verse = currentVerse ?: return
+
+        // One snapshot for the whole render: availability and the active
+        // translation must agree even if a download lands mid-render —
+        // shared with the next/prev previews too.
+        val downloaded = downloadedIds.value
+
+        // The independent lookups run concurrently — sequentially a render
+        // costs ~6 DB round-trips (per swipe, and per settings tick).
+        coroutineScope {
+            val surahDeferred = async { surah(verse.surahNo) }
+            val isReadDeferred = async { isRead(verse.id) }
+            val allReadDeferred = async { isEverythingRead() }
+            val nextPreviewDeferred =
+                async { verseSelection.next(verse.id)?.let { buildPreview(it, prefs, downloaded) } }
+            val previousPreviewDeferred =
+                async { verseSelection.previous(verse.id)?.let { buildPreview(it, prefs, downloaded) } }
+
+            val translationLanguage = prefs.translationDisplay.toTranslationLanguage()
+            val availableTranslations = translationLanguage
+                ?.let { TranslationLibrary.available(it, downloaded) }
+                .orEmpty()
+            val defaultMeta = translationLanguage?.let { activeTranslation(it, prefs, downloaded) }
+            val shownMeta = availableTranslations.find { it.id == translationOverrideId } ?: defaultMeta
+            val translation = shownMeta?.let { translationText(it, verse.id) }
+            val translitText = translitFor(verse, prefs)
+
+            _uiState.update { current ->
+                current.copy(
+                    isLoading = false,
+                    surahName = surahDeferred.await()?.let { surahDisplayName(it, prefs.surahNameLanguage) } ?: "",
+                    surahNameDirection = if (prefs.surahNameLanguage == NameDisplayLanguage.ARABIC) LayoutDirection.Rtl else LayoutDirection.Ltr,
+                    ayahLabel = ayahLabel(verse, prefs.surahNameLanguage),
+                    totalLabel = surahDeferred.await()?.let { "${localizeDigits(it.ayahCount, prefs.surahNameLanguage)} ${ayahWord(prefs.surahNameLanguage)}" } ?: "",
+                    arabicText = verse.arabicTextFor(prefs.arabicScript),
+                    arabicFont = prefs.arabicFont,
+                    arabicFontSize = prefs.arabicFontSize,
+                    translitText = translitText,
+                    translitFontSize = prefs.translitFontSize,
+                    translationText = translation,
+                    translationFontSize = prefs.translationFontSize,
+                    translationSourceName = shownMeta?.name,
+                    translationHasAlternates = availableTranslations.size > 1,
+                    isMarkedRead = isReadDeferred.await(),
+                    readingMode = prefs.readingMode,
+                    isCompleted = allReadDeferred.await() && !completionDismissed,
+                    // triggeredAppLabel untouched — owned by setTriggeredAppLabel()
+                    nextPreview = nextPreviewDeferred.await(),
+                    previousPreview = previousPreviewDeferred.await(),
+                )
+            }
+        }
+    }
+
+    // Like render(), minus what only applies to the ayah actually being read
+    // (override mode, read status, header) and always with the real default
+    // translation — a peeked neighbour isn't in compare mode. Shares render's
+    // downloadedIds snapshot so previews can't disagree with the main ayah.
+    private suspend fun buildPreview(
+        verse: VerseEntity,
+        prefs: UserPreferences,
+        downloaded: Set<String>,
+    ): AyahPreview {
+        val translationLanguage = prefs.translationDisplay.toTranslationLanguage()
+        val meta = translationLanguage?.let { activeTranslation(it, prefs, downloaded) }
+        val translation = meta?.let { translationText(it, verse.id) }
+        val translitText = translitFor(verse, prefs)
+        return AyahPreview(
+            ayahLabel = ayahLabel(verse, prefs.surahNameLanguage),
+            arabicText = verse.arabicTextFor(prefs.arabicScript),
+            arabicFont = prefs.arabicFont,
+            arabicFontSize = prefs.arabicFontSize,
+            translitText = translitText,
+            translitFontSize = prefs.translitFontSize,
+            translationText = translation,
+            translationFontSize = prefs.translationFontSize,
+        )
+    }
+}
+
+// Pure core of the reading session's preferences filter, extracted for unit
+// testing: exactly the UserPreferences fields the reading card renders (or
+// echoes in its UI state). Anything NOT listed here changes none of this
+// screen's output, so its emissions skip the full re-render — see
+// ReadingRelevanceTest, which pins both the inclusions and the exclusions.
+// When a new preference starts affecting this card, add it here AND to that
+// test; when one doesn't, leave it out.
+internal fun readingRenderSignature(p: UserPreferences): List<Any?> = listOf(
+    p.readingMode,
+    p.surahNameLanguage,
+    p.arabicScript,
+    p.arabicFont,
+    p.arabicFontSize,
+    p.pronunciation,
+    p.translitFontSize,
+    p.translationDisplay,
+    p.translationFontSize,
+    p.activeTranslationEnglish,
+    p.activeTranslationBengali,
+)
