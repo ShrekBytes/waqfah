@@ -53,11 +53,11 @@ already have — one ayah at a time, without asking you to build a new routine.
 - English or Bengali interface, or follow the system language.
 
 <p align="center">
-  <img src="docs/img/theme1.png" width="19%" alt="Waqfah reading screen theme 1">
-  <img src="docs/img/theme2.png" width="19%" alt="Waqfah reading screen theme 2">
-  <img src="docs/img/theme3.png" width="19%" alt="Waqfah reading screen theme 3">
-  <img src="docs/img/theme4.png" width="19%" alt="Waqfah reading screen theme 4">
-  <img src="docs/img/theme5.png" width="19%" alt="Waqfah reading screen theme 5">
+  <img src="docs/img/theme1.png" width="19%" alt="The reading screen in the Light theme: warm off-white paper with a sage accent">
+  <img src="docs/img/theme2.png" width="19%" alt="The reading screen in the Cream theme: cream paper with a terracotta accent">
+  <img src="docs/img/theme3.png" width="19%" alt="The reading screen in the Stone theme: monochrome sage-gray with an ink accent">
+  <img src="docs/img/theme4.png" width="19%" alt="The reading screen in the Midnight theme: a black OLED background with a lamplight-gold accent">
+  <img src="docs/img/theme5.png" width="19%" alt="The reading screen in the Indigo theme: a night-sky navy background with a gold accent">
 </p>
 
 ## Getting started
@@ -71,13 +71,6 @@ already have — one ayah at a time, without asking you to build a new routine.
 Onboarding also suggests two settings — *unrestricted battery* and
 *notifications* — that keep the monitor reliable. They're optional:
 declining them never blocks anything.
-
-<p align="center">
-  <img src="docs/img/onboarding_preferences.png" width="24%" alt="Onboarding screen showing preferences choice">
-  <img src="docs/img/onboarding_selectapps.png" width="24%" alt="Onboarding screen showing app selection">
-  <img src="docs/img/onboarding_permissions.png" width="24%" alt="Onboarding screen asking for the two permissions: Usage access and Display over other apps">
-</p>
-
 
 ## Download
 
@@ -121,6 +114,10 @@ Two more are recommended, but optional and never required:
   from stopping the background monitor.
 - **Notifications** — keeps the monitor's silent, lowest-priority
   notification visible on Android 13+.
+
+<p align="center">
+  <img src="docs/img/onboarding_permissions.png" width="32%" alt="Waqfah's in-app permissions screen: Usage access and Display over other apps listed under Required, and unrestricted battery and notifications under Recommended">
+</p>
 
 The rest Android grants on its own, each with a single purpose:
 
