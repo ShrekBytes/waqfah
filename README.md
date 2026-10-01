@@ -4,7 +4,7 @@
   <img src="docs/img/showcase.gif" width="24%" alt="Recording of the live pause: a monitored app opens, Waqfah's reading screen appears over it, and skipping continues straight into the app">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="24%" alt="The reading screen: an ayah in Arabic script with transliteration and an English translation, above a Mark Read button">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="24%" alt="The same reading screen shown over another app, with a button to continue into that app">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="24%" alt="The Apps screen: a searchable list of installed apps with toggles, and a Wait before showing again control">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="24%" alt="Change Surah and Ayah Screen - Jump to any ayah and read">
 </p>
 
 <p align="center">
