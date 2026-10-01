@@ -26,9 +26,11 @@ F-Droid's own advice is to package the app yourself with a merge request to
 ## 1. `fdroiddata` metadata — `metadata/dev.shrekbytes.waqfah.fdroid.yml`
 
 ```yaml
+AntiFeatures:
+  - NonFreeAssets
 Categories:
-  - Religion
   - Reading
+  - Religion
 License: AGPL-3.0-only
 AuthorName: ShrekBytes
 AuthorEmail: shrekbytes@duck.com
@@ -43,7 +45,7 @@ Repo: https://github.com/ShrekBytes/waqfah.git
 Builds:
   - versionName: 2.0.0
     versionCode: 4
-    commit: 4f99d704ef7da3228a13c19e62a004a662a82a72
+    commit: 160271ebe38a57826b620be0bb1136aa5612e666
     gradle:
       - fdroid
 
@@ -51,10 +53,14 @@ AutoUpdateMode: Version
 UpdateCheckMode: Tags
 CurrentVersion: 2.0.0
 CurrentVersionCode: 4
-
-AntiFeatures:
-  - NonFreeAssets
 ```
+
+The key order is not cosmetic. The fork's `fdroid rewritemeta` job fails the
+pipeline if the file is not already in fdroidserver's canonical order, and the
+first submission was rejected for exactly that: `AntiFeatures` belonged at the
+top rather than the bottom, `Categories` had to be sorted alphabetically, and
+the file needed a trailing newline. The block above is the output of
+`fdroid rewritemeta`, and re-running that task on it produces no diff.
 
 Notes on the fields:
 
@@ -64,14 +70,16 @@ Notes on the fields:
   that out. Use the peeled form:
 
   ```bash
-  git rev-parse v2.0.0^{commit}   # -> 4f99d704ef7da3228a13c19e62a004a662a82a72
+  git rev-parse v2.0.0^{commit}   # -> 160271ebe38a57826b620be0bb1136aa5612e666
   git rev-list -n 1 v2.0.0        # same thing
   ```
 
-  `v2.0.0` was re-pointed from `31f92fd` to `4f99d70` before submission, because
-  `31f92fd` pinned a JDK 25 daemon toolchain that the F-Droid buildserver cannot
-  provide (see the toolchain note in §2). The tag is annotated in both cases, so
-  the peeled form is the only safe way to read it.
+  `v2.0.0` was re-pointed twice before submission, both times because a build
+  fix had to live inside the tagged commit: first from `31f92fd` to `4f99d70`
+  (the JDK 25 daemon toolchain pin, see §2), then to `160271e` (dropping the
+  foojay toolchain plugin that fdroidserver's suss scanner blocks, see §5). The
+  tag is annotated in every case, so the peeled form is the only safe way to
+  read it.
 
   Every release must be tagged upstream (`v<versionName>`) before a build block
   can reference it, and the tag must be created only once the repo is final —
@@ -249,17 +257,67 @@ third party rights, including ... copyright and trade marks."
 ## 4. Remaining steps
 
 Everything the repo has to supply is in place: metadata, screenshots, a clean
-licence position, and `v2.0.0` tagged at `4f99d70`. That tag has been verified to
+licence position, and `v2.0.0` tagged at `160271e`. That tag has been verified to
 build the way the buildserver builds it — a clean clone with no
 `keystore.properties` and no `local.properties`, JDK 21 only, and Gradle's
 toolchain auto-download disabled, produces `app-fdroid-release-unsigned.apk`.
 What is left:
 
 1. ~~Push `main` and the re-pointed tag~~ — **done.** The remote tag peels to
-   `4f99d70`. The force-push was needed because the tag was moved: a tag that
+   `160271e`. The force-push was needed because the tag was moved: a tag that
    exists only locally, or that still points at the old commit on the remote, is
    invisible to or wrong for F-Droid.
-2. Open the `fdroiddata` merge request with the file from §1, committed as
-   `New App: dev.shrekbytes.waqfah.fdroid`.
+2. ~~Open the `fdroiddata` merge request~~ — **opened.** See §5 for what the
+   first pipeline run rejected.
 3. Expect review feedback in that MR rather than by email. Once merged, the app
    takes roughly 24–48 hours to appear, because signing is a human step.
+
+## 5. First pipeline run — what failed, and why
+
+The first pipeline on the fork (`ShrekBytes/fdroiddata`, pipeline 2902336999)
+failed two jobs. Both are now fixed upstream. `fdroid lint`, `checkupdates`,
+`check source code`, `schema validation` and `tools check scripts` all passed
+on the same run, so the metadata itself was sound — the problems were
+formatting and one build-time dependency.
+
+### `fdroid rewritemeta` — key order
+
+Purely cosmetic to a human, fatal to the job. `fdroidserver` compares the
+committed file against its own canonical serialisation and fails if they
+differ. Three deltas: `AntiFeatures` belonged at the top, not the bottom;
+`Categories` had to be alphabetical (`Reading` before `Religion`); and the file
+needed a trailing newline. The block in §1 is the corrected form — the output
+of `fdroid rewritemeta`, which is idempotent on it.
+
+### `fdroid build` — the foojay toolchain plugin
+
+The job aborted during source scanning, before compiling anything:
+
+```
+ERROR: Found usual suspect 'org.gradle.toolchains.foojay-resolver' at settings.gradle.kts
+ERROR: Could not build app dev.shrekbytes.waqfah.fdroid: Can't build due to 1 error while scanning
+```
+
+`fdroidserver`'s scanner checks every `.gradle`/`.gradle.kts` line against
+[`suss.json`](https://fdroid.gitlab.io/fdroid-suss/suss.json), a list of
+components that fetch code at build time. The entry for
+`org.gradle.toolchains.foojay-resolver-convention` is Apache-2.0, so this is
+not a licensing problem — it is that the plugin downloads a JDK from the
+network mid-build, which the isolated buildserver will not do. The plugin has
+been removed from `settings.gradle.kts`.
+
+It was redundant: nothing in the project declares a `java { toolchain { … } }`
+requirement, and Gradle's own daemon JVM criteria provisions the daemon JDK from
+the `toolchainUrl` entries in `gradle/gradle-daemon-jvm.properties` without any
+plugin. Verified by building a minimal project containing only that file, with
+no plugin and an empty `GRADLE_USER_HOME`: Gradle fetched JDK 21 unaided.
+
+Two things worth knowing:
+
+- `scanignore` could in principle list `settings.gradle.kts` to silence the
+  scanner, but that suppresses the check rather than resolving it. Reviewers
+  would rightly object. Do not do it.
+- The scanner also strips `gradle/gradle-daemon-jvm.properties` and
+  `gradle/wrapper/gradle-wrapper.jar` from the source tree before building, and
+  uses its own `gradlew-fdroid`. So the daemon pin does not apply on the
+  buildserver at all — it matters for local and CI builds, not for F-Droid's.
