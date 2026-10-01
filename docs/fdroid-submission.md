@@ -46,6 +46,7 @@ Builds:
   - versionName: 2.0.0
     versionCode: 4
     commit: 160271ebe38a57826b620be0bb1136aa5612e666
+    subdir: app
     gradle:
       - fdroid
 
@@ -85,6 +86,15 @@ Notes on the fields:
   can reference it, and the tag must be created only once the repo is final —
   F-Droid reads the fastlane metadata from the tagged source, so tagging before
   the screenshots are committed would bake in a release without them.
+- `subdir: app` is required, and is the field that makes the build *finish*. With it,
+  fdroidserver sets its root to `<repo>/app`, so its APK search lands on
+  `app/build/outputs/apk/fdroid/release/`. Without it the search looks in
+  `<repo>/build/outputs/apk`, which does not exist in a standard Android Studio
+  layout, and the build dies after a successful Gradle run with
+  `FileNotFoundError: ... 'build/dev.shrekbytes.waqfah.fdroid/build/outputs/apk'`.
+  The same pattern appears in `com.keylesspalace.tusky`, which also has an `app/`
+  module plus a flavour (`subdir: app` with `gradle: - blue`). It does not weaken
+  the source scan: fdroidserver scans the whole build directory, not `root_dir`.
 - `gradle: - fdroid` selects the `fdroid` flavour, so F-Droid runs
   `assembleFdroidRelease` and picks up the `.fdroid` application ID. The `play`
   flavour is not built here.
@@ -267,18 +277,23 @@ What is left:
    `160271e`. The force-push was needed because the tag was moved: a tag that
    exists only locally, or that still points at the old commit on the remote, is
    invisible to or wrong for F-Droid.
-2. ~~Open the `fdroiddata` merge request~~ — **opened.** See §5 for what the
-   first pipeline run rejected.
-3. Expect review feedback in that MR rather than by email. Once merged, the app
+2. ~~Open the `fdroiddata` merge request~~ — **opened**, and iterated twice on
+   pipeline failures. See §5.
+3. **Update the metadata file in the fork to match §1 exactly** — the only
+   outstanding action. It is byte-identical to the output of `fdroid rewritemeta`
+   on that file, so copying it verbatim is safe. The deltas that matter are the
+   `subdir: app` line, the `commit:` hash, and the key order.
+4. Expect review feedback in that MR rather than by email. Once merged, the app
    takes roughly 24–48 hours to appear, because signing is a human step.
 
-## 5. First pipeline run — what failed, and why
+## 5. Pipeline runs — what failed, and why
 
-The first pipeline on the fork (`ShrekBytes/fdroiddata`, pipeline 2902336999)
-failed two jobs. Both are now fixed upstream. `fdroid lint`, `checkupdates`,
-`check source code`, `schema validation` and `tools check scripts` all passed
-on the same run, so the metadata itself was sound — the problems were
-formatting and one build-time dependency.
+Three separate problems surfaced across the first two pipelines on the fork
+(`ShrekBytes/fdroiddata`). All are fixed upstream. Everything else passed on
+those runs — `fdroid lint`, `checkupdates`, `check source code`,
+`schema validation`, `tools check scripts` — so the metadata itself was sound
+each time. Each failure was in a different layer: metadata formatting, a
+build-time dependency, then the build output path.
 
 ### `fdroid rewritemeta` — key order
 
@@ -321,3 +336,35 @@ Two things worth knowing:
   `gradle/wrapper/gradle-wrapper.jar` from the source tree before building, and
   uses its own `gradlew-fdroid`. So the daemon pin does not apply on the
   buildserver at all — it matters for local and CI builds, not for F-Droid's.
+
+### `fdroid build`, second attempt — `subdir: app`
+
+The second pipeline got much further: **Gradle itself succeeded**, compiling and
+packaging the APK in 4m 12s. The job still failed, in fdroidserver's post-build
+step:
+
+```
+BUILD SUCCESSFUL in 4m 12s
+ERROR: Could not build app dev.shrekbytes.waqfah.fdroid due to unknown error:
+FileNotFoundError: [Errno 2] No such file or directory:
+'build/dev.shrekbytes.waqfah.fdroid/build/outputs/apk'
+```
+
+`fdroidserver/build.py` searches for the artifact under
+`<root_dir>/build/outputs/apk/…`, where `root_dir` is the build directory unless
+`subdir` is set. In a standard Android Studio layout the module lives in `app/`,
+so the real artifact is at `<repo>/app/build/outputs/apk/fdroid/release/` and the
+search path never exists. Worse, the flavour branch calls `os.listdir()` on that
+missing directory without guarding it, so a *successful* build is reported as an
+unknown error.
+
+`subdir: app` is the fix, and it is the standard one — `com.keylesspalace.tusky`
+uses exactly this combination (`subdir: app` plus a flavour) for the same reason.
+Verified by replaying fdroidserver's own lookup logic against a real build tree:
+without `subdir` it raises the same `FileNotFoundError` on the same path; with
+`subdir: app` it resolves to
+`app/build/outputs/apk/fdroid/release/app-fdroid-release.apk`.
+
+`output:` would also work — setting it switches fdroidserver to its `raw` output
+method, which globs an explicit path instead — but `subdir: app` is the
+convention reviewers will recognise.
