@@ -27,3 +27,6 @@ captures/
 *.keystore
 # Points at that material (paths + passwords) — machine-specific too
 /keystore.properties
+
+# Agent working memory (local notes, not project source)
+.workbuddy-ai/

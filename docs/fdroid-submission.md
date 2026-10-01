@@ -22,6 +22,7 @@ F-Droid's own advice is to package the app yourself with a merge request to
 
 ---
 
+
 ## 1. `fdroiddata` metadata — `metadata/dev.shrekbytes.waqfah.fdroid.yml`
 
 ```yaml
@@ -62,7 +63,6 @@ Notes on the fields:
   until the repo is final, because F-Droid reads the fastlane metadata from the
   tagged source — tagging before the screenshots are committed would bake in a
   release with no screenshots. Order of operations:
-
   ```bash
   # 1. commit the screenshots, then tag and push
   git tag v2.0.0
@@ -70,7 +70,6 @@ Notes on the fields:
   # 2. fill the hash in
   git rev-parse v2.0.0
   ```
-
   Every release must be tagged upstream (`v<versionName>`) before a build block
   can reference it.
 - `gradle: - fdroid` selects the `fdroid` flavour, so F-Droid runs
@@ -89,11 +88,12 @@ Notes on the fields:
   line goes away entirely.
 - Commit the metadata MR with the message `New App: dev.shrekbytes.waqfah.fdroid`.
 
+
 ## 2. RFP issue body (alternative route)
 
 Open at <https://gitlab.com/fdroid/rfp/issues/new>:
 
-```markdown
+````markdown
 * [x] The app complies with the inclusion criteria.
 * [x] The app is not already listed in the repo or issue tracker.
 * [x] The app has not already been requested.
@@ -115,7 +115,7 @@ IssueTracker: https://github.com/ShrekBytes/waqfah/issues
 AutoName: Waqfah
 RepoType: git
 Repo: https://github.com/ShrekBytes/waqfah.git
-```
+````
 
 Why do you want this app added to F-Droid: I am the author. Waqfah is free
 software under AGPL-3.0 with no ads, no tracking, and no proprietary
@@ -137,22 +137,25 @@ and Bengali, or follows the system language.
 
 #### Notes for the reviewer
 
-* `NonFreeAssets` — the app bundles the bKash logo, a trademarked asset. The two
+- `NonFreeAssets` — the app bundles the bKash logo, a trademarked asset. The two
   bundled Arabic fonts (`amiri.ttf`, `digital_khatt_indopak.otf`) are both
   OFL-1.1.
-* Both bundled translations are covered by Tanzil's terms: the Quran text license
+- Both bundled translations are covered by Tanzil's terms: the Quran text license
   permits use in any application with attribution and a link to tanzil.net, and
   the translation terms permit non-commercial use (Waqfah is free and ad-free),
   with a backlink required only above three translations. Both credits are on the
   in-app Gratitude screen.
-* Build toolchain is current: Gradle 9.5.0, AGP 9.3.2, `compileSdk`/`targetSdk` 37.
+- Build toolchain is current: Gradle 9.5.0, AGP 9.3.2, `compileSdk`/`targetSdk` 37.
   `gradle/gradle-daemon-jvm.properties` pins a JDK 25 toolchain that Gradle
   downloads on first build; say the word if you would prefer a pinned local JDK
   instead and I will add it.
-* Bundled `quran_core.db` is read-only Quran text data rebuilt each release. Its
+- Bundled `quran_core.db` is read-only Quran text data rebuilt each release. Its
   contents and provenance are written up in `docs/quran-core-db.md`, including a
   verse-by-verse check showing the Uthmani column is Tanzil's text verbatim.
+
 ```
+```
+
 
 ## 3. Asset and licensing status
 
@@ -174,18 +177,15 @@ third party rights, including ... copyright and trade marks."
    a backlink only above three translations, and the Gratitude screen already
    links Tanzil. `quran_core.db` is covered by Tanzil's text license, which
    grants use in "any website or application" with attribution and a link.
-
 3. ~~OFL text for the bundled fonts~~ — **added.** Both `amiri.ttf` and
    `digital_khatt_indopak.otf` are OFL-1.1, which requires the notice to travel
    with the copies. `app/src/main/assets/licenses/` now ships each font's
    upstream OFL file verbatim, so they are inside the APK as well as the repo.
-
 4. ~~`quran_core.db` provenance~~ — **documented.** `docs/quran-core-db.md`
    records the schema, the verified invariants, and a verse-by-verse check
    proving the Uthmani column is Tanzil's text verbatim (5,925 byte-identical,
    311 fully explained, 0 unexplained). It also states plainly that no generator
    script exists in the repo.
-
 5. ~~Signing conflict~~ — **resolved by splitting the channels.** The GitHub
    Releases APK is being dropped, and the two store builds now carry different
    application IDs (`dev.shrekbytes.waqfah` for Play, `dev.shrekbytes.waqfah.fdroid`
@@ -199,24 +199,33 @@ third party rights, including ... copyright and trade marks."
 
 **Still open:**
 
-6. **`ic_bkash.webp` is a trademarked logo** (the policy names trade marks
+1. **`ic_bkash.webp` is a trademarked logo** (the policy names trade marks
    explicitly), and `ic_nagad.webp` / `ic_rocket.webp` are unused but tracked —
    lint reports them as `UnusedResources`. Kept deliberately; expect
    `NonFreeAssets` unless they go.
-7. **Upload `bn/taisirul.db` to `waqfah-translations`.** It is not in that repo
-   yet, so its new download URL 404s until it is. The pinned checksum is
-   `d79f5fc49c072c6432f8521f5ad4dd2f742e98a8a94bad95672b45e6532112d9`. Recover the
-   exact bytes from the commit *before* the asset was deleted (`c05e3fd`), then
-   upload that file unchanged:
 
-   ```bash
-   git show c05e3fd^:app/src/main/assets/translations/bn/taisirul.db > taisirul.db
-   sha256sum taisirul.db   # must print d79f5fc49c072c6432f8521f5ad4dd2f742e98a8a94bad95672b45e6532112d9
-   ```
+**Done:**
 
-## 4. Remaining manual step
+2. ~~Upload `bn/taisirul.db` to `waqfah-translations`~~ — **uploaded and
+   verified.** The file is now in that repo (5,062,656 bytes) and its SHA-256 is
+   `d79f5fc49c072c6432f8521f5ad4dd2f742e98a8a94bad95672b45e6532112d9`, matching the
+   pinned value exactly, so the catalog's download path resolves.
+3. ~~Phone screenshots~~ — **installed.** Five 1080×2400 PNGs at
+   `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` … `5.png`
+   (reading screen, monitored apps, the pause over another app, settings, surah
+   list).
+4. ~~Stale APKs~~ — deleted. The pre-flavour `app-debug.apk` and
+   `app-release.apk` still carried the dead `com.shrekbytes.waqfah` ID and would
+   never have been regenerated.
 
-`fastlane/metadata/android/en-US/images/phoneScreenshots/` is empty. F-Droid
-expects at least two phone screenshots there (`1.png`, `2.png`). They have to come
-from a real device or emulator run — capture the reading screen and the monitored
-apps list, at least 320 px on the short edge.
+## 4. Remaining steps
+
+The repo is ready. What is left is the tag and the MR:
+
+```bash
+git tag v2.0.0
+git push origin main --tags
+git rev-parse v2.0.0   # paste the result into `commit:` in §1
+```
+
+Then open the `fdroiddata` merge request with the file from §1.
