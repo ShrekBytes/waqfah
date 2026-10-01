@@ -1,13 +1,10 @@
 # Waqfah
 
 <p align="center">
+  <img src="docs/img/showcase.gif" width="210" alt="Recording of the live pause: a monitored app opens, Waqfah's reading screen appears over it, and skipping continues straight into the app">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="210" alt="The reading screen: an ayah in Arabic script with transliteration and an English translation, above a Mark Read button">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="210" alt="The same reading screen shown over another app, with a button to continue into that app">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="210" alt="The Apps screen: a searchable list of installed apps with toggles, and a Wait before showing again control">
-</p>
-
-<p align="center">
-  <img src="docs/img/showcase.gif" width="210" alt="Recording of the live pause: a monitored app opens, Waqfah's reading screen appears over it, and skipping continues straight into the app">
 </p>
 
 <p align="center">
@@ -56,11 +53,11 @@ already have — one ayah at a time, without asking you to build a new routine.
 - English or Bengali interface, or follow the system language.
 
 <p align="center">
-  <img src="docs/img/theme1.png" width="160" alt="Waqfah reading screen in one of its themes (1 of 5)">
-  <img src="docs/img/theme2.png" width="160" alt="Waqfah reading screen in one of its themes (2 of 5)">
-  <img src="docs/img/theme3.png" width="160" alt="Waqfah reading screen in one of its themes (3 of 5)">
-  <img src="docs/img/theme4.png" width="160" alt="Waqfah reading screen in one of its themes (4 of 5)">
-  <img src="docs/img/theme5.png" width="160" alt="Waqfah reading screen in one of its themes (5 of 5)">
+  <img src="docs/img/theme1.png" width="160" alt="Waqfah reading screen theme 1">
+  <img src="docs/img/theme2.png" width="160" alt="Waqfah reading screen theme 2">
+  <img src="docs/img/theme3.png" width="160" alt="Waqfah reading screen theme 3">
+  <img src="docs/img/theme4.png" width="160" alt="Waqfah reading screen theme 4">
+  <img src="docs/img/theme5.png" width="160" alt="Waqfah reading screen theme 5">
 </p>
 
 ## Getting started
