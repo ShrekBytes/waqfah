@@ -59,9 +59,26 @@ CurrentVersionCode: 4
 The key order is not cosmetic. The fork's `fdroid rewritemeta` job fails the
 pipeline if the file is not already in fdroidserver's canonical order, and the
 first submission was rejected for exactly that: `AntiFeatures` belonged at the
-top rather than the bottom, `Categories` had to be sorted alphabetically, and
-the file needed a trailing newline. The block above is the output of
-`fdroid rewritemeta`, and re-running that task on it produces no diff.
+top rather than the bottom, and `Categories` had to be sorted alphabetically.
+The block above is the output of `fdroid rewritemeta`, and re-running that task
+on it produces no diff.
+
+**Watch the trailing newline.** It is the easiest part to lose and it fails the
+job on its own. Pasting this block out of a rendered Markdown view often drops
+the final newline, because the selection ends at the last visible character — so
+the file lands in GitLab ending `CurrentVersionCode: 4` with no `\n`, and
+`rewritemeta` reports:
+
+```
+-CurrentVersionCode: 4
+\ No newline at end of file
++CurrentVersionCode: 4
+```
+
+Check with `tail -c1 metadata/dev.shrekbytes.waqfah.fdroid.yml | xxd` — it must
+print `0a`. To repair in place, `sed -i -e '$a\' <file>` appends one only when
+missing, so it is safe to run more than once. In GitLab's web editor, place the
+cursor at the very end of the last line and press Enter before committing.
 
 Notes on the fields:
 
@@ -295,14 +312,19 @@ those runs — `fdroid lint`, `checkupdates`, `check source code`,
 each time. Each failure was in a different layer: metadata formatting, a
 build-time dependency, then the build output path.
 
-### `fdroid rewritemeta` — key order
+### `fdroid rewritemeta` — key order, then the trailing newline
 
 Purely cosmetic to a human, fatal to the job. `fdroidserver` compares the
 committed file against its own canonical serialisation and fails if they
-differ. Three deltas: `AntiFeatures` belonged at the top, not the bottom;
-`Categories` had to be alphabetical (`Reading` before `Religion`); and the file
-needed a trailing newline. The block in §1 is the corrected form — the output
-of `fdroid rewritemeta`, which is idempotent on it.
+differ. Three deltas on the first attempt: `AntiFeatures` belonged at the top,
+not the bottom; `Categories` had to be alphabetical (`Reading` before
+`Religion`); and the file needed a trailing newline.
+
+It took two rounds, because only the first two were fixed and the newline was
+still missing on the second run — the job then reported a single one-line hunk
+whose only content was `\ No newline at end of file`. See the warning in §1: the
+newline is the easiest part to lose when pasting from a rendered Markdown view,
+and it fails the job by itself.
 
 ### `fdroid build` — the foojay toolchain plugin
 
