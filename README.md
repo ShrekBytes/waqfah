@@ -53,11 +53,11 @@ already have — one ayah at a time, without asking you to build a new routine.
 - English or Bengali interface, or follow the system language.
 
 <p align="center">
-  <img src="docs/img/theme1.png" width="160" alt="Waqfah reading screen theme 1">
-  <img src="docs/img/theme2.png" width="160" alt="Waqfah reading screen theme 2">
-  <img src="docs/img/theme3.png" width="160" alt="Waqfah reading screen theme 3">
-  <img src="docs/img/theme4.png" width="160" alt="Waqfah reading screen theme 4">
-  <img src="docs/img/theme5.png" width="160" alt="Waqfah reading screen theme 5">
+  <img src="docs/img/theme1.png" width="19%" alt="Waqfah reading screen theme 1">
+  <img src="docs/img/theme2.png" width="19%" alt="Waqfah reading screen theme 2">
+  <img src="docs/img/theme3.png" width="19%" alt="Waqfah reading screen theme 3">
+  <img src="docs/img/theme4.png" width="19%" alt="Waqfah reading screen theme 4">
+  <img src="docs/img/theme5.png" width="19%" alt="Waqfah reading screen theme 5">
 </p>
 
 ## Getting started
