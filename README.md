@@ -26,9 +26,8 @@ app opens, nothing more.
 
 ## Download
 
-Waqfah is coming soon — in shaa Allah — to
-[F-Droid](https://f-droid.org/packages/dev.shrekbytes.waqfah.fdroid) and Google
-Play.
+Waqfah is coming soon — in shaa Allah — to F-Droid and Google Play. The store
+listings are not live yet, so there is nothing to link to until they are.
 
 The two channels ship separate builds with separate application IDs
 (`dev.shrekbytes.waqfah` for Google Play, `dev.shrekbytes.waqfah.fdroid` for

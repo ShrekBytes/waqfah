@@ -45,7 +45,9 @@ no tracking, no lectures. Digital-wellbeing blockers prevent; Waqfah pauses.
   separate waqfah-translations repository.
 - App UI in English and Bengali, or follows system language; Arabic content
   renders RTL.
-- Distribution: GitHub Releases APK today; F-Droid and Google Play coming.
+- Distribution: separate F-Droid and Google Play builds, each with its own
+  application ID; the earlier GitHub Releases APK was dropped when the two
+  store channels split.
 
 ## Capabilities and Constraints
 
