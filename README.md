@@ -8,8 +8,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue" alt="License: AGPL-3.0-only">
-  <img src="https://img.shields.io/badge/platform-Android%209%2B-3DDC84" alt="Platform: Android 9 or newer">
+[![License](https://img.shields.io/github/license/ShrekBytes/waqfah?style=for-the-badge)](LICENSE)
+  <img src="https://img.shields.io/badge/platform-Android%209%2B-3DDC84?style=for-the-badge&logo=android" alt="Platform: Android 9 or newer">
 </p>
 
 **Waqfah** (وقفة — "a pause") shows a single Quranic ayah before the apps you
