@@ -27,7 +27,8 @@ F-Droid's own advice is to package the app yourself with a merge request to
 
 ```yaml
 AntiFeatures:
-  - NonFreeAssets
+  NonFreeAssets:
+    en-US: Bundles non-free payment logos and Tanzil Quran text/translations.
 Categories:
   - Reading
   - Religion
@@ -119,11 +120,19 @@ Notes on the fields:
   one `versionCode`, which is fine: they are different application IDs.
 - `License` is `AGPL-3.0-only` (SPDX). `LICENSE` is the verbatim AGPL-3.0 text with
   no "or later" clause.
-- `NonFreeAssets` is declared deliberately — the bKash logo is a trademarked
-  asset. Declaring it honestly is better than being asked about it in review. It
-  is the *only* remaining basis for the flag: the non-free font is gone and the
-  bundled translations are Tanzil-covered. Drop the three payment icons and this
-  line goes away entirely.
+- `NonFreeAssets` is declared deliberately, and it has **two independent bases**.
+  The payment logos on the donation screen (`ic_bkash.webp`, `ic_nagad.webp`,
+  `ic_rocket.webp`) are brand marks whose artwork carries no free licence. More
+  importantly, the bundled Quran data is not free either: Tanzil's text licence
+  is verbatim-only ("changing the text is not allowed" — i.e. No Derivatives) and
+  its translation terms are non-commercial. F-Droid's definition of the flag names
+  exactly those two restrictions (NC and ND), so this is the stronger basis.
+  **Dropping the three icons would not clear the flag.** The trademark question is
+  a separate matter, governed by the inclusion policy's "must not infringe third
+  party rights … including trade marks" clause — see §3.
+- **Keep the reason under ~69 characters.** fdroidserver's YAML dumper sets no
+  line width, so it folds plain scalars at 80 columns; a longer reason is rewritten
+  onto two lines and the `rewritemeta` job fails on the diff. See §5.
 - Commit the metadata MR with the message `New App: dev.shrekbytes.waqfah.fdroid`.
 
 This file has been checked with F-Droid's own tooling, not just by eye. `fdroid lint`
@@ -227,16 +236,20 @@ different application IDs on purpose — `dev.shrekbytes.waqfah` for Google Play
 to match the Play key and there is no published signature to reuse. F-Droid
 should sign with its own key.
 
-**`NonFreeAssets` is declared deliberately.** The app bundles the bKash logo, a
-trademarked asset, in its donation screen. Both bundled Arabic fonts — Amiri and
-Digital Khatt Indopak — are OFL-1.1, and their licence texts ship inside the APK
-in `app/src/main/assets/licenses/`.
+**`NonFreeAssets` is declared deliberately**, and it covers two things. The
+donation screen bundles the bKash, Nagad and Rocket payment logos, used
+nominatively to indicate which methods are accepted; the artwork itself is not
+under a free licence. The bundled Quran text and translations come from the
+Tanzil Project, whose terms permit verbatim redistribution only ("changing the
+text is not allowed") and non-commercial use of translations — the NC and ND
+restrictions the flag exists for. Both bundled Arabic fonts — Amiri and Digital
+Khatt Indopak — are OFL-1.1, and their licence texts ship inside the APK in
+`app/src/main/assets/licenses/`.
 
-**Bundled Quran text and translations** are used under the Tanzil Project's
-terms, which permit use in any application with attribution and a link to
-tanzil.net; both are credited on the in-app Gratitude screen. The provenance of
-`quran_core.db` is written up in `docs/quran-core-db.md`, including a
-verse-by-verse check showing the Uthmani column is Tanzil's text verbatim.
+The provenance of `quran_core.db` is written up in `docs/quran-core-db.md`,
+including a verse-by-verse check showing the Uthmani column is Tanzil's text
+verbatim; both the text and the translations are credited on the in-app
+Gratitude screen, with a link to tanzil.net.
 
 **Build notes.** Two product flavours select the store channel; `subdir: app` is
 required because the Android module lives in `app/`. `compileSdk`/`targetSdk` 37,
@@ -286,14 +299,17 @@ third party rights, including ... copyright and trade marks."
 
 **Decided — accepted, no action:**
 
-1. **`ic_bkash.webp` is a trademarked logo, and the app ships it deliberately.**
-   The policy names trade marks explicitly, so the metadata declares
-   `NonFreeAssets` and the badge is expected. That is a filterable label rather
-   than a rejection, and using a payment brand's mark to say which method is
-   accepted is ordinary nominative use — plenty of F-Droid apps carry this badge.
-   The brand recognition is worth more on a donate screen than a clean listing,
-   so the logo stays. If it is ever dropped, remove the `AntiFeatures:` block in
-   §1 as well: it is the only remaining basis for the flag.
+1. **The payment logos stay, but they are not the basis for the flag.**
+   `ic_bkash.webp` is a brand mark whose artwork is under no free licence, and the
+   app ships it deliberately: using a payment brand's mark to say which method is
+   accepted is ordinary nominative use, and the brand recognition is worth more on
+   a donate screen than a clean listing. The flag rests on the *licence* position
+   (no free licence for the artwork, plus Tanzil's ND/NC terms — see §1), **not** on
+   the trademark. F-Droid's `NonFreeAssets` definition is licence-based and never
+   mentions trade marks; trade marks live in the inclusion policy's
+   "must not infringe third party rights" clause, which the flag does not satisfy
+   or excuse. So the logo is not what makes the flag correct, and removing it
+   would not remove the flag.
    `ic_nagad.webp` and `ic_rocket.webp` are placeholders for accounts that will
    be added later, so they stay too. Lint reports both as `UnusedResources` until
    the rows referencing them are uncommented — two warnings, neither fatal, and
@@ -331,24 +347,22 @@ What is left:
    `160271e`.
 2. ~~Get the fork's pipeline green~~ — **done.** Four failures, each in a
    different layer; see §5.
-3. **Open the merge request — this is the outstanding action.** The metadata is
-   committed to `ShrekBytes/fdroiddata` `master` (four commits on top of
-   upstream), but no MR exists on `fdroid/fdroiddata` yet. A green pipeline only
-   proves the branch is sound; nothing reaches a reviewer until the MR is
-   opened. Use the *App inclusion* template and:
-   - **Title:** `New app: Waqfah` — the template asks for that format, with a
-     lowercase "app".
-   - **Source/target:** `ShrekBytes/fdroiddata` `master` → `fdroid/fdroiddata`
-     `master`.
-   - Make sure it is **not** a Draft.
-   - **Answer the Reproducible Builds item.** It is deliberately not enabled:
-     the two channels use different application IDs on purpose, so F-Droid's
-     signing key never has to match the Play key and there is no published
-     signature to reuse. The template asks for the reason if you cannot enable
-     it — give it rather than leaving the box unchecked.
-   - **Do not squash or rebase.** The template says not to rebase when there is
-     no conflict; the four commits are fine as they are.
-4. Wait for a packager. Review happens in the MR, not by email. Once merged, the
+3. ~~Open the merge request~~ — **done.** [!50834](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/50834),
+   title `New app: Waqfah`, source `ShrekBytes/fdroiddata` `master` →
+   `fdroid/fdroiddata` `master`, not a Draft. The Reproducible Builds item is
+   answered in the description rather than enabled: the two channels use different
+   application IDs on purpose, so F-Droid's signing key never has to match the Play
+   key and there is no published signature to reuse.
+4. **Answer the first review round — this is the outstanding action.** linsui
+   (2026-10-02) asked for two things, neither of which needs a rebase:
+   - *"Please enable 'Squash commits'."* — tick **Squash commits when merge
+     request is accepted** in the MR edit page. This supersedes the older "do not
+     squash" advice that used to sit here; the reviewer asked for it directly.
+   - *"Add the reason."* — an inline comment anchored to line 2 of the metadata,
+     i.e. the `NonFreeAssets` line. Replace it with the reason shown in §1,
+     keeping it under ~69 characters so `rewritemeta` does not fold it (§5).
+   Commit to the fork's `master`; the MR picks it up on its own. No force-push.
+5. Wait for a packager. Review happens in the MR, not by email. Once merged, the
    app takes roughly 24–48 hours to appear, because signing is a human step.
 
 ## 5. Pipeline runs — what failed, and why
@@ -373,6 +387,26 @@ still missing on the second run — the job then reported a single one-line hunk
 whose only content was `\ No newline at end of file`. See the warning in §1: the
 newline is the easiest part to lose when pasting from a rendered Markdown view,
 and it fails the job by itself.
+
+
+### `fdroid rewritemeta`, again — line folding
+
+Adding the `NonFreeAssets` reason on 2026-10-02 brought the same job back for a
+third reason. fdroidserver's dumper (`ruamel.yaml` with `indent(mapping=2,
+sequence=4, offset=2)`) sets no line width, so it folds plain scalars at 80
+columns. A reason of 106 characters was rewritten as two lines — with a trailing
+space after the break, which is easy to lose when copying — and the job would have
+failed on the diff even though the YAML was valid.
+
+Reproduced locally against `ruamel.yaml` with the same settings: the break lands at
+the last space that still fits within 80 columns. Since `    en-US: ` occupies 11 of
+those, **a reason of roughly 69 characters or less stays on one line**; 74 already
+folds. The committed reason is 66 characters and produces no diff.
+
+Shortening the reason is the cheap fix. There is no local `fdroid` binary in this
+project and no `fdroiddata` clone, so reproducing the folded bytes by hand — trailing
+space included — is not worth it. If a long reason is ever genuinely needed, run
+`fdroid rewritemeta` and commit its output rather than hand-wrapping.
 
 
 ### `fdroid build` — the foojay toolchain plugin

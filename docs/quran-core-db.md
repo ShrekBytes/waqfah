@@ -93,6 +93,16 @@ Both conditions are met: the in-app Gratitude screen credits the Tanzil Project
 with a link to `tanzil.net`. QUL is credited there too. The text is redistributed
 unmodified apart from the two documented transformations above.
 
+**This is not a free licence, and that is deliberate.** The verbatim-only clause is
+a No Derivatives restriction, and Tanzil's translation terms are non-commercial —
+the two restrictions F-Droid's `NonFreeAssets` anti-feature is defined around. The
+bundled Quran data is therefore one of the two bases for the `NonFreeAssets` flag in
+`metadata/dev.shrekbytes.waqfah.fdroid.yml` (see `docs/fdroid-submission.md` §1); the
+other is the payment-logo artwork on the donation screen. F-Droid's inclusion policy
+allows this: assets may use non-commercial licences provided they permit
+redistribution, and Tanzil's do. So it is a filterable label, not a compliance
+problem, and it does not block the submission.
+
 ## The gap
 
 **No generation script exists in this repository.** The file was assembled
