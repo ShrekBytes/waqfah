@@ -133,6 +133,12 @@ Notes on the fields:
 - **Keep the reason under ~69 characters.** fdroidserver's YAML dumper sets no
   line width, so it folds plain scalars at 80 columns; a longer reason is rewritten
   onto two lines and the `rewritemeta` job fails on the diff. See §5.
+- **The reason is user-facing.** F-Droid renders it on the public app page under
+  "This app contains non-free assets", so it is read by people deciding whether to
+  install — not only by the reviewer. State what is non-free and why, and stop.
+  The licence audit of everything *else* — the OFL fonts, the provenance of the
+  bundled database — belongs in the MR description and in the repo docs, never in
+  this field.
 - Commit the metadata MR with the message `New App: dev.shrekbytes.waqfah.fdroid`.
 
 This file has been checked with F-Droid's own tooling, not just by eye. `fdroid lint`
@@ -242,14 +248,16 @@ nominatively to indicate which methods are accepted; the artwork itself is not
 under a free licence. The bundled Quran text and translations come from the
 Tanzil Project, whose terms permit verbatim redistribution only ("changing the
 text is not allowed") and non-commercial use of translations — the NC and ND
-restrictions the flag exists for. Both bundled Arabic fonts — Amiri and Digital
-Khatt Indopak — are OFL-1.1, and their licence texts ship inside the APK in
-`app/src/main/assets/licenses/`.
+restrictions the flag exists for.
 
 The provenance of `quran_core.db` is written up in `docs/quran-core-db.md`,
 including a verse-by-verse check showing the Uthmani column is Tanzil's text
 verbatim; both the text and the translations are credited on the in-app
 Gratitude screen, with a link to tanzil.net.
+
+Everything else bundled is freely licensed: both Arabic fonts — Amiri and
+Digital Khatt Indopak — are OFL-1.1, and their licence texts ship inside the APK
+in `app/src/main/assets/licenses/`.
 
 **Build notes.** Two product flavours select the store channel; `subdir: app` is
 required because the Android module lives in `app/`. `compileSdk`/`targetSdk` 37,
