@@ -31,7 +31,7 @@ shared, so every asset below has to satisfy both.
 
 | Asset | Requirement | State |
 | --- | --- | --- |
-| App title | ≤ 30 chars | `title.txt` — "Waqfah — Quran before apps" (26) |
+| App title | ≤ 30 chars | `title.txt` — "Waqfah - Quran before apps" (26) |
 | Short description | ≤ 80 chars | Present, 54 |
 | Full description | ≤ 4000 chars | Present, 2429, plain-text reflowed (§2) |
 | App icon | 512×512 PNG, no alpha | `images/icon.png` — 512×512 RGB |
@@ -41,6 +41,11 @@ shared, so every asset below has to satisfy both.
 | Privacy policy URL | Public URL, required | `docs/privacy-policy.html` — needs hosting (§3) |
 | Tablet screenshots | Optional | Not supplied; omitting costs tablet placement, nothing else |
 | Promo video | Optional | Not supplied |
+
+**The title uses a plain hyphen, not an em dash.** It has to stay that way:
+`fastlane supply` pushes `title.txt`, so if the file disagrees with the title
+already live in the Console, the next supply run silently rewrites the live
+listing. The Console is the source of truth here, not this repo.
 
 **Release notes are not shared.** `changelogs/4.txt` is an F-Droid changelog and
 is wrong for Play's first release. It opens "First release under the new package
@@ -225,6 +230,35 @@ The longer explanation, if the form asks for more:
 > to be running before the monitored app opens. No standard foreground service
 > type covers this: it is not playing media, not locating, not syncing, and
 > not completing a short task. It never reads the contents of other apps.
+
+Two more fields in that declaration are easy to miss, and both are mandatory.
+
+**A demonstration video is required**, one link per declared foreground service
+type, showing the steps the user takes to trigger the feature. This is not
+optional and it is the field most likely to stall the declaration.
+`play-fgs-video-script.md` is the shot-by-shot script for Waqfah's. Upload it
+unlisted and open the link in an incognito window before pasting it into the
+Console — a link that prompts for a sign-in cannot be reviewed.
+
+**The description must also cover what breaks if the task is deferred or
+interrupted.** The form asks for that explicitly, and the explanation above only
+covers why the service is needed, not why it cannot start late or be paused.
+Append:
+
+> **Why it must start immediately.** The service has to already be running at
+> the moment a monitored app is opened. If the system deferred the start,
+> Waqfah would learn about the open only after the user was already inside the
+> app, and the reading screen could not appear before it. The feature would
+> simply not work.
+>
+> **Why it cannot be paused or restarted.** The service's only job is to notice
+> a foreground change the instant it happens. A paused or restarted service
+> misses the transitions that occur while it is not running, and there is no
+> event to replay later — by the time it resumes, the app is already open and
+> the moment to show the reading screen has passed.
+
+**Use case: "Other".** No preset maps to this, and the manifest agrees —
+`foregroundServiceType="specialUse"` is the only honest choice.
 
 ### Sensitive permissions
 
@@ -487,39 +521,45 @@ already 24-bit RGB — confirm with
 The account is **personal**, so the closed test is the critical path and
 everything else is parallel work that fits inside its 14 days.
 
-1. **Create the app record** — name, default language `en-US`, Free, App.
-2. **Complete App content** (§4) — App access, Data safety, content rating,
-   target audience, the foreground-service justification, and both permission
-   justifications. App access is the one most likely to be skipped and the one
-   most likely to cost a rejection: the core feature needs two permissions
-   granted from system settings, and a reviewer who is not told that will see
-   the app do nothing.
-3. **Enroll in Play App Signing** (§2) when the first upload asks, using
-   `waqfah-release.jks` as the upload key and letting Google hold the signing
-   key.
-4. **Upload the AAB to internal testing** and smoke-test the Play-signed build
-   (§6). Do this first among the uploads — it catches problems before 12 people
-   depend on the build.
-5. **Start the closed test the same day** (§6). Create the closed track, add
-   your tester list, send the tester briefing, and get 12 opted in. **This is
-   the critical path** — the 14 continuous days start when the 12th tester opts
-   in, and nothing else on this list is on the critical path.
-6. **Run the test for real.** Log feedback, fix what comes back, keep a record.
-   The production application asks what you learned and what changed.
-7. **Apply for production access** from the Dashboard once the window closes,
-   then roll out.
-8. **Bengali store listing.** The app ships a full Bengali interface and the
+**Submission is behind us.** The app content declarations cleared review and
+the app is in closed testing with a tester roster above the 12 minimum, so what
+remains is the testing window and the production application. Everything that
+used to be on this list is in the done section below.
+
+1. **Record the day the 12th tester opted in.** That date starts the 14
+   continuous days, and nothing else on this list is on the critical path. Play
+   Console counts testers who are *opted in*, not invitations — an invitation
+   nobody accepted counts for nothing, and a tester who opts out before day 14
+   does not count at all: opting back in later restarts that slot's clock.
+2. **Run the test for real.** Log feedback, fix what comes back, keep a record.
+   The production application asks what you learned and what changed, and
+   reconstructing that from memory at the end produces the vague answers that
+   earn another round.
+3. **Apply for production access** from the Dashboard once the window closes,
+   then roll out. Day 14 is a milestone, not approval — Google can and does
+   request additional testing.
+4. **Bengali store listing.** The app ships a full Bengali interface and the
    policy page is bilingual, but `fastlane/metadata/android/bn/` does not
    exist. Do not machine-translate the listing copy: it is user-facing
    marketing for a religious app, which is exactly where a bad translation
    does damage. Translate it properly or reuse the wording already in
    `values-bn/strings.xml`.
-9. **Release notes.** Do **not** reuse `changelogs/4.txt` — it is an F-Droid
+5. **Release notes.** Do **not** reuse `changelogs/4.txt` — it is an F-Droid
    upgrade note and reads as nonsense to a first-time Play user. Paste the
    first-release text from §1 into the Console's release-notes field.
 
 Done, recorded here so they are not re-checked:
 
+- ~~Create the app record~~ — created, default language `en-US`, Free, App.
+- ~~Complete App content (§4)~~ — cleared review. App access, Data safety,
+  content rating, target audience, the foreground-service declaration including
+  its demonstration video, and both sensitive-permission justifications were
+  all accepted. The App access instructions mattered: without them a reviewer
+  installs the app, sees nothing happen, and rejects it.
+- ~~Enroll in Play App Signing (§2)~~ — `waqfah-release.jks` enrolled as the
+  upload key, Google holds the app signing key.
+- ~~Upload the AAB and start the closed test~~ — bundle uploaded, closed track
+  live with 15+ testers recruited, above the 12 minimum.
 - ~~Privacy policy hosting~~ — live at <https://shrekbytes.github.io/waqfah/>,
   served by `.github/workflows/pages.yml`.
 - ~~Confirm `targetSdk 37` is accepted~~ — Android 17 / API 37 went stable on
