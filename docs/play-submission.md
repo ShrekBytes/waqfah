@@ -124,6 +124,27 @@ actually gets decided. The wording below is drawn from the README's
 Permissions section and the in-app rationale screens, so it matches what a
 reviewer sees if they install the app.
 
+### App access
+
+Play asks whether any functionality is restricted, and if so, for instructions
+so a reviewer can reach it. **Answer yes** — Waqfah's core feature does not work
+until the user grants two permissions from system settings, and a reviewer who
+is not told this will install the app, see nothing happen, and reject it.
+
+Suggested wording for the reviewer instructions:
+
+> The app's core feature needs two permissions, both granted from Android
+> settings rather than an in-app prompt:
+>
+> 1. Open Waqfah and complete the short tour, or skip it.
+> 2. On the Permissions screen, tap "Usage access" and enable Waqfah in the
+>    system list that opens.
+> 3. Tap "Display over other apps" and enable it in the system list that opens.
+> 4. Open the Apps tab and enable any app (for example, Settings or Calculator).
+> 5. Leave Waqfah and open that app. The reading screen appears over it.
+>
+> No account or login is needed. Nothing is restricted behind a sign-in.
+
 ### Data safety
 
 - Does the app collect or share any required user data types? **No.**
@@ -359,9 +380,12 @@ already 24-bit RGB — confirm with
 2. **Create the app record** — name, default language `en-US`, Free, App.
 3. **Enroll in Play App Signing** (§2), uploading `waqfah-release.jks` as the
    upload key.
-4. **Complete App content** (§4) — Data safety, content rating, target
-   audience, the foreground-service justification, and both permission
-   justifications.
+4. **Complete App content** (§4) — App access, Data safety, content rating,
+   target audience, the foreground-service justification, and both permission
+   justifications. App access is the one most likely to be skipped and the one
+   most likely to cost a rejection: the core feature needs two permissions
+   granted from system settings, and a reviewer who is not told that will see
+   the app do nothing.
 5. ~~Confirm `targetSdk 37` is accepted.~~ **Resolved: it is.** Android 17 /
    API 37 went stable on 2026-06-16, so `targetSdk 37` is a released API level
    and Play accepts it for production uploads. Play's floor is 36 for new apps
