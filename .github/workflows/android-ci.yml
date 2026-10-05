@@ -51,6 +51,15 @@ jobs:
       - name: Assemble release APKs (R8 check)
         run: ./gradlew :app:assemblePlayRelease :app:assembleFdroidRelease --console=plain
 
+      # The Play upload artifact is an AAB, not an APK, and until now nothing
+      # built it — the bundle path could have broken without CI noticing.
+      # CI has no keystore, so this proves the bundle compiles and packages but
+      # says nothing about the signature: with no signing config the task emits
+      # an unsigned `app-play-release.aab` (note: no `-unsigned` suffix, unlike
+      # the APK). See docs/play-submission.md.
+      - name: Bundle Play release (AAB check)
+        run: ./gradlew :app:bundlePlayRelease --console=plain
+
       - name: Upload play debug APK
         uses: actions/upload-artifact@v7
         with:
@@ -87,8 +96,12 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # Newest stable system image (no API 37 image is published yet); bump
-      # the pin deliberately when targetSdk bumps.
+      # API 36 is pinned because that is what this job was last verified
+      # against — not because a 37 image is missing. `android-37.0;google_apis;
+      # x86_64` has been published since Android 17 went stable on 2026-06-16.
+      # targetSdk is already 37, so bumping this to 37.0 is due; do it as its
+      # own change with a green run behind it, since the KVM workaround above
+      # is tuned to this image and boot behaviour is the fragile part.
       - name: Run instrumented tests on an emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:

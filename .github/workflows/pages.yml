@@ -1,0 +1,61 @@
+name: Privacy policy page
+
+# Publishes docs/privacy-policy.html as the site root.
+#
+# Google Play requires a public URL for the privacy policy before an app can be
+# submitted. Publishing only that one file — rather than pointing Pages at
+# `/docs` — keeps the site to the policy alone: a `/docs` source would also
+# serve docs/audits/*.md, docs/RELEASING.md and docs/fdroid-submission.md as
+# indexable web pages. Nothing there is confidential (the repository is public
+# under AGPL-3.0), but a store reviewer should not land on maintainer notes.
+#
+# REQUIRES a one-time setting: Settings → Pages → Build and deployment →
+# Source = "GitHub Actions". The deploy job fails until that is set.
+#
+# Resulting URL: https://shrekbytes.github.io/waqfah/
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/privacy-policy.html
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let an in-flight deploy finish rather than cancelling it half-applied.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Renamed to index.html so the site root *is* the policy — that is the
+      # URL to give Google Play, with no filename to remember.
+      - name: Stage the page
+        run: |
+          mkdir -p _site
+          cp docs/privacy-policy.html _site/index.html
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
