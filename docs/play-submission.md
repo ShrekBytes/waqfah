@@ -4,6 +4,10 @@ Working notes for getting Waqfah into Google Play.
 
 - **Application ID (Play build):** `dev.shrekbytes.waqfah`
 - **Application ID (F-Droid build):** `dev.shrekbytes.waqfah.fdroid`
+- **Developer account:** **personal**, created after 2023-11-13 — so the
+  12-tester / 14-day closed test is required before production access, and it
+  is the critical path. See §6.
+- **Privacy policy (live):** <https://shrekbytes.github.io/waqfah/>
 - **Reference:** <https://support.google.com/googleplay/android-developer/>,
   <https://developer.android.com/distribute/best-practices/launch/launch-checklist>,
   <https://developer.android.com/google/play/requirements/target-sdk>
@@ -312,17 +316,100 @@ build. Grant Usage Access and Display-over-other-apps by hand and confirm the
 reading screen still appears over a monitored app — that path is the whole
 product, and it is the one Play's signature change could plausibly disturb.
 
-**The gate.** If the developer account is a *personal* account created after
-2023-11-13, Google requires a closed test with **at least 12 testers opted in
-for 14 continuous days** before production access can be requested. The clock
-starts when the 12th tester has opted in, not when the build is uploaded.
-Organization accounts are exempt. This is calendar time, not effort — start it
-before doing anything else that can wait.
-
 **Pre-launch report** runs automatically on the uploaded AAB, on real devices.
 It will drive the UI, rotate, and force-stop. Because Waqfah needs two
 permissions granted by hand, expect the report to show the app mostly idle;
 that is not a failure. What it is good for is surfacing crashes.
+
+### The gate — personal accounts only
+
+This account is a **personal** account created after 2023-11-13, so the
+requirement applies and it is the longest pole in the whole submission.
+**Internal testing does not satisfy it.** Only a closed test does.
+
+The rule, precisely:
+
+- **At least 12 testers must be opted in**, not merely invited. An invitation
+  nobody accepted counts for nothing.
+- They must stay opted in **continuously for 14 days**, and the qualifying
+  period is the 14 days *immediately preceding* the production request.
+- **A tester who opts out before day 14 never counts.** Opting back in later
+  does not stitch the two periods into one continuous 14-day window. That
+  tester's clock restarts.
+- Recruit a **buffer above 12**. One dropout at day 10 can drop the qualifying
+  count below the minimum and cost a fresh 14 days for that slot.
+- Reaching day 14 is a milestone, **not approval**. Google can request
+  additional testing, and it does.
+
+### Why Waqfah's testers need a briefing
+
+This is the part that makes this app's closed test different from a typical
+one, and the part most likely to be mishandled.
+
+The requirement is about continuous opt-in, but the production-access
+application asks **substantive questions about engagement**: whether testers
+used the available features, whether usage matched production expectations,
+what feedback came back, and what changed as a result. A roster of 12 people
+who opted in, installed, saw a blank-looking app, and never touched it again
+produces weak answers to all of those — and "insufficient tester engagement" is
+one of Google's stated reasons for demanding another round.
+
+Waqfah does nothing until two permissions are granted from system settings.
+Nobody grants those unprompted. **Send every tester the instructions below
+before they install**, not after they report it as broken.
+
+### Tester instructions (send this to all of them)
+
+> Thanks for helping test Waqfah. It takes about three minutes to set up, and
+> you need to do one step in Android settings or the app will look like it does
+> nothing.
+>
+> 1. Open the opt-in link I sent you and accept. Then install Waqfah from the
+>    Play Store link on the same page.
+> 2. Open Waqfah. A short tour runs — you can skip it.
+> 3. On the Permissions screen, tap **Usage access** and switch Waqfah on in
+>    the Android list that opens. Come back and tap **Display over other apps**
+>    and switch it on too. Both of these are in Android's own settings, not
+>    inside the app, so it feels like leaving the app. That is normal.
+> 4. Go to the **Apps** tab and turn on a couple of apps you use often —
+>    anything, say your messaging app and a game.
+> 5. Now leave Waqfah and open one of those apps. A screen with a Quranic verse
+>    should appear over it. Read it or tap to skip, and you continue into the
+>    app.
+> 6. Try it a few times over the next two weeks — open your monitored apps as
+>    you normally would.
+>
+> Please tell me anything that looks wrong, feels slow, or is confusing.
+> Especially: if the verse screen does not appear, tell me which app you
+> opened and what your phone is.
+>
+> One thing to know: Waqfah and an older build cannot be installed at the same
+> time. If you have Waqfah installed already, uninstall it first.
+
+### Practical mechanics
+
+- **Access method:** an email list or a Google Group, set when you create the
+  closed track. An email list is simpler; a Google Group scales better and
+  lets testers add themselves.
+- **Verify opt-ins, don't count invitations.** Play Console shows the actual
+  opted-in tester count. Track your own roster alongside it so you notice a
+  dropout the same week rather than on the day you apply.
+- **Keep a feedback log** as you go. The production application asks what you
+  learned and what you changed; reconstructing that after the fact from memory
+  produces vague answers.
+- **Fix what testers report** during the window. It is free evidence for the
+  production application, and it is what the 14 days are actually for.
+- **Timing.** The window is 14 continuous days from the day the 12th tester
+  opts in. From that date, expect production access some days after the
+  application, not the same day.
+
+### Applying
+
+Dashboard → **Apply for production**. The form covers the closed test, the app,
+and production readiness, and it asks about tester engagement, what you learned,
+and how you decided the app was ready. Answer it with what actually happened —
+Google can request another round, and an application that does not match the
+observable test data is a good way to get one.
 
 ---
 
@@ -373,27 +460,30 @@ already 24-bit RGB — confirm with
 
 ## 8. Remaining steps
 
-1. **Enable Pages and confirm the URL** (§3). Settings → Pages → Source =
-   "GitHub Actions", then check that `https://shrekbytes.github.io/waqfah/`
-   renders the policy. Put that URL into the Console. This is the only
-   listing blocker.
-2. **Create the app record** — name, default language `en-US`, Free, App.
-3. **Enroll in Play App Signing** (§2), uploading `waqfah-release.jks` as the
-   upload key.
-4. **Complete App content** (§4) — App access, Data safety, content rating,
+The account is **personal**, so the closed test is the critical path and
+everything else is parallel work that fits inside its 14 days.
+
+1. **Create the app record** — name, default language `en-US`, Free, App.
+2. **Complete App content** (§4) — App access, Data safety, content rating,
    target audience, the foreground-service justification, and both permission
    justifications. App access is the one most likely to be skipped and the one
    most likely to cost a rejection: the core feature needs two permissions
    granted from system settings, and a reviewer who is not told that will see
    the app do nothing.
-5. ~~Confirm `targetSdk 37` is accepted.~~ **Resolved: it is.** Android 17 /
-   API 37 went stable on 2026-06-16, so `targetSdk 37` is a released API level
-   and Play accepts it for production uploads. Play's floor is 36 for new apps
-   since 2026-08-31, so the app clears it either way. No change needed.
-6. **Upload the AAB to internal testing** and smoke-test the Play-signed build
-   (§6).
-7. **Start the closed test** if the account is personal (§6). Do this as early
-   as the build is installable, because it is the long pole.
+3. **Enroll in Play App Signing** (§2) when the first upload asks, using
+   `waqfah-release.jks` as the upload key and letting Google hold the signing
+   key.
+4. **Upload the AAB to internal testing** and smoke-test the Play-signed build
+   (§6). Do this first among the uploads — it catches problems before 12 people
+   depend on the build.
+5. **Start the closed test the same day** (§6). Create the closed track, add
+   your tester list, send the tester briefing, and get 12 opted in. **This is
+   the critical path** — the 14 continuous days start when the 12th tester opts
+   in, and nothing else on this list is on the critical path.
+6. **Run the test for real.** Log feedback, fix what comes back, keep a record.
+   The production application asks what you learned and what changed.
+7. **Apply for production access** from the Dashboard once the window closes,
+   then roll out.
 8. **Bengali store listing.** The app ships a full Bengali interface and the
    policy page is bilingual, but `fastlane/metadata/android/bn/` does not
    exist. Do not machine-translate the listing copy: it is user-facing
@@ -402,6 +492,16 @@ already 24-bit RGB — confirm with
    `values-bn/strings.xml`.
 9. **Release notes.** Reuse `changelogs/4.txt` as the "What's new" text. Play
    caps it at 500 characters; the file is ~280.
+
+Done, recorded here so they are not re-checked:
+
+- ~~Privacy policy hosting~~ — live at <https://shrekbytes.github.io/waqfah/>,
+  served by `.github/workflows/pages.yml`.
+- ~~Confirm `targetSdk 37` is accepted~~ — Android 17 / API 37 went stable on
+  2026-06-16, so it is a released API level and Play accepts it. Play's floor is
+  36 for new apps since 2026-08-31. No change needed.
+- ~~Verify the AAB build path~~ — built and verified both signed and unsigned;
+  `:app:bundlePlayRelease` now runs in CI.
 
 Nothing here changes `versionCode 4` / `versionName 2.0.0` — that is a valid
 first Play release. After it, each channel's `versionCode` only needs to
