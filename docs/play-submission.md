@@ -37,10 +37,34 @@ shared, so every asset below has to satisfy both.
 | App icon | 512×512 PNG, no alpha | `images/icon.png` — 512×512 RGB |
 | Feature graphic | 1024×500 PNG/JPEG, no alpha | `images/featureGraphic.png` — 1024×500 RGB |
 | Phone screenshots | 2–8, 320–3840 px | Five at 1080×2400 |
-| Release notes | ≤ 500 chars | `changelogs/4.txt`, 309 |
+| Release notes | ≤ 500 chars | **Play needs its own — see below** |
 | Privacy policy URL | Public URL, required | `docs/privacy-policy.html` — needs hosting (§3) |
 | Tablet screenshots | Optional | Not supplied; omitting costs tablet placement, nothing else |
 | Promo video | Optional | Not supplied |
+
+**Release notes are not shared.** `changelogs/4.txt` is an F-Droid changelog and
+is wrong for Play's first release. It opens "First release under the new package
+name, so this version installs alongside an older one rather than updating it" —
+which is meaningful to someone upgrading from the old GitHub Releases APK, and
+nonsense to a Play user who has never installed Waqfah. It also uses `*` bullets,
+which Play renders literally.
+
+Play's Console release-notes field is just a text box. Paste this (382 of the
+500 allowed characters):
+
+```
+First release.
+
+Waqfah shows a single Quranic ayah before the apps you choose. Pick your apps, grant two permissions, and it runs quietly in the background: no accounts, no ads, no tracking, and nothing leaves your device.
+
+Sequential or random reading across all 6,236 ayat, Indopak and Uthmani scripts, English and Bengali translations, seven themes, and a per-app pause interval.
+```
+
+If you later drive Play uploads with `fastlane supply`, it reads
+`fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` — the same path
+F-Droid reads. The two audiences want different text for *this* version only,
+because Play has no prior installs and F-Droid does. From `versionCode 5` onward
+the same note works for both, so only this first one needs handling separately.
 
 **The full description is shared with F-Droid, so it must be valid for both.**
 F-Droid renders it as Markdown; Play renders it as plain text. Markdown syntax
@@ -490,8 +514,9 @@ everything else is parallel work that fits inside its 14 days.
    marketing for a religious app, which is exactly where a bad translation
    does damage. Translate it properly or reuse the wording already in
    `values-bn/strings.xml`.
-9. **Release notes.** Reuse `changelogs/4.txt` as the "What's new" text. Play
-   caps it at 500 characters; the file is ~280.
+9. **Release notes.** Do **not** reuse `changelogs/4.txt` — it is an F-Droid
+   upgrade note and reads as nonsense to a first-time Play user. Paste the
+   first-release text from §1 into the Console's release-notes field.
 
 Done, recorded here so they are not re-checked:
 
