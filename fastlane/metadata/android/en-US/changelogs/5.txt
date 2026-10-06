@@ -1,0 +1,5 @@
+Bookmarks. Save any ayah while you read and return to it later.
+
+* Tap the ribbon on the reading card to bookmark an ayah
+* A new Bookmarks tab lists everything you saved, in Quran order
+* Set the reading mode to Bookmarks to read only your saved ayahs
