@@ -55,6 +55,8 @@
     <string name="perm_battery_desc">Keeps Waqfah running reliably (on the next screen, select Battery &gt; Unrestricted)</string>
     <string name="perm_notifications_name">Notifications</string>
     <string name="perm_notifications_desc">Shows Waqfah\'s silent background notification</string>
+    <string name="perm_xiaomi_popup_name">Open new windows in background</string>
+    <string name="perm_xiaomi_popup_desc">Allows the reading screen to appear over opened apps on Xiaomi and HyperOS devices</string>
     <string name="perm_section_required">Required</string>
     <string name="perm_section_optional">Recommended</string>
     <string name="permissions_title">Permissions</string>
@@ -69,6 +71,8 @@
     <string name="rationale_overlay_never">It shows only Waqfah\'s reading screen when a monitored app opens — never ads or unexpected overlays.</string>
     <string name="rationale_battery_allows">Prevents Android from stopping Waqfah\'s background monitor to save power, ensuring it continues to work reliably.</string>
     <string name="rationale_battery_never">It does not increase battery drain — the monitor checks active apps once per second only while the screen is on and sleeps when the screen is off.</string>
+    <string name="rationale_xiaomi_popup_allows">Lets Waqfah display the reading screen over opened apps from the background on Xiaomi and HyperOS.</string>
+    <string name="rationale_xiaomi_popup_never">It never displays unwanted pop-ups or ads — it only opens Waqfah\'s reading screen before monitored apps.</string>
 
     <!-- App identity -->
     <string name="app_name">Waqfah</string>

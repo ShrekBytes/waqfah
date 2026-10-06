@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import dev.shrekbytes.waqfah.R
 
 // Stable identity for each permission row so screens never depend on list order.
-enum class PermissionKey { USAGE_ACCESS, OVERLAY, BATTERY, NOTIFICATIONS }
+enum class PermissionKey { USAGE_ACCESS, OVERLAY, BATTERY, NOTIFICATIONS, XIAOMI_BACKGROUND_START }
 
 data class PermissionInfo(val key: PermissionKey, @StringRes val nameRes: Int, @StringRes val descriptionRes: Int)
 
@@ -19,9 +19,17 @@ object PermissionCatalog {
         R.string.perm_overlay_name,
         R.string.perm_overlay_desc,
     )
-    // Required: monitoring literally cannot function without these two, so
-    // they're the only rows gated behind onboarding's Continue button.
+    val xiaomiBackgroundStart = PermissionInfo(
+        PermissionKey.XIAOMI_BACKGROUND_START,
+        R.string.perm_xiaomi_popup_name,
+        R.string.perm_xiaomi_popup_desc,
+    )
+    // Required: monitoring literally cannot function without these, so
+    // they're the rows gated behind onboarding's Continue button.
     val all = listOf(usage, overlay)
+
+    fun required(isXiaomi: Boolean): List<PermissionInfo> =
+        if (isXiaomi) listOf(usage, overlay, xiaomiBackgroundStart) else all
 
     val battery = PermissionInfo(
         PermissionKey.BATTERY,

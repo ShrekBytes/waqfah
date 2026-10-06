@@ -16,7 +16,7 @@ import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
 private data class RationaleBlock(val titleRes: Int, val allowsRes: Int, val neverRes: Int)
 
-private val blocks = listOf(
+private val baseBlocks = listOf(
     RationaleBlock(
         R.string.perm_usage_name,
         R.string.rationale_usage_allows,
@@ -34,9 +34,22 @@ private val blocks = listOf(
     ),
 )
 
+private val xiaomiBlock = RationaleBlock(
+    R.string.perm_xiaomi_popup_name,
+    R.string.rationale_xiaomi_popup_allows,
+    R.string.rationale_xiaomi_popup_never,
+)
+
 @Composable
 fun PermissionsRationaleScreen(onBack: () -> Unit) {
     val colors = WaqfahTheme.colors
+    val isXiaomi = androidx.compose.runtime.remember {
+        val manufacturer = android.os.Build.MANUFACTURER.lowercase()
+        manufacturer in setOf("xiaomi", "redmi", "poco")
+    }
+    val blocks = androidx.compose.runtime.remember(isXiaomi) {
+        if (isXiaomi) baseBlocks + xiaomiBlock else baseBlocks
+    }
 
     SettingsScaffold(title = stringResource(R.string.rationale_title), onBack = onBack) {
         Text(

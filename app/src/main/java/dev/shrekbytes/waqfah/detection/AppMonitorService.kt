@@ -261,6 +261,12 @@ class AppMonitorService : Service() {
     private fun launchReadingScreen(packageName: String) {
         // A new trigger gets a new once-only re-assert budget (InterstitialSession owns it).
         InterstitialSession.onTriggerLaunched()
+        if (permissionsRepository.isXiaomiOrHyperOS() && !permissionsRepository.hasBackgroundStartPermission()) {
+            Log.w(
+                TAG,
+                "Background activity start permission (OP_BACKGROUND_START_ACTIVITY) is not granted on this Xiaomi/HyperOS device — launch will likely be blocked by the system",
+            )
+        }
         val intent = Intent(this, TriggerActivity::class.java).apply {
             putExtra(TriggerActivity.EXTRA_TRIGGERED_PACKAGE, packageName)
             // Background starts are allowed because Waqfah holds

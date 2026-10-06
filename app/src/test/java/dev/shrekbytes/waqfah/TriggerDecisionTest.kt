@@ -399,6 +399,17 @@ class TriggerDecisionTest {
         assertEquals(Verdict.Trigger(A), verdict)
     }
 
+    @Test
+    fun nonChooserFrameworkActivity_doesNotSuppressSubsequentOpenAsIndirectEntry() {
+        val systemDialog = ResumedActivity("android", "com.android.server.wm.AlertActivity")
+        val e = engine()
+        e.resume(systemDialog)
+
+        val verdict = e.resume(resumed(A)).single()
+
+        assertEquals(Verdict.Trigger(A), verdict)
+    }
+
     // And it must sever the call context: the first resume after a pause is
     // not treated as the tail end of a call that started before it.
     @Test

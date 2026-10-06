@@ -2,7 +2,11 @@ package dev.shrekbytes.waqfah.ui.onboarding
 
 import android.Manifest
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,7 +47,9 @@ fun OnboardPermissionsScreen(
     // reliability (aggressive OEMs kill non-exempted monitors) but monitoring
     // works without it, so refusing onboarding over it would lock users out of
     // a fully functional core for a nice-to-have.
-    val allGranted = state.usageAccessGranted && state.overlayGranted
+    val allGranted = state.usageAccessGranted &&
+        state.overlayGranted &&
+        (!state.isXiaomi || state.xiaomiBackgroundStartGranted)
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
@@ -70,52 +76,54 @@ fun OnboardPermissionsScreen(
             )
         },
     ) {
-        Text(
-            stringResource(R.string.onboard_perms_body),
-            color = colors.inkMuted,
-            fontSize = 14.sp,
-            lineHeight = 21.sp,
-        )
-        Text(
-            stringResource(R.string.why_permissions_link),
-            color = colors.accent,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenRationale),
-        )
-        // The two groups get explicit headers so users can see at a glance
-        // what's indispensable versus nice-to-have (SectionTitle carries the
-        // group separation spacing itself).
-        SectionTitle(stringResource(R.string.perm_section_required))
-        PermissionCatalog.all.forEach { info ->
-            OnboardPermissionRow(
-                title = stringResource(info.nameRes),
-                subtitle = stringResource(info.descriptionRes),
-                granted = state.isGranted(info.key),
-                onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Text(
+                stringResource(R.string.onboard_perms_body),
+                color = colors.inkMuted,
+                fontSize = 14.sp,
+                lineHeight = 21.sp,
             )
-        }
-        // Optional rows — recommended for reliability (battery) and visibility
-        // (notifications) but never gating Continue. Battery routes through
-        // system settings; notifications uses the runtime request above until
-        // it can no longer change anything.
-        SectionTitle(stringResource(R.string.perm_section_optional))
-        PermissionCatalog.recommended.forEach { info ->
-            OnboardPermissionRow(
-                title = stringResource(info.nameRes),
-                subtitle = stringResource(info.descriptionRes),
-                granted = state.isGranted(info.key),
-                onOpenSettings = {
-                    if (info.key == PermissionKey.NOTIFICATIONS &&
-                        !state.notificationsGranted &&
-                        !state.notificationsPermanentlyDenied
-                    ) {
-                        notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
-                        context.startActivity(viewModel.settingsIntentFor(info.key))
-                    }
-                },
+            Text(
+                stringResource(R.string.why_permissions_link),
+                color = colors.accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenRationale),
             )
+            // The two groups get explicit headers so users can see at a glance
+            // what's indispensable versus nice-to-have (SectionTitle carries the
+            // group separation spacing itself).
+            SectionTitle(stringResource(R.string.perm_section_required))
+            PermissionCatalog.required(state.isXiaomi).forEach { info ->
+                OnboardPermissionRow(
+                    title = stringResource(info.nameRes),
+                    subtitle = stringResource(info.descriptionRes),
+                    granted = state.isGranted(info.key),
+                    onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
+                )
+            }
+            // Optional rows — recommended for reliability (battery) and visibility
+            // (notifications) but never gating Continue. Battery routes through
+            // system settings; notifications uses the runtime request above until
+            // it can no longer change anything.
+            SectionTitle(stringResource(R.string.perm_section_optional))
+            PermissionCatalog.recommended.forEach { info ->
+                OnboardPermissionRow(
+                    title = stringResource(info.nameRes),
+                    subtitle = stringResource(info.descriptionRes),
+                    granted = state.isGranted(info.key),
+                    onOpenSettings = {
+                        if (info.key == PermissionKey.NOTIFICATIONS &&
+                            !state.notificationsGranted &&
+                            !state.notificationsPermanentlyDenied
+                        ) {
+                            notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            context.startActivity(viewModel.settingsIntentFor(info.key))
+                        }
+                    },
+                )
+            }
         }
     }
 }

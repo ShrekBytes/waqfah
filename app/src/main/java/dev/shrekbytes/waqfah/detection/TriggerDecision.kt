@@ -292,10 +292,12 @@ class TriggerDecision(
 
     private fun isSystemPicker(event: ResumedActivity?): Boolean {
         val className = event?.className ?: return false
-        // The framework chooser/resolver runs under the "android" package;
-        // OEM skins subclass them elsewhere, hence the suffix heuristic.
-        return event.packageName == "android" ||
-            className.endsWith("ResolverActivity") ||
+        // The framework chooser/resolver runs under the "android" package
+        // (com.android.internal.app.ResolverActivity / ChooserActivity);
+        // OEM skins subclass them elsewhere. We match the suffix so other
+        // framework activities under "android" (e.g. system dialogs, lockscreen)
+        // are not misclassified as pickers.
+        return className.endsWith("ResolverActivity") ||
             className.endsWith("ChooserActivity")
     }
 

@@ -24,12 +24,15 @@ data class PermissionsUiState(
     // refresh() clears it once the permission is observed granted, since a
     // grant implies the don't-ask state was lifted.
     val notificationsPermanentlyDenied: Boolean = false,
+    val isXiaomi: Boolean = false,
+    val xiaomiBackgroundStartGranted: Boolean = false,
 ) {
     fun isGranted(key: PermissionKey): Boolean = when (key) {
         PermissionKey.USAGE_ACCESS -> usageAccessGranted
         PermissionKey.OVERLAY -> overlayGranted
         PermissionKey.BATTERY -> batteryExempted
         PermissionKey.NOTIFICATIONS -> notificationsGranted
+        PermissionKey.XIAOMI_BACKGROUND_START -> xiaomiBackgroundStartGranted
     }
 }
 
@@ -50,11 +53,14 @@ class PermissionsViewModel @Inject constructor(
     // screen calls this again on every resume (see PermissionsScreen).
     fun refresh() {
         val notificationsGranted = permissionsRepository.hasNotificationPermission()
+        val isXiaomi = permissionsRepository.isXiaomiOrHyperOS()
         _uiState.value = PermissionsUiState(
             usageAccessGranted = permissionsRepository.hasUsageAccess(),
             overlayGranted = permissionsRepository.canDrawOverlays(),
             batteryExempted = permissionsRepository.isIgnoringBatteryOptimizations(),
             notificationsGranted = notificationsGranted,
+            isXiaomi = isXiaomi,
+            xiaomiBackgroundStartGranted = permissionsRepository.hasBackgroundStartPermission(),
             // A grant means the OS's don't-ask state was lifted — the user
             // enabled notifications from the very settings page this flag
             // routes to — so it must not keep routing taps away from the
@@ -82,6 +88,7 @@ class PermissionsViewModel @Inject constructor(
         PermissionKey.USAGE_ACCESS -> permissionsRepository.usageAccessSettingsIntent()
         PermissionKey.OVERLAY -> permissionsRepository.overlaySettingsIntent()
         PermissionKey.BATTERY -> permissionsRepository.batterySettingsIntent()
+        PermissionKey.XIAOMI_BACKGROUND_START -> permissionsRepository.xiaomiPermissionsSettingsIntent()
         // NOTIFICATIONS is a runtime permission (see the screens' launcher);
         // this settings deep-link is only its "Don't ask again" fallback.
         else -> permissionsRepository.notificationSettingsIntent()

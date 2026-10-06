@@ -57,7 +57,7 @@ fun PermissionsScreen(
         // Two labeled groups so users see at a glance what's indispensable
         // versus recommended (SectionTitle carries the spacing itself).
         SectionTitle(stringResource(R.string.perm_section_required))
-        PermissionCatalog.all.forEach { info ->
+        PermissionCatalog.required(state.isXiaomi).forEach { info ->
             PermissionToggleRow(
                 title = stringResource(info.nameRes),
                 subtitle = stringResource(info.descriptionRes),
