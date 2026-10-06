@@ -588,6 +588,39 @@ class ReadingSessionTest {
         assertEquals(1, startingVerseLoads)
     }
 
+    // The cross-activity proof this ticket exists for. Home (MainActivity) and
+    // the pause screen (TriggerActivity) are separate activities holding
+    // separate sessions; this builds both over the one shared collection the
+    // way the two ViewModels do. A saved state cached per card would leave the
+    // other card's ribbon stale — the shared observable set is what makes it
+    // follow with no reload and no tap on the observing card. Both directions
+    // are pinned: a one-way test would pass with a write-only bug, where a save
+    // reaches the store but an unsave never does.
+    @Test
+    fun bookmark_saveOnOneSession_landsOnTheOther_bothDirections() = runTest {
+        val home = session()
+        val interstitial = session()
+        runCurrent()
+        assertEquals("1:1", home.uiState.value.ayahLabel)
+        assertEquals("1:1", interstitial.uiState.value.ayahLabel)
+        assertFalse(home.uiState.value.isSaved)
+        assertFalse(interstitial.uiState.value.isSaved)
+
+        interstitial.toggleBookmark() // saved on the pause screen
+        runCurrent()
+        assertTrue(interstitial.uiState.value.isSaved)
+        assertTrue(home.uiState.value.isSaved) // Home's ribbon follows, same ayah
+
+        home.toggleBookmark() // unsaved on Home
+        runCurrent()
+        assertFalse(home.uiState.value.isSaved)
+        assertFalse(interstitial.uiState.value.isSaved) // and back
+
+        // Neither card reloaded: the collection changed under both, and each
+        // one only re-read the ayah it was already showing.
+        assertEquals(2, startingVerseLoads)
+    }
+
     // The deliberate divergence from mark-read: the toggle never flips ahead of
     // the write. A failed write leaves the store holding the old truth, so the
     // ribbon must keep showing that truth rather than the state the tap hoped

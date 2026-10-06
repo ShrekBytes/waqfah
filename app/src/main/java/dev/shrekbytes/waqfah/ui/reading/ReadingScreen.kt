@@ -19,10 +19,10 @@ import dev.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 
 // Shared wiring for ReadingCard's callbacks: both hosts (the Home tab and the
 // TriggerActivity interstitial) render the same card and differ only in their
-// bottom bar. onGoToAyah and onToggleBookmark are Home-only (null for
-// TriggerActivity): the header is only tappable on the current Home page, and
-// the bookmark toggle is only on the Home card for now — the interstitial
-// gains it in its own change, and until then it keeps its existing layout.
+// bottom bar. onGoToAyah stays Home-only (null for TriggerActivity) — the
+// header is tappable only where it leads somewhere, and the pause screen has no
+// header affordance. onToggleBookmark is passed by every host: the save control
+// is on the Home card, the Bookmarks card and the pause screen alike.
 //
 // Takes the session, not the ViewModel that hosts it: the card is the same
 // machine whichever sequence the session walks, so the Bookmarks tab renders
@@ -76,7 +76,14 @@ fun ReadingScreen(
 
     BackHandler(onBack = ::requestDismiss)
 
-    WaqfahReadingContent(session = viewModel.session, onGoToAyah = null) {
+    // The pause screen's session is its own (a separate Activity), so the save
+    // control here reads and writes the same shared collection the Home card
+    // does — a save made over a monitored app shows on Home with no refresh.
+    WaqfahReadingContent(
+        session = viewModel.session,
+        onGoToAyah = null,
+        onToggleBookmark = viewModel.session::toggleBookmark,
+    ) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
             WaqfahPrimaryButton(
                 text = stringResource(R.string.open_app_button, state.triggeredAppLabel ?: stringResource(R.string.app_name)),
