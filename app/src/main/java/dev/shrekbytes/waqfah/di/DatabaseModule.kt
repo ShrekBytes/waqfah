@@ -27,9 +27,10 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideWaqfahAppDatabase(@ApplicationContext context: Context): WaqfahAppDatabase =
-        // No destructive-migration fallback — read_verses is real user progress;
-        // add proper Migration objects if this schema ever changes.
+        // No destructive-migration fallback — read_verses is real user progress
+        // and bookmark_verses is the user's own collection; add proper Migration
+        // objects if this schema ever changes.
         Room.databaseBuilder(context, WaqfahAppDatabase::class.java, "waqfah_app.db")
-            .addMigrations(AppStateMigrations.MIGRATION_1_2)
+            .addMigrations(AppStateMigrations.MIGRATION_1_2, AppStateMigrations.MIGRATION_2_3)
             .build()
 }

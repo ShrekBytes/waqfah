@@ -44,4 +44,23 @@ object AppStateMigrations {
             db.execSQL("ALTER TABLE monitored_apps_new RENAME TO monitored_apps")
         }
     }
+
+    // The bookmark collection arrives as a brand-new table, so this migration
+    // only creates it — no existing row is read, rewritten, or dropped. Both
+    // prior tables (monitored_apps, read_verses) are user data and must survive
+    // untouched; AppStateMigrationTest pins that against the exported v2 schema.
+    // saved_at is deliberately not backfilled: there is nothing to backfill from.
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE bookmark_verses (
+                    verse_id INTEGER NOT NULL,
+                    saved_at INTEGER NOT NULL,
+                    PRIMARY KEY(verse_id)
+                )
+                """.trimIndent(),
+            )
+        }
+    }
 }

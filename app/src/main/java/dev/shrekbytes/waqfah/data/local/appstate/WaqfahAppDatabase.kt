@@ -8,8 +8,9 @@ import androidx.room.RoomDatabase
 // fallback — if it changes, write a Migration by hand, and the exported JSON is
 // what lets a Migration test verify it against the real old schema instead of a
 // guess.
-@Database(entities = [MonitoredAppEntity::class, ReadVerseEntity::class], version = 2, exportSchema = true)
+@Database(entities = [MonitoredAppEntity::class, ReadVerseEntity::class, BookmarkVerseEntity::class], version = 3, exportSchema = true)
 abstract class WaqfahAppDatabase : RoomDatabase() {
     abstract fun monitoredAppDao(): MonitoredAppDao
     abstract fun readVerseDao(): ReadVerseDao
+    abstract fun bookmarkDao(): BookmarkDao
 }
