@@ -82,9 +82,12 @@ fun WaqfahTabBar(
             }
             // The hand-drawn ribbon rather than a Material bookmark glyph: it
             // is the same control the reading card's toggle shows, so the tab
-            // and the action that fills it read as one thing.
+            // and the action that fills it read as one thing. Filled, not
+            // outlined, so its weight matches Home's and Settings' filled
+            // glyphs — an outlined ribbon beside two solid ones read as a
+            // lighter, secondary tab.
             TabItem(stringResource(R.string.tab_bookmarks), selected == WaqfahTab.BOOKMARKS, onBookmarksClick, colors) { tint ->
-                BookmarkRibbonIcon(filled = false, tint = tint, modifier = Modifier.size(TAB_ICON_SIZE))
+                BookmarkRibbonIcon(filled = true, tint = tint, modifier = Modifier.size(TAB_ICON_SIZE))
             }
             TabItem(stringResource(R.string.tab_settings), selected == WaqfahTab.SETTINGS, onSettingsClick, colors) { tint ->
                 Icon(Icons.Default.Settings, contentDescription = null, tint = tint, modifier = Modifier.size(TAB_ICON_SIZE))

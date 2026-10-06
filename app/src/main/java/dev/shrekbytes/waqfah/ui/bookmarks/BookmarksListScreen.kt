@@ -56,6 +56,7 @@ import dev.shrekbytes.waqfah.ui.components.BookmarkEmptyState
 import dev.shrekbytes.waqfah.ui.components.ChevronDirection
 import dev.shrekbytes.waqfah.ui.components.ChevronIcon
 import dev.shrekbytes.waqfah.ui.components.WaqfahBackButton
+import dev.shrekbytes.waqfah.ui.components.rowHighlight
 import dev.shrekbytes.waqfah.ui.components.skeletonPulseAlpha
 import dev.shrekbytes.waqfah.ui.reading.BookmarksViewModel
 import dev.shrekbytes.waqfah.ui.reading.arabicTextFor
@@ -100,12 +101,30 @@ fun BookmarksListScreen(
     Surface(modifier = Modifier.fillMaxSize(), color = colors.background, contentColor = colors.ink) {
         Column(Modifier.fillMaxSize().padding(horizontal = 28.dp)) {
             WaqfahBackButton(onClick = onBack)
-            Text(
-                stringResource(R.string.bookmarks_list_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = colors.ink,
-                modifier = Modifier.padding(top = 8.dp, bottom = 14.dp),
-            )
+            // Title, with the collection's size on the right. Deliberately a
+            // step above the per-surah "N saved" each row carries (12.5sp
+            // Medium): the two are the same wording about different scopes, so
+            // size and weight are what tell the reader which is the total and
+            // which is one surah's share.
+            Row(
+                Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.bookmarks_list_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = colors.ink,
+                    modifier = Modifier.weight(1f),
+                )
+                if (state.savedTotal > 0) {
+                    Text(
+                        stringResource(R.string.bookmarks_saved_count_fmt, localizeDigits(state.savedTotal, state.surahNameLanguage)),
+                        color = colors.inkMuted,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
 
             when {
                 state.isLoading -> BookmarksListSkeleton(Modifier.weight(1f))
@@ -133,12 +152,28 @@ fun BookmarksListScreen(
                                 enter = fadeIn() + expandVertically(),
                                 exit = fadeOut() + shrinkVertically(),
                             ) {
+                                // No horizontal padding on the block: each row owns
+                                // its own inset, so the highlight it draws and the
+                                // hairline between rows come out the same width.
                                 Column(
                                     Modifier
                                         .fillMaxWidth()
-                                        .padding(start = 14.dp, end = 14.dp, top = 2.dp, bottom = 12.dp),
+                                        .padding(top = 2.dp, bottom = 12.dp),
                                 ) {
-                                    row.savedAyahs.forEach { verse ->
+                                    row.savedAyahs.forEachIndexed { ayahIndex, verse ->
+                                        // A hairline between consecutive saved ayahs of
+                                        // the same surah: they are separate rows that
+                                        // happen to look alike, and without it the block
+                                        // reads as one run of text. Inset to the rows'
+                                        // own box — 26dp left, 14dp right — so the rule
+                                        // and the press highlight are the same width and
+                                        // blend, and never drawn after the last.
+                                        if (ayahIndex > 0) {
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(start = 26.dp, end = 14.dp),
+                                                color = colors.line.copy(alpha = 0.5f),
+                                            )
+                                        }
                                         SavedAyahRow(
                                             arabicText = verse.arabicTextFor(state.arabicScript),
                                             ayahNo = verse.ayahNo,
@@ -229,6 +264,21 @@ private fun SurahRowHeader(
 // One saved ayah inside an expanded surah: a single line of the reader's own
 // script, truncated so a long ayah can't dominate the list, with its ayah
 // number on the right. Tapping it is the jump.
+//
+// rowHighlight is the app's single press treatment for flat list rows: no clip,
+// no border, no second treatment invented for this screen.
+//
+// The row is a child of the surah above it, so its box is inset further on the
+// left than the surah's content — 26dp against 14dp — while its right edge lines
+// up with the surah's: nested on one side, flush on the other. That inset sits
+// *before* rowHighlight, so the highlight itself is that box, and the hairline
+// between ayahs is inset to the same two values, so the pressed row and the rule
+// are the same width and blend. The 10dp inside is what keeps the text off the
+// highlight's own edges; flush text there reads as a mistake.
+//
+// What must not come back is wrapping the helper in clip(RoundedCornerShape(…)),
+// which an earlier pass did: that turns the highlight into a pill and it stops
+// matching every other row in the app.
 @Composable
 private fun SavedAyahRow(
     arabicText: String,
@@ -241,13 +291,9 @@ private fun SavedAyahRow(
     Box(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
-            )
-            .padding(horizontal = 12.dp, vertical = 11.dp),
+            .padding(start = 26.dp, end = 14.dp)
+            .rowHighlight(onClick)
+            .padding(horizontal = 10.dp, vertical = 11.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             // Box carries the weight: CompositionLocalProvider takes no modifier,

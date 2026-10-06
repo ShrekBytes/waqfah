@@ -25,7 +25,12 @@ data class BookmarksListUiState(
     val arabicScript: ArabicScript = ArabicScript.INDOPAK,
     val arabicFont: ArabicFont = ArabicFont.DIGITAL_KHATT_INDOPAK,
     val isLoading: Boolean = true,
-)
+) {
+    // What the title row's right-hand count shows. Derived from the rows rather
+    // than carried alongside them, so the header can never claim a total the
+    // list below it does not actually show.
+    val savedTotal: Int get() = rows.sumOf { it.savedCount }
+}
 
 // The bookmarks list's data (#22). It reads the collection's observable set and
 // the read-only Quran text and projects them through bookmarkSurahRows — the
