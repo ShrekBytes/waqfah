@@ -136,8 +136,11 @@ fun ReadingCard(
     onStartOver: () -> Unit,
     onSwitchModeAndRestart: () -> Unit,
     onGoToAyah: (() -> Unit)? = null,
-    // Home-only for now, like onGoToAyah: null means this host shows no
-    // bookmark toggle at all, and the action row keeps its pre-toggle layout.
+    // The save control (see CONTEXT.md). null means this host shows no bookmark
+    // toggle and the action row keeps its pre-toggle layout; the tour's practice
+    // card is the one host that leaves it null, since the tour has no bookmark
+    // stop. Every reading surface — Home, the Bookmarks tab and the pause
+    // screen — passes one.
     onToggleBookmark: (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
