@@ -69,7 +69,7 @@ class PermissionsRepository @Inject constructor(
     // would report the permission's state is vendor-private and not stable
     // across builds, so the row is offered by capability and never claims a
     // state it cannot read (ADR-0008).
-    fun vendorBackgroundStartIntent(): Intent = Intent(MIUI_PERM_EDITOR_ACTION).apply {
+    fun vendorBackgroundStartSettingsIntent(): Intent = Intent(MIUI_PERM_EDITOR_ACTION).apply {
         setClassName(MIUI_SECURITY_CENTER, MIUI_PERMISSION_EDITOR)
         putExtra(MIUI_EXTRA_PKGNAME, context.packageName)
     }
@@ -78,7 +78,7 @@ class PermissionsRepository @Inject constructor(
     // from resolveActivity unless it is declared in the manifest's <queries>,
     // which is why that declaration is load-bearing rather than decorative.
     fun hasVendorBackgroundStartScreen(): Boolean =
-        vendorBackgroundStartIntent().resolveActivity(context.packageManager) != null
+        vendorBackgroundStartSettingsIntent().resolveActivity(context.packageManager) != null
 
     private companion object {
         // MIUI / HyperOS: the per-app permission editor, the screen that carries
