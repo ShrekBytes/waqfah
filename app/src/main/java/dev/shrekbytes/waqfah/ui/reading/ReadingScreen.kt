@@ -19,12 +19,15 @@ import dev.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 
 // Shared wiring for ReadingCard's callbacks: both hosts (the Home tab and the
 // TriggerActivity interstitial) render the same card and differ only in their
-// bottom bar. onGoToAyah is Home-only (null for TriggerActivity) so the
-// header is only tappable on the current Home page, not the trigger interstitial.
+// bottom bar. onGoToAyah and onToggleBookmark are Home-only (null for
+// TriggerActivity): the header is only tappable on the current Home page, and
+// the bookmark toggle is only on the Home card for now — the interstitial
+// gains it in its own change, and until then it keeps its existing layout.
 @Composable
 fun WaqfahReadingContent(
     viewModel: ReadingViewModel,
     onGoToAyah: (() -> Unit)? = null,
+    onToggleBookmark: (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit,
 ) {
     val state by viewModel.session.uiState.collectAsStateWithLifecycle()
@@ -39,6 +42,7 @@ fun WaqfahReadingContent(
         onStartOver = viewModel.session::startOver,
         onSwitchModeAndRestart = viewModel.session::switchModeAndRestart,
         onGoToAyah = onGoToAyah,
+        onToggleBookmark = onToggleBookmark,
         bottomBar = bottomBar,
     )
 }

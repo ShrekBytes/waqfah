@@ -29,7 +29,12 @@ fun HomeScreen(
     viewModel: ReadingViewModel,
 ) {
     Box(Modifier.fillMaxSize()) {
-        WaqfahReadingContent(viewModel = viewModel, onGoToAyah = onGoToAyah, bottomBar = {})
+        WaqfahReadingContent(
+            viewModel = viewModel,
+            onGoToAyah = onGoToAyah,
+            onToggleBookmark = viewModel.session::toggleBookmark,
+            bottomBar = {},
+        )
 
         // Subtle tour relauncher: a bare "?" pinned to the top-right, with no
         // chip fill (minimal). Only this screen composes it — TriggerActivity's

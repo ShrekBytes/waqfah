@@ -77,6 +77,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -84,6 +85,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.data.model.ReadingMode
+import dev.shrekbytes.waqfah.ui.components.BookmarkRibbonIcon
 import dev.shrekbytes.waqfah.ui.components.ChevronDirection
 import dev.shrekbytes.waqfah.ui.components.ChevronIcon
 import dev.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
@@ -99,6 +101,20 @@ private val COMMIT_THRESHOLD_DISTANCE = 56.dp
 
 // Calm, bounce-free return to center on under-threshold release / cancellation.
 private val CANCEL_SPRING = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+
+// The bookmark toggle's footprint in the action row. Fixed, and the only thing
+// that ever changes about the toggle is what it looks like — never how much room
+// it takes, so the row's geometry, and with it Mark Read's position, is
+// identical in both states.
+//
+// The row fits the toggle whole while it is at least 356dp wide with the pill at
+// its 124dp minimum: 10 + 124 + 10 is fixed, and the right slot must also hold
+// an arrow, a gap and the toggle (48 + 10 + 48) after mirroring the left slot's
+// arrow. Below that — a 320dp card, or a 360dp one whose font scale has grown
+// the pill past 128dp — the right slot runs out and the toggle is the part that
+// overhangs. That is deliberate: the alternative is letting the toggle push Mark
+// Read off the centre line, which is the one thing this row must not do.
+private val ACTION_TOGGLE_SIZE = 44.dp
 
 // One handler for every gesture-launched coroutine in the card: the swipe and
 // arrow handlers await the session's suspend verbs, whose Room probes can fail
@@ -119,6 +135,9 @@ fun ReadingCard(
     onStartOver: () -> Unit,
     onSwitchModeAndRestart: () -> Unit,
     onGoToAyah: (() -> Unit)? = null,
+    // Home-only for now, like onGoToAyah: null means this host shows no
+    // bookmark toggle at all, and the action row keeps its pre-toggle layout.
+    onToggleBookmark: (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -393,12 +412,25 @@ fun ReadingCard(
                         }
                     }
                 }
+                // Mark Read is centred by construction rather than by luck: the
+                // two weighted slots either side of it are always the same
+                // width, so the pill lands on the card's centre line, and the
+                // arrows keep the exact distance from it they had before the
+                // bookmark toggle existed. Each slot aligns its own content
+                // towards the pill, which is what puts the arrows 10dp away
+                // without any of them knowing about the others.
+                //
+                // The toggle rides inside the right slot, after the right arrow,
+                // which is what makes it outermost without displacing anything:
+                // a wider right slot's *content* does not move the slot's edge,
+                // so neither the pill nor either arrow can feel it.
                 Row(
                     Modifier.fillMaxWidth().padding(vertical = 22.dp),
-                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = stringResource(R.string.cd_prev_ayah))
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                        RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = stringResource(R.string.cd_prev_ayah))
+                    }
                     Spacer(Modifier.width(10.dp))
                     MarkReadPill(
                         marked = state.isMarkedRead,
@@ -407,7 +439,20 @@ fun ReadingCard(
                         onClick = handleMarkRead,
                     )
                     Spacer(Modifier.width(10.dp))
-                    RemArrow(direction = ChevronDirection.RIGHT, onClick = onNext, contentDescription = stringResource(R.string.cd_next_ayah))
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RemArrow(direction = ChevronDirection.RIGHT, onClick = onNext, contentDescription = stringResource(R.string.cd_next_ayah))
+                            // The save control, outermost on the right (see CONTEXT.md).
+                            if (onToggleBookmark != null) {
+                                Spacer(Modifier.width(10.dp))
+                                BookmarkToggle(
+                                    saved = state.isSaved,
+                                    verseKey = state.ayahLabel,
+                                    onClick = onToggleBookmark,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -658,6 +703,67 @@ private fun MarkReadPill(marked: Boolean, markReadTrigger: Int, verseKey: Any?, 
                 Icons.Default.Check,
                 contentDescription = null,
                 modifier = Modifier.size(17.dp).alpha(checkAlpha),
+            )
+        }
+    }
+}
+
+// The bookmark toggle (see CONTEXT.md). A ribbon, not a heart: the action reads
+// as "keep this for later", not "like this".
+//
+// Both ribbon states stay permanently composed in one fixed-size button and
+// only their alpha animates — the technique MarkReadPill uses — so the toggle
+// never changes width and cannot nudge Mark Read off the centre line as it
+// fills and empties. The state itself is never decided here: it arrives in
+// `saved`, which the session reads back from the store, so a failed write
+// leaves the ribbon showing what is actually saved rather than what the tap
+// hoped for.
+@Composable
+private fun BookmarkToggle(saved: Boolean, verseKey: Any?, onClick: () -> Unit) {
+    val colors = WaqfahTheme.colors
+    val bookmarkLabel = stringResource(R.string.cd_bookmark)
+    val savedLabel = stringResource(R.string.cd_bookmark_saved)
+    val notSavedLabel = stringResource(R.string.cd_bookmark_not_saved)
+
+    // Same snap-on-ayah-change rule as MarkReadPill: swiping swaps the saved
+    // state too, and a cross-fade there would read as the incoming ayah's
+    // ribbon animating away from the previous ayah's. Only taps tween.
+    var lastVerseKey by remember { mutableStateOf<Any?>(null) }
+    var verseJustChanged by remember { mutableStateOf(false) }
+    if (verseKey != lastVerseKey) {
+        lastVerseKey = verseKey
+        verseJustChanged = true
+    } else {
+        verseJustChanged = false
+    }
+
+    val alphaSpec: AnimationSpec<Float> = if (verseJustChanged) snap() else tween(160)
+    val filledAlpha by animateFloatAsState(if (saved) 1f else 0f, alphaSpec, label = "bookmark_filled_alpha")
+    val outlineAlpha by animateFloatAsState(if (saved) 0f else 1f, alphaSpec, label = "bookmark_outline_alpha")
+
+    IconButton(onClick = onClick, modifier = Modifier.size(ACTION_TOGGLE_SIZE)) {
+        // Both ribbons sit in one node whose semantics are replaced wholesale,
+        // the way RemArrow hangs its label on the icon rather than on the
+        // button: the clickable node merges what is inside it, so a name set
+        // on the button's own modifier would sit above the node TalkBack
+        // actually focuses. Name and state are announced separately — the name
+        // says what the control is, the state says which way it currently
+        // points — and only one of the two ribbons ever contributes a word.
+        Box(
+            Modifier.clearAndSetSemantics {
+                contentDescription = bookmarkLabel
+                stateDescription = if (saved) savedLabel else notSavedLabel
+            },
+        ) {
+            BookmarkRibbonIcon(
+                filled = true,
+                tint = colors.accent,
+                modifier = Modifier.size(18.dp).alpha(filledAlpha),
+            )
+            BookmarkRibbonIcon(
+                filled = false,
+                tint = colors.inkMuted,
+                modifier = Modifier.size(18.dp).alpha(outlineAlpha),
             )
         }
     }

@@ -114,6 +114,30 @@ fun ChevronIcon(direction: ChevronDirection, tint: Color, modifier: Modifier = M
     }
 }
 
+// Bookmark ribbon for the reading card's save toggle: outlined = not in the
+// collection, filled = in it. Drawn rather than taken from Material, which
+// ships no bookmark glyph in the icon set this app depends on, and drawn at
+// the same weight as ChevronIcon so the two sit together in the action row.
+@Composable
+fun BookmarkRibbonIcon(filled: Boolean, tint: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val s = size.minDimension / 18f
+        val path = Path().apply {
+            moveTo(5f * s, 3f * s)
+            lineTo(13f * s, 3f * s)
+            lineTo(13f * s, 15f * s)
+            lineTo(9f * s, 11.5f * s)
+            lineTo(5f * s, 15f * s)
+            close()
+        }
+        if (filled) {
+            drawPath(path, color = tint)
+        } else {
+            drawPath(path, color = tint, style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        }
+    }
+}
+
 @Composable
 fun WaqfahBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors

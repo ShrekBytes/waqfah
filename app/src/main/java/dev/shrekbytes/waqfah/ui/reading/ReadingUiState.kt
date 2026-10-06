@@ -37,6 +37,10 @@ data class ReadingUiState(
     // Whether another downloaded translation exists to compare against.
     val translationHasAlternates: Boolean = false,
     val isMarkedRead: Boolean = false,
+    // Whether the current ayah is in the bookmark collection. Unlike
+    // isMarkedRead this is never flipped ahead of the write: the collection is
+    // a lookup surface, so the toggle reflects what the store holds (ADR-0005).
+    val isSaved: Boolean = false,
     // Every ayah marked read — drives the completion popup.
     val isCompleted: Boolean = false,
     // Active mode, echoed here so the completion popup can label its
