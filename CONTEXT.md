@@ -126,6 +126,49 @@ the in-surah continue (first-unread-in-surah, else the surah's first ayah),
 and next/previous stepping with wrap-around.
 _Avoid_: verse picker
 
+**Bookmark**:
+One verse the user saved to their own collection. It is a verse and nothing
+else — no note, no label, no trigger context; the verse's text is never
+affected by it.
+_Avoid_: favourite, like, saved item
+
+**Bookmark collection**:
+The user's bookmarks, in Quran order. Not read progress: marking a verse read
+never removes a bookmark, and wiping progress never empties the collection.
+_Avoid_: favourites list, saved ayahs
+
+**Bookmark toggle**:
+Saving a verse to, or removing it from, the bookmark collection. The only
+thing that changes the collection.
+_Avoid_: favourite action, star
+
+**Bookmarks tab**:
+The Home tab's sibling holding the bookmarks card. Always present; when the
+collection is empty it shows the empty-state message rather than hiding.
+_Avoid_: favourites tab
+
+**Bookmarks card**:
+The bookmarks tab's reading surface — the same card as Home, over the
+bookmark collection instead of the whole Quran.
+_Avoid_: favourites screen
+
+**Bookmarked-ayah stepper**:
+The bookmarks card's own stepping: next/previous move within the collection,
+wrapping inside it. Independent of the mushaf-wide stepping the Home tab and
+the interstitial use, and of the read/unread rules those apply.
+_Avoid_: bookmark mode, filtered selection
+
+**Bookmarks list**:
+The bookmark collection as browsable rows — the surahs holding at least one
+bookmarked verse, each expanding to its bookmarked verses. Opened from the
+bookmarks card's header; a row jump retargets the card.
+_Avoid_: bookmark picker, favourites list
+
+**Bookmarks header**:
+The bookmarks card's top pill. There and on Home it opens the list; on the
+interstitial there is no header at all.
+_Avoid_: bookmark go-to
+
 ### Feature tour
 
 **Feature tour**:
