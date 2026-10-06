@@ -106,8 +106,12 @@ TriggerDecision as a constructor probe.
   use the cold `preferences` flow.
 - Repositories expose Flows; ViewModels combine them into immutable UI state;
   Compose screens stay stateless where possible. Three deliberate exceptions:
-  ReadingViewModel exposes its ReadingSession directly (the machine owns its
-  state — screens read `session.uiState`), and ReadingPorts is owned by the
+  each reading host exposes its ReadingSession directly (the machine owns its
+  state — screens read `session.uiState`): ReadingViewModel for the Home-side
+  surfaces, BookmarksViewModel for the bookmarks tab, and
+  InterstitialReadingViewModel for the pause screen — the one host that follows
+  the reading mode's Bookmarks option, which is why it alone is handed the
+  mode-aware sequence (ADR-0006). And ReadingPorts is owned by the
   reading machine (ui/reading) with DefaultReadingPorts (data/repository)
   implementing it — a consumer-owned port, wired in AppModule. Likewise
   FeatureTourViewModel hosts **TourSession** (`ui/tour/TourSession.kt`), the
@@ -120,7 +124,7 @@ TriggerDecision as a constructor probe.
 
 - ReadingSession serializes verse mutation, render, and the preference state
   they read behind `mutationMutex`; mark-read decisions are made under that
-  lock against DB truth. ReadingViewModel is only its Android adapter.
+  lock against DB truth. The reading ViewModels are only its Android adapters.
 - BookmarkCollectionRepository serializes its read-and-mutate toggle inside
   Room's transaction seam, like MonitoredAppStateRepository's; the bookmark
   collection is separate user data, so a progress reset never reaches it.

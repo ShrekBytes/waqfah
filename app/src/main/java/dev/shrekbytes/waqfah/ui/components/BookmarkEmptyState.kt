@@ -21,9 +21,11 @@ import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 // The "nothing saved yet" state: the invitation to start a collection
 // (ADR-0005), not an error and not a blank surface. The copy is the only
 // definition of what a bookmark is, so it is shared rather than restated — the
-// bookmarks card renders it in place of the reading card, and the bookmarks
-// list renders it in place of its rows, and both must say the same thing. The
-// ribbon shows the control the message asks the reader to look for.
+// bookmarks card renders it in place of the reading card, the bookmarks list
+// renders it in place of its rows, and the pause screen renders it when the
+// reading mode is Bookmarks and nothing is saved (ADR-0006); all three must say
+// the same thing. The ribbon shows the control the message asks the reader to
+// look for.
 //
 // The caller supplies the space: the card hands it the height the card body
 // would have used, the list the space under its title.

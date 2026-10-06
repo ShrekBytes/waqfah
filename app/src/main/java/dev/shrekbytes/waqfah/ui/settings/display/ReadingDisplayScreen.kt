@@ -98,7 +98,11 @@ fun ReadingDisplayScreen(
         SettingsField {
             FieldLabel(stringResource(R.string.mode_label))
             ChipGroup(
-                options = listOf(ReadingMode.SEQUENTIAL to stringResource(R.string.mode_sequential), ReadingMode.RANDOM to stringResource(R.string.mode_random)),
+                options = listOf(
+                    ReadingMode.SEQUENTIAL to stringResource(R.string.mode_sequential),
+                    ReadingMode.RANDOM to stringResource(R.string.mode_random),
+                    ReadingMode.BOOKMARKS to stringResource(R.string.mode_bookmarks),
+                ),
                 selected = prefs.readingMode,
                 onSelect = viewModel::setReadingMode,
             )

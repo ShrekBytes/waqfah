@@ -15,7 +15,11 @@ object PreferenceLimits {
 // The app's own display language (independent of the aid-content languages).
 enum class AppLanguage { SYSTEM, ENGLISH, BENGALI }
 
-enum class ReadingMode { SEQUENTIAL, RANDOM }
+// SEQUENTIAL and RANDOM are mushaf orderings; BOOKMARKS walks the bookmark
+// collection in Quran order and only the interstitial does so — Home is always
+// the whole Quran, and the mushaf treats BOOKMARKS as SEQUENTIAL (see
+// VerseSelection.start). See CONTEXT.md's "Reading mode".
+enum class ReadingMode { SEQUENTIAL, RANDOM, BOOKMARKS }
 enum class NameDisplayLanguage { ENGLISH, BENGALI, ARABIC }
 enum class AidLanguage { NONE, ENGLISH, BENGALI }
 

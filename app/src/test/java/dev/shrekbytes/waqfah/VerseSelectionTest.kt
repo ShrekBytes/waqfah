@@ -67,6 +67,25 @@ class VerseSelectionTest {
         assertNull(selection(rows = emptyList()).start(ReadingMode.SEQUENTIAL, emptySet()))
     }
 
+    // BOOKMARKS is the bookmark collection's ordering, not the mushaf's, so the
+    // mushaf has nothing to say about it and falls in with sequential. Home is
+    // always the whole Quran, so this is what a fresh Home session does when the
+    // chip is on Bookmarks.
+    @Test
+    fun bookmarksMode_startBehavesLikeSequential() = runTest {
+        assertEquals(3, selection().start(ReadingMode.BOOKMARKS, setOf(1, 2, 4, 5))?.id)
+    }
+
+    @Test
+    fun bookmarksMode_allRead_fallsBackToFirstVerse() = runTest {
+        assertEquals(1, selection().start(ReadingMode.BOOKMARKS, setOf(1, 2, 3, 4, 5))?.id)
+    }
+
+    @Test
+    fun bookmarksMode_emptyStore_returnsNull() = runTest {
+        assertNull(selection(rows = emptyList()).start(ReadingMode.BOOKMARKS, emptySet()))
+    }
+
     @Test
     fun randomStart_returnsAnUnreadVerse() = runTest {
         val id = selection().start(ReadingMode.RANDOM, setOf(1, 2, 3))?.id

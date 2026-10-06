@@ -145,6 +145,7 @@
     <string name="mode_label">তিলাওয়াতের ধরন</string>
     <string name="mode_sequential">ধারাবাহিক</string>
     <string name="mode_random">র‍্যান্ডম</string>
+    <string name="mode_bookmarks">বুকমার্ক</string>
     <string name="surah_names_label">সূরার নাম ও আয়াত নম্বর</string>
     <string name="script_label">আরবি লিপি</string>
     <string name="script_indopak">ইন্দো-পাক</string>

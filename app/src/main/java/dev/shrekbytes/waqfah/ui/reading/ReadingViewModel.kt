@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.shrekbytes.waqfah.data.bookmark.BookmarkCollection
-import dev.shrekbytes.waqfah.data.installedapp.InstalledAppCatalog
 import dev.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import dev.shrekbytes.waqfah.data.repository.SettingsRepository
 import dev.shrekbytes.waqfah.data.repository.TranslationRepository
@@ -13,26 +12,29 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// HomeScreen and ReadingScreen live in separate Activities (MainActivity and
-// TriggerActivity), so each gets its own instance. Everything that must survive
-// across them — read status and the bookmark collection — is persisted in Room,
-// not held in memory.
+// The reading session behind every Home-side surface — the Home tab, the tour's
+// practice card and the surah picker — all of which walk the whole Quran. The
+// interstitial has a ViewModel of its own (InterstitialReadingViewModel),
+// because it is the one surface that follows the reading mode's Bookmarks
+// option; this class is deliberately handed the plain mushaf selection, so the
+// chip can never move Home off the Quran.
+//
+// Everything that must survive across activities — read status and the bookmark
+// collection — is persisted in Room, not held in memory.
 //
 // The reading machine itself lives in ReadingSession; this class is only its
-// Android adapter: it hands the session its three signals, exposes the session
-// for every verb and state read, and resolves the interstitial's package label.
-// Every behavioural question — stepping, rendering, mark-read, completion — is
-// answered (and tested) there. The session's probes arrive through
-// ReadingPorts, provided by AppModule (DefaultReadingPorts).
+// Android adapter: it hands the session its three signals and exposes the
+// session for every verb and state read. Every behavioural question — stepping,
+// rendering, mark-read, completion — is answered (and tested) there. The
+// session's probes arrive through ReadingPorts, provided by AppModule
+// (DefaultReadingPorts).
 @HiltViewModel
 class ReadingViewModel @Inject constructor(
     settingsRepository: SettingsRepository,
     translationRepository: TranslationRepository,
     readingProgressRepository: ReadingProgressRepository,
-    private val installedAppCatalog: InstalledAppCatalog,
     ports: ReadingPorts,
     verseSelection: VerseSelection,
     bookmarks: BookmarkCollection,
@@ -60,13 +62,6 @@ class ReadingViewModel @Inject constructor(
         bookmarks = bookmarks,
         scope = sessionScope,
     )
-
-    // The interstitial's "you opened <app>" caption — label resolution is
-    // adapter work (package-manager lookups), the state write is the session's.
-    fun setTriggeredPackage(packageName: String?) = viewModelScope.launch {
-        val label = packageName?.let { installedAppCatalog.labelFor(it) ?: it }
-        session.setTriggeredAppLabel(label)
-    }
 
     private companion object {
         private const val TAG = "ReadingViewModel"

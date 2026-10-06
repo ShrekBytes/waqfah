@@ -52,8 +52,10 @@ no tracking, no lectures. Digital-wellbeing blockers prevent; Waqfah pauses.
 
 ## Capabilities and Constraints
 
-- Reading modes: sequential (lowest unread ayah) or random (any unread ayah),
-  with progress tracking across the whole Quran (6236 ayat).
+- Reading modes: sequential (lowest unread ayah), random (any unread ayah), or
+  bookmarks (the reader's own saved ayahs in Quran order, which the pause screen
+  alone follows — Home is always the whole Quran), with progress tracking across
+  the whole Quran (6236 ayat).
 - Arabic display: Indopak and Uthmani scripts, bundled fonts, adjustable
   sizes; optional transliteration; translations bundled in English and
   Bengali with more available as downloads.

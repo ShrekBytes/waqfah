@@ -145,6 +145,7 @@
     <string name="mode_label">Mode</string>
     <string name="mode_sequential">Sequential</string>
     <string name="mode_random">Random</string>
+    <string name="mode_bookmarks">Bookmarks</string>
     <string name="surah_names_label">Surah names &amp; numbers</string>
     <string name="script_label">Script</string>
     <string name="script_indopak">IndoPak</string>

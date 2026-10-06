@@ -1,5 +1,11 @@
 # Bookmarks are a second collection, not a third reading mode
 
+**Amended by ADR-0006.** A third `ReadingMode` value exists now and the
+interstitial follows it. Everything below about the *collection* still holds —
+the tab, the second session, the empty state, the separate table. Only the
+closing argument against a third mode is superseded, and only for the pause
+screen.
+
 The Bookmarks tab reads the bookmark collection through its own ReadingSession
 instance, constructed with a collection-scoped stepper, rather than by adding a
 `BOOKMARKED` value to `ReadingMode`. The tab is always present, with an

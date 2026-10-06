@@ -40,7 +40,8 @@ import kotlinx.coroutines.sync.withLock
 // subscribes to (preferences, downloaded translation ids, the progress-reset
 // nudge) as flows, the bookmark collection — its published set and its toggle
 // — as BookmarkCollection, verse movement as VerseSequence (the mushaf's
-// selection, or the bookmark collection's stepper — see ADR-0005), and the
+// selection, the bookmark collection's stepper, or the composite the
+// interstitial is handed — see ADR-0006), and the
 // remaining verse/progress/translation probes behind one interface —
 // ReadingPorts — that DefaultReadingPorts adapts the repositories to. The
 // whole machine is unit-testable with a fake ReadingPorts, a fake
@@ -54,12 +55,12 @@ class ReadingSession(
     // to recognise the echo of its own resets — see lastSelfInitiatedReset.
     private val progressReset: StateFlow<Int>,
     private val ports: ReadingPorts,
-    // The sequence this session walks: the whole mushaf on Home and in the
-    // interstitial, the reader's bookmark collection on the Bookmarks tab.
-    // Which one it was handed is the session's only difference between the
-    // two — everything else it does is the same machine, and nothing below
-    // branches on it except where read progress is concerned (see
-    // VerseSequence.isMushafWide).
+    // The sequence this session walks: the whole mushaf on Home and on the
+    // tour's practice card, the reader's bookmark collection on the Bookmarks
+    // tab, and whichever the reading mode names on the interstitial. Which one
+    // it was handed is the session's only difference between the hosts —
+    // everything else it does is the same machine, and nothing below branches on
+    // it except where read progress is concerned (see VerseSequence.isMushafWide).
     private val verseSelection: VerseSequence,
     // The bookmark collection (see CONTEXT.md). The session subscribes to the
     // set it publishes and reads membership back from the store — it holds no

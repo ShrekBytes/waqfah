@@ -57,13 +57,16 @@ fun WaqfahReadingContent(
     )
 }
 
-// Only ever reached via TriggerActivity — see its doc comment. [onDismissRequest]
-// lets the host run its own exit animation before actually finishing; when null,
-// dismissal finishes the hosting activity directly.
+// Only ever reached via TriggerActivity — see its doc comment. The session is
+// the interstitial's own ViewModel rather than ReadingViewModel: this is the one
+// surface that follows the reading mode's Bookmarks option, and which sequence a
+// host hands its session is settled when the ViewModel is built.
+// [onDismissRequest] lets the host run its own exit animation before actually
+// finishing; when null, dismissal finishes the hosting activity directly.
 @Composable
 fun ReadingScreen(
     triggeredPackage: String,
-    viewModel: ReadingViewModel = hiltViewModel(),
+    viewModel: InterstitialReadingViewModel = hiltViewModel(),
     onDismissRequest: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current

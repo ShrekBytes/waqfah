@@ -61,11 +61,15 @@ class VerseSelection @Inject constructor(
 
     // Fresh-session start: sequential opens on the lowest unread ayah (the
     // very first ayah once everything is read, so there is always content);
-    // random opens on any unread ayah (any ayah at all once all are read).
+    // random opens on any unread ayah (any ayah at all once all are read);
+    // bookmarks is not a mushaf ordering at all, so it means nothing here and
+    // falls in with sequential — Home is always the whole Quran, and a fresh
+    // Home session under BOOKMARKS opens on the first unread ayah exactly as it
+    // does under SEQUENTIAL.
     override suspend fun start(mode: ReadingMode, readIds: Set<Int>): VerseEntity? {
         val ids = lookups.getAllVerseIds()
         return when (mode) {
-            ReadingMode.SEQUENTIAL ->
+            ReadingMode.SEQUENTIAL, ReadingMode.BOOKMARKS ->
                 ids.firstOrNull { it !in readIds }?.let { lookups.getVerseById(it) }
                     ?: lookups.getFirstVerse()
             ReadingMode.RANDOM ->

@@ -119,17 +119,27 @@ signals it subscribes to. The repositories are adapted to it by
 DefaultReadingPorts; tests fake it inline.
 _Avoid_: probe bundle, session callbacks
 
+**Reading mode**:
+Which collection a reading session walks. `SEQUENTIAL` and `RANDOM` are mushaf
+orderings; `BOOKMARKS` walks the bookmark collection in Quran order and only the
+interstitial follows it — Home is always the whole Quran, and the mushaf treats
+`BOOKMARKS` as sequential (ADR-0006).
+_Avoid_: reading order, mode
+
 **Verse sequence**:
 The verses a reading session walks: which verse a fresh session opens on, and
 which verse comes next or previous, wrapping at the ends. Two implementations,
 deliberately siblings — verse selection walks the whole mushaf, the
 bookmarked-ayah stepper walks the collection — and the session is handed
-whichever applies.
+whichever applies. The interstitial is handed the mode-aware sequence instead:
+a composite of those two, which picks one when a fresh session starts and holds
+it for that walk.
 _Avoid_: verse walk, verse order
 
 **Verse selection**:
 The choice of which verse to show: the fresh-session start (sequential
-first-unread, random random-unread, each with its everything-read fallback),
+first-unread, random random-unread, each with its everything-read fallback, and
+`BOOKMARKS` falling in with sequential because it is not a mushaf ordering),
 the in-surah continue (first-unread-in-surah, else the surah's first ayah),
 and next/previous stepping with wrap-around.
 _Avoid_: verse picker
@@ -161,10 +171,12 @@ bookmark collection instead of the whole Quran.
 _Avoid_: favourites screen
 
 **Bookmarked-ayah stepper**:
-The bookmarks card's own stepping: next/previous move within the collection,
-wrapping inside it. Independent of the mushaf-wide stepping the Home tab and
-the interstitial use, and of the read/unread rules those apply.
-_Avoid_: bookmark mode, filtered selection
+The collection's own stepping: next/previous move within the bookmarks, wrapping
+inside them. Independent of the mushaf-wide stepping verse selection does, and of
+the read/unread rules that applies. The bookmarks card always walks it; the
+interstitial walks it when the reading mode is `BOOKMARKS`, which is a choice of
+collection rather than a way of stepping.
+_Avoid_: filtered selection, bookmark filter
 
 **Bookmarks list**:
 The bookmark collection as browsable rows — the surahs holding at least one
