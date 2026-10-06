@@ -67,3 +67,27 @@ interface ReadVerseDao {
     @Query("DELETE FROM read_verses")
     suspend fun clearAll()
 }
+
+@Dao
+interface BookmarkDao {
+    // The collection published as one observable set of verse ids (see
+    // CONTEXT.md): every surface showing an ayah's saved state reads this
+    // rather than caching its own copy. Same "publish disk truth as one
+    // observable set" pattern as TranslationRepository.downloadedIds.
+    @Query("SELECT verse_id FROM bookmark_verses")
+    fun observeSavedVerseIds(): Flow<List<Int>>
+
+    // INSERT IGNORE makes saving twice a no-op instead of an error and keeps
+    // saved_at from being rewritten.
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(entity: BookmarkVerseEntity)
+
+    @Query("DELETE FROM bookmark_verses WHERE verse_id = :verseId")
+    suspend fun remove(verseId: Int)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM bookmark_verses WHERE verse_id = :verseId)")
+    suspend fun exists(verseId: Int): Boolean
+
+    @Query("SELECT verse_id FROM bookmark_verses ORDER BY verse_id")
+    suspend fun getAllSavedVerseIds(): List<Int>
+}

@@ -2,8 +2,10 @@ package dev.shrekbytes.waqfah.di
 
 import android.content.Context
 import android.content.Intent
+import dev.shrekbytes.waqfah.data.bookmark.BookmarkCollection
 import dev.shrekbytes.waqfah.data.installedapp.InstalledAppCatalog
 import dev.shrekbytes.waqfah.data.monitoredapp.MonitoredAppState
+import dev.shrekbytes.waqfah.data.repository.BookmarkCollectionRepository
 import dev.shrekbytes.waqfah.data.repository.DefaultReadingPorts
 import dev.shrekbytes.waqfah.data.repository.MonitoredAppStateRepository
 import dev.shrekbytes.waqfah.data.repository.PackageManagerInstalledAppCatalog
@@ -46,6 +48,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideMonitoredAppState(repository: MonitoredAppStateRepository): MonitoredAppState = repository
+
+    @Provides
+    @Singleton
+    fun provideBookmarkCollection(repository: BookmarkCollectionRepository): BookmarkCollection = repository
 
     @Provides
     @Singleton

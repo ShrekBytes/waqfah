@@ -68,8 +68,9 @@ TriggerDecision as a constructor probe.
 - `data/local/core` — read-only Quran text (`quran_core.db`, bundled asset,
   rebuilt wholesale each release; destructive migration by design). Its contents
   and provenance are documented in `docs/quran-core-db.md`.
-- `data/local/appstate` — user data (`monitored_apps`, `read_verses`);
-  **no** destructive fallback here, migrations must be written if schema changes.
+- `data/local/appstate` — user data (`monitored_apps`, `read_verses`,
+  `bookmark_verses`); **no** destructive fallback here, migrations must be
+  written if schema changes.
 - **MonitoredAppState** (`data/monitoredapp/MonitoredAppState.kt`) owns the
   monitored-app state facts — monitored package membership and trigger stamps —
   while `MonitoredAppStateRepository` adapts them to the Room database. Its
@@ -78,6 +79,15 @@ TriggerDecision as a constructor probe.
   the current membership identity and claim revision; `claimTrigger` atomically
   stamps only that observed membership, so a removed/re-added package or a
   concurrent decision fails closed. Version 1 to 2 preserves all user data.
+- **BookmarkCollection** (`data/bookmark/BookmarkCollection.kt`) owns the
+  bookmark collection — the user's saved verses, one verse each, separate from
+  read progress in both directions — while `BookmarkCollectionRepository` adapts
+  it to the `bookmark_verses` table. The collection is published as one
+  observable set of verse ids (the same "publish disk truth as one observable
+  set" pattern as `TranslationRepository.downloadedIds`), so every surface
+  showing an ayah's saved state reads the same source; `toggle` is verse-keyed
+  and serialized inside Room's transaction seam. Version 2 to 3 creates that
+  table only — no existing row is read or dropped, and nothing is backfilled.
 - **InstalledAppCatalog** (`data/installedapp/InstalledAppCatalog.kt`) owns the
   installed-app catalog seam. `PackageManagerInstalledAppCatalog` adapts Android
   launchable-app discovery, labels, and fixed-size icons for Settings and
@@ -111,6 +121,9 @@ TriggerDecision as a constructor probe.
 - ReadingSession serializes verse mutation, render, and the preference state
   they read behind `mutationMutex`; mark-read decisions are made under that
   lock against DB truth. ReadingViewModel is only its Android adapter.
+- BookmarkCollectionRepository serializes its read-and-mutate toggle inside
+  Room's transaction seam, like MonitoredAppStateRepository's; the bookmark
+  collection is separate user data, so a progress reset never reaches it.
 - TriggerDecision keeps cooldown policy and captures the exact wall-clock stamp;
   MonitoredAppState owns the compare-and-set trigger claim. Membership identity
   distinguishes remove-and-re-add, and the claim revision distinguishes
