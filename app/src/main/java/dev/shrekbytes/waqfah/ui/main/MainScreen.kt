@@ -20,9 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.Surface
+import dev.shrekbytes.waqfah.ui.bookmarks.BookmarksScreen
 import dev.shrekbytes.waqfah.ui.components.WaqfahTab
 import dev.shrekbytes.waqfah.ui.components.WaqfahTabBar
 import dev.shrekbytes.waqfah.ui.home.HomeScreen
+import dev.shrekbytes.waqfah.ui.reading.BookmarksViewModel
 import dev.shrekbytes.waqfah.ui.settings.SettingsScreen
 import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import dev.shrekbytes.waqfah.ui.tour.FeatureTourOverlay
@@ -43,6 +45,11 @@ fun MainScreen(
     onOpenDonate: () -> Unit,
     onGoToSurah: () -> Unit = {},
     readingViewModel: dev.shrekbytes.waqfah.ui.reading.ReadingViewModel = hiltViewModel(),
+    // The Bookmarks tab's own session (ADR-0005), separate from the shared
+    // ReadingViewModel above so each tab keeps its own position. Scoped to
+    // this destination's ViewModelStore, which outlives the pushes over it —
+    // so the bookmarks card is where the reader left it on return.
+    bookmarksViewModel: BookmarksViewModel = hiltViewModel(),
 ) {
     // The tour machine is the FeatureTourViewModel's session: it owns the
     // gate's flags (manual open, this-session dismissal) alongside the steps,
@@ -79,6 +86,7 @@ fun MainScreen(
                             onGoToAyah = onGoToSurah,
                             viewModel = readingViewModel,
                         )
+                        WaqfahTab.BOOKMARKS -> BookmarksScreen(viewModel = bookmarksViewModel)
                         WaqfahTab.SETTINGS -> SettingsScreen(
                             onOpenReadingDisplay = onOpenReadingDisplay,
                             onOpenApps = onOpenApps,
@@ -92,6 +100,7 @@ fun MainScreen(
                 WaqfahTabBar(
                     selected = selectedTab,
                     onHomeClick = { selectedTab = WaqfahTab.HOME },
+                    onBookmarksClick = { selectedTab = WaqfahTab.BOOKMARKS },
                     onSettingsClick = { selectedTab = WaqfahTab.SETTINGS },
                 )
             }

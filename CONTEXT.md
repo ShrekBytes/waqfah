@@ -106,10 +106,10 @@ _Avoid_: last shown, cooldown write
 ### Reading
 
 **ReadingSession**:
-The reading machine shared by both hosts — the Home tab and the
-interstitial. It steps between verses, renders the current one, and marks
-verses read, owning its own ordering; the ViewModel only adapts it to
-Android.
+The reading machine shared by all three hosts — the Home tab, the
+Bookmarks tab and the interstitial. It steps between verses, renders the
+current one, and marks verses read, owning its own ordering; the ViewModels
+only adapt it to Android.
 _Avoid_: reading engine, reader, reading manager
 
 **ReadingPorts**:
@@ -118,6 +118,14 @@ facts ReadingSession fetches mid-step or mid-render, as distinct from the three
 signals it subscribes to. The repositories are adapted to it by
 DefaultReadingPorts; tests fake it inline.
 _Avoid_: probe bundle, session callbacks
+
+**Verse sequence**:
+The verses a reading session walks: which verse a fresh session opens on, and
+which verse comes next or previous, wrapping at the ends. Two implementations,
+deliberately siblings — verse selection walks the whole mushaf, the
+bookmarked-ayah stepper walks the collection — and the session is handed
+whichever applies.
+_Avoid_: verse walk, verse order
 
 **Verse selection**:
 The choice of which verse to show: the fresh-session start (sequential

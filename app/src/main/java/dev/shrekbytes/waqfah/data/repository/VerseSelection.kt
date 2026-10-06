@@ -20,6 +20,28 @@ interface VerseLookups {
     suspend fun getPreviousVerse(beforeId: Int): VerseEntity?
 }
 
+// The verse sequence a reading session walks (see CONTEXT.md's "Verse
+// selection" and "Bookmarked-ayah stepper"): which verse a fresh session opens
+// on, and which verse comes next/previous, wrapping at the ends. Two
+// implementations, deliberately siblings rather than one an extension of the
+// other — VerseSelection answers "what verse comes next in the mushaf",
+// BookmarkedAyahStepper answers "what bookmarked verse comes next" — and the
+// reading machine is handed whichever applies without knowing which it has.
+interface VerseSequence {
+    // Whether this sequence is the whole mushaf. Read progress is the mushaf's
+    // bookkeeping, so this is what decides its reach: the every-ayah-read
+    // completion event belongs to a mushaf-wide walk, and a progress reset
+    // re-lands one. A collection-scoped sequence has no relationship to read
+    // status in either direction (ADR-0005).
+    val isMushafWide: Boolean
+
+    suspend fun start(mode: ReadingMode, readIds: Set<Int>): VerseEntity?
+
+    suspend fun next(afterId: Int): VerseEntity?
+
+    suspend fun previous(beforeId: Int): VerseEntity?
+}
+
 // Verse selection (see CONTEXT.md): the one place that decides which verse
 // to show. Stateless: callers pass a read-id snapshot in, so this module
 // never touches the progress store and needs no lock of its own. Randomness
@@ -33,11 +55,14 @@ interface VerseLookups {
 class VerseSelection @Inject constructor(
     private val lookups: VerseLookups,
     private val random: Random,
-) {
+) : VerseSequence {
+
+    override val isMushafWide = true
+
     // Fresh-session start: sequential opens on the lowest unread ayah (the
     // very first ayah once everything is read, so there is always content);
     // random opens on any unread ayah (any ayah at all once all are read).
-    suspend fun start(mode: ReadingMode, readIds: Set<Int>): VerseEntity? {
+    override suspend fun start(mode: ReadingMode, readIds: Set<Int>): VerseEntity? {
         val ids = lookups.getAllVerseIds()
         return when (mode) {
             ReadingMode.SEQUENTIAL ->
@@ -63,9 +88,9 @@ class VerseSelection @Inject constructor(
     }
 
     // Stepping by global id, wrapping around at either end of the mushaf.
-    suspend fun next(afterId: Int): VerseEntity? =
+    override suspend fun next(afterId: Int): VerseEntity? =
         lookups.getNextVerse(afterId) ?: lookups.getFirstVerse()
 
-    suspend fun previous(beforeId: Int): VerseEntity? =
+    override suspend fun previous(beforeId: Int): VerseEntity? =
         lookups.getPreviousVerse(beforeId) ?: lookups.getLastVerse()
 }

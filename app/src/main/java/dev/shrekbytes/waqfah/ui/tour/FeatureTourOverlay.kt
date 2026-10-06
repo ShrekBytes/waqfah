@@ -394,7 +394,7 @@ private fun TryItPage(
                 .background(colors.line.copy(alpha = 0.3f)),
         ) {
             WaqfahReadingContent(
-                viewModel = viewModel,
+                session = viewModel.session,
                 onGoToAyah = if (isGoToStep) onOpenPicker else null,
                 bottomBar = {},
             )

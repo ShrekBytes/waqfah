@@ -34,7 +34,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -46,10 +45,19 @@ import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class WaqfahTab { HOME, SETTINGS }
+enum class WaqfahTab { HOME, BOOKMARKS, SETTINGS }
+
+// One size for all three glyphs — the row only stays even if every tab's icon
+// is the same height, whatever shape it is.
+private val TAB_ICON_SIZE = 22.dp
 
 @Composable
-fun WaqfahTabBar(selected: WaqfahTab, onHomeClick: () -> Unit, onSettingsClick: () -> Unit) {
+fun WaqfahTabBar(
+    selected: WaqfahTab,
+    onHomeClick: () -> Unit,
+    onBookmarksClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+) {
     val colors = WaqfahTheme.colors
     // Floating pill: detached capsule. Dark themes lift the surface (elevated-
     // surface look); light themes go near-white with a hairline outline in
@@ -69,8 +77,18 @@ fun WaqfahTabBar(selected: WaqfahTab, onHomeClick: () -> Unit, onSettingsClick: 
             .then(if (isLight) Modifier.border(1.dp, colors.line.copy(alpha = 0.6f), shape) else Modifier),
     ) {
         Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            TabItem(stringResource(R.string.tab_home), Icons.Default.Home, selected == WaqfahTab.HOME, onHomeClick, colors)
-            TabItem(stringResource(R.string.tab_settings), Icons.Default.Settings, selected == WaqfahTab.SETTINGS, onSettingsClick, colors)
+            TabItem(stringResource(R.string.tab_home), selected == WaqfahTab.HOME, onHomeClick, colors) { tint ->
+                Icon(Icons.Default.Home, contentDescription = null, tint = tint, modifier = Modifier.size(TAB_ICON_SIZE))
+            }
+            // The hand-drawn ribbon rather than a Material bookmark glyph: it
+            // is the same control the reading card's toggle shows, so the tab
+            // and the action that fills it read as one thing.
+            TabItem(stringResource(R.string.tab_bookmarks), selected == WaqfahTab.BOOKMARKS, onBookmarksClick, colors) { tint ->
+                BookmarkRibbonIcon(filled = false, tint = tint, modifier = Modifier.size(TAB_ICON_SIZE))
+            }
+            TabItem(stringResource(R.string.tab_settings), selected == WaqfahTab.SETTINGS, onSettingsClick, colors) { tint ->
+                Icon(Icons.Default.Settings, contentDescription = null, tint = tint, modifier = Modifier.size(TAB_ICON_SIZE))
+            }
         }
     }
 }
@@ -78,7 +96,15 @@ fun WaqfahTabBar(selected: WaqfahTab, onHomeClick: () -> Unit, onSettingsClick: 
 // No default ripple: selecting swaps pill + icon color instantly (no animation,
 // so there's no spring overshoot flash). Pressing previews via a slight shrink.
 @Composable
-private fun TabItem(label: String, icon: ImageVector, isSelected: Boolean, onClick: () -> Unit, colors: WaqfahColors) {
+private fun TabItem(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    colors: WaqfahColors,
+    // A slot rather than an ImageVector: the bar's icons are not all Material
+    // glyphs — the bookmark tab draws the app's own ribbon.
+    icon: @Composable (tint: Color) -> Unit,
+) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -118,7 +144,7 @@ private fun TabItem(label: String, icon: ImageVector, isSelected: Boolean, onCli
             // null: the tab is clickable as one merged unit, and the visible
             // label Text below already supplies its accessible name — setting
             // it here too would make TalkBack announce the label twice.
-            Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(22.dp))
+            icon(contentColor)
         }
         Text(
             label,

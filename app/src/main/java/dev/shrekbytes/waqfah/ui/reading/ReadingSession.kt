@@ -11,7 +11,7 @@ import dev.shrekbytes.waqfah.data.model.TranslationLibrary
 import dev.shrekbytes.waqfah.data.model.TranslationMeta
 import dev.shrekbytes.waqfah.data.model.UserPreferences
 import dev.shrekbytes.waqfah.data.model.toTranslationLanguage
-import dev.shrekbytes.waqfah.data.repository.VerseSelection
+import dev.shrekbytes.waqfah.data.repository.VerseSequence
 import androidx.compose.ui.unit.LayoutDirection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -27,24 +27,25 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-// The reading machine shared by both hosts — the Home tab and the interstitial
-// (see CONTEXT.md). It owns the whole reading loop: stepping between verses,
-// rendering the current one, marking verses read, the compare-translations
-// peek, and the completion state — plus the ordering that keeps all of it
-// consistent: every read and write of currentVerse, latestPrefs,
-// translationOverrideId, completionDismissed and the render-signature
-// bookkeeping happens behind one mutex — this module's internal invariant,
-// not a convention callers must know about.
+// The reading machine shared by all three hosts — the Home tab, the Bookmarks
+// tab and the interstitial (see CONTEXT.md). It owns the whole reading loop:
+// stepping between verses, rendering the current one, marking verses read, the
+// compare-translations peek, and the completion state — plus the ordering
+// that keeps all of it consistent: every read and write of currentVerse,
+// latestPrefs, translationOverrideId, completionDismissed and the
+// render-signature bookkeeping happens behind one mutex — this module's
+// internal invariant, not a convention callers must know about.
 //
 // Everything impure arrives through the constructor: the signals it
 // subscribes to (preferences, downloaded translation ids, the progress-reset
 // nudge) as flows, the bookmark collection — its published set and its toggle
-// — as BookmarkCollection, verse movement as VerseSelection, and the remaining
-// verse/progress/translation probes behind one interface — ReadingPorts —
-// that DefaultReadingPorts adapts the repositories to. The whole machine is
-// unit-testable with a fake ReadingPorts, a fake BookmarkCollection, a fake
-// VerseLookups behind a real VerseSelection, and virtual time (see
-// ReadingSessionTest).
+// — as BookmarkCollection, verse movement as VerseSequence (the mushaf's
+// selection, or the bookmark collection's stepper — see ADR-0005), and the
+// remaining verse/progress/translation probes behind one interface —
+// ReadingPorts — that DefaultReadingPorts adapts the repositories to. The
+// whole machine is unit-testable with a fake ReadingPorts, a fake
+// BookmarkCollection, a fake VerseLookups behind a real VerseSequence, and
+// virtual time (see ReadingSessionTest).
 class ReadingSession(
     private val preferences: Flow<UserPreferences>,
     private val downloadedIds: StateFlow<Set<String>>,
@@ -53,7 +54,13 @@ class ReadingSession(
     // to recognise the echo of its own resets — see lastSelfInitiatedReset.
     private val progressReset: StateFlow<Int>,
     private val ports: ReadingPorts,
-    private val verseSelection: VerseSelection,
+    // The sequence this session walks: the whole mushaf on Home and in the
+    // interstitial, the reader's bookmark collection on the Bookmarks tab.
+    // Which one it was handed is the session's only difference between the
+    // two — everything else it does is the same machine, and nothing below
+    // branches on it except where read progress is concerned (see
+    // VerseSequence.isMushafWide).
+    private val verseSelection: VerseSequence,
     // The bookmark collection (see CONTEXT.md). The session subscribes to the
     // set it publishes and reads membership back from the store — it holds no
     // copy of an ayah's saved state, so the toggle cannot drift from what is
@@ -134,7 +141,17 @@ class ReadingSession(
                     lastRenderSignature = signature
                     if (defaultChanged) translationOverrideId = null
                     if (currentVerse == null) currentVerse = loadStartingVerse(prefs)
-                    render(prefs)
+                    // A selection with nothing to show is a state of its own,
+                    // not a load that never resolves: the card says the
+                    // collection is empty rather than showing a skeleton
+                    // forever. Only a collection-scoped walk can be empty —
+                    // the mushaf always has an ayah — so a null selection
+                    // there leaves this path exactly as it was.
+                    if (currentVerse == null && !verseSelection.isMushafWide) {
+                        showEmptyStateLocked()
+                    } else {
+                        render(prefs)
+                    }
                 }
             }
         }
@@ -151,30 +168,58 @@ class ReadingSession(
                 }
             }
         }
-        // Same idea for "Reset progress" in Settings: if this screen is already
-        // showing an ayah, jump to a fresh starting verse instead of leaving
-        // stale read/completion state on screen until a restart. The session's
-        // own resets (startOver / switchModeAndRestart) echo through this same
-        // signal — but they reload synchronously under the lock and record the
-        // echo below, so the collector skips their emission instead of paying
-        // a second reload.
+        // Same idea for "Reset progress" in Settings: whatever this screen
+        // shows is stale once someone else wipes the read history, so it must
+        // not be left there until a restart. The session's own resets
+        // (startOver / switchModeAndRestart) echo through this same signal —
+        // but they reload synchronously under the lock and record the echo
+        // below, so the collector skips their emission instead of paying a
+        // second reload.
         scope.launch {
             progressReset.drop(1).collect { value ->
                 mutationMutex.withLock {
                     if (value <= lastSelfInitiatedReset) return@withLock
-                    if (currentVerse != null) beginFreshSessionLocked()
+                    if (currentVerse == null) return@withLock
+                    // The wipe happened elsewhere, so whatever is on screen is
+                    // stale either way. The mushaf-wide walk starts over from a
+                    // fresh verse; a collection-scoped session is not a progress
+                    // surface and must not move, so it re-renders instead — the
+                    // ayah it shows may well have been in the wiped history, and
+                    // the card must not keep claiming it was read.
+                    if (verseSelection.isMushafWide) {
+                        beginFreshSessionLocked()
+                    } else {
+                        render(latestPrefs)
+                    }
                 }
             }
         }
-        // The collection's published set is the change signal for the saved
-        // state of the ayah on screen: a save made anywhere else — the
-        // interstitial today, another card later — must land here without a
-        // re-render or a manual refresh. The set itself is not held; membership
-        // is read back from the store, so no copy of it can go stale.
+        // The collection's published set is the change signal for two things:
+        // the saved state of the ayah on screen — a save made anywhere else,
+        // the interstitial or another card, must land here without a re-render
+        // or a manual refresh — and, on a collection-scoped session, the
+        // collection's own emptiness, because there the collection *is* the
+        // content. The set itself is not held; membership is read back from
+        // the store, so no copy of it can go stale.
         scope.launch {
-            bookmarks.savedVerseIds.collect {
+            bookmarks.savedVerseIds.collect { saved ->
                 mutationMutex.withLock {
-                    currentVerse?.let { verse -> refreshSavedStateLocked(verse) }
+                    when {
+                        // Nothing saved: the card has nothing to show and must
+                        // say so, rather than keep rendering an ayah that is no
+                        // longer saved — or step to an unrelated one.
+                        !verseSelection.isMushafWide && saved.isEmpty() ->
+                            showEmptyStateLocked()
+
+                        // Filled again from empty — a save made on Home or in
+                        // the interstitial: pick up the collection's first
+                        // ayah. Before the first load the session is loading,
+                        // not empty, so this cannot jump ahead of preferences.
+                        currentVerse == null && _uiState.value.isEmpty ->
+                            beginFreshSessionLocked()
+
+                        else -> currentVerse?.let { verse -> refreshSavedStateLocked(verse) }
+                    }
                 }
             }
         }
@@ -211,9 +256,10 @@ class ReadingSession(
                 // database until something unrelated re-renders the card.
                 // Completion is deliberately not refreshed: the write it would
                 // have reflected never landed. Rethrown so the host scope's
-                // CoroutineExceptionHandler (ReadingViewModel) still logs the
-                // failure — this machine does no Android logging of its own,
-                // which is what keeps it JVM-testable.
+                // CoroutineExceptionHandler (the ViewModel that hosts this
+                // session) still logs the failure — this machine does no
+                // Android logging of its own, which is what keeps it
+                // JVM-testable.
                 _uiState.update { it.copy(isMarkedRead = !newIsRead) }
                 throw e
             }
@@ -242,6 +288,22 @@ class ReadingSession(
     // interstitial — can never disagree about a verse.
     private suspend fun refreshSavedStateLocked(verse: VerseEntity) {
         _uiState.update { it.copy(isSaved = bookmarks.isSaved(verse.id)) }
+    }
+
+    // Caller must hold mutationMutex. The selection answered "nothing to
+    // show": a presentable state — an empty bookmark collection is the
+    // invitation to start one (ADR-0005) — not a load that never resolves.
+    // There is no verse to show, step from, or mark, so the session holds
+    // none, and the state goes back to its initial values rather than a
+    // patched copy of the last verse's: a leftover isMarkedRead or isSaved
+    // would be a claim about an ayah that isn't there. triggeredAppLabel is
+    // the host's, not the verse's, and survives; render() is what fills the
+    // verse fields in again when one comes back.
+    private fun showEmptyStateLocked() {
+        currentVerse = null
+        _uiState.update { current ->
+            ReadingUiState(isLoading = false, isEmpty = true, triggeredAppLabel = current.triggeredAppLabel)
+        }
     }
 
     // Launched so the flag flips under the same mutex render() reads it from.
@@ -311,8 +373,12 @@ class ReadingSession(
         }
     }
 
+    // Read progress governs the mushaf-wide walk only: the every-ayah-read
+    // completion event — and the progress-wiping "Start Again" it offers —
+    // belongs to walking the whole Quran, so a collection-scoped session
+    // never reports it (ADR-0005).
     private suspend fun isEverythingRead(): Boolean =
-        countRead() >= totalVerses()
+        verseSelection.isMushafWide && countRead() >= totalVerses()
 
     // The bundled Quran database ships whole with every app update, so its size
     // never changes at runtime — fetch it once instead of on every render.
@@ -421,6 +487,8 @@ class ReadingSession(
             _uiState.update { current ->
                 current.copy(
                     isLoading = false,
+                    // An ayah is being rendered, so the sequence is not empty.
+                    isEmpty = false,
                     surahName = surahDeferred.await()?.let { surahDisplayName(it, prefs.surahNameLanguage) } ?: "",
                     surahNameDirection = if (prefs.surahNameLanguage == NameDisplayLanguage.ARABIC) LayoutDirection.Rtl else LayoutDirection.Ltr,
                     ayahLabel = ayahLabel(verse, prefs.surahNameLanguage),

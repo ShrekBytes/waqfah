@@ -9,7 +9,7 @@ import dev.shrekbytes.waqfah.data.model.TranslationMeta
 // mid-step or mid-render, as opposed to the three signals it subscribes to
 // (preferences, downloadedIds, progressReset), which stay direct constructor
 // flows on the session. Verse movement (fresh start, stepping) is verse
-// selection's decision, not a probe: the session takes VerseSelection
+// selection's decision, not a probe: the session takes VerseSequence
 // directly. DefaultReadingPorts (data/repository) adapts the repositories to
 // this interface, provided in AppModule; tests fake it inline.
 interface ReadingPorts {

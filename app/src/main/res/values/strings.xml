@@ -23,6 +23,7 @@
 
     <!-- Tabs -->
     <string name="tab_home">Home</string>
+    <string name="tab_bookmarks">Bookmarks</string>
     <string name="tab_settings">Settings</string>
 
     <!-- Onboarding -->
@@ -172,6 +173,10 @@
     <string name="reset_dialog_title">Reset progress?</string>
     <string name="reset_dialog_body">This will clear every ayah marked as read and restart from the beginning.</string>
     <string name="reset_mode_note"> Reading mode will also switch.</string>
+
+    <!-- Bookmarks -->
+    <string name="bookmarks_empty_title">No bookmarks yet</string>
+    <string name="bookmarks_empty_body">Tap the bookmark ribbon on any ayah to keep it here. Saved ayahs stay in Quran order, ready whenever you return.</string>
 
     <!-- About -->
     <string name="about_title">About</string>

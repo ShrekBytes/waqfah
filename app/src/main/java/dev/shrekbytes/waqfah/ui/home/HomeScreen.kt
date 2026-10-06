@@ -30,7 +30,7 @@ fun HomeScreen(
 ) {
     Box(Modifier.fillMaxSize()) {
         WaqfahReadingContent(
-            viewModel = viewModel,
+            session = viewModel.session,
             onGoToAyah = onGoToAyah,
             onToggleBookmark = viewModel.session::toggleBookmark,
             bottomBar = {},
