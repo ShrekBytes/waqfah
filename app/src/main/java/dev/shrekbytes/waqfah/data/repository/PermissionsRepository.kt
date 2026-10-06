@@ -62,4 +62,33 @@ class PermissionsRepository @Inject constructor(
     // exemption manually.
     fun batterySettingsIntent(): Intent =
         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri())
+
+    // Some ROMs block background activity starts behind a permission of their
+    // own, which lives in the vendor settings app rather than in Settings.
+    // Whether that screen exists is the only signal available: the op that
+    // would report the permission's state is vendor-private and not stable
+    // across builds, so the row is offered by capability and never claims a
+    // state it cannot read (ADR-0008).
+    fun vendorBackgroundStartIntent(): Intent = Intent(MIUI_PERM_EDITOR_ACTION).apply {
+        setClassName(MIUI_SECURITY_CENTER, MIUI_PERMISSION_EDITOR)
+        putExtra(MIUI_EXTRA_PKGNAME, context.packageName)
+    }
+
+    // The capability probe. Package visibility filtering hides the vendor app
+    // from resolveActivity unless it is declared in the manifest's <queries>,
+    // which is why that declaration is load-bearing rather than decorative.
+    fun hasVendorBackgroundStartScreen(): Boolean =
+        vendorBackgroundStartIntent().resolveActivity(context.packageManager) != null
+
+    private companion object {
+        // MIUI / HyperOS: the per-app permission editor, the screen that carries
+        // "Open new windows while running in the background". Unverified on a
+        // real device — the first thing to confirm on a HyperOS phone. If the
+        // component is wrong the intent simply does not resolve, so no row is
+        // shown: the failure is silent rather than misleading.
+        const val MIUI_SECURITY_CENTER = "com.miui.securitycenter"
+        const val MIUI_PERMISSION_EDITOR = "com.miui.permcenter.permissions.PermissionsEditorActivity"
+        const val MIUI_PERM_EDITOR_ACTION = "miui.intent.action.APP_PERM_EDITOR"
+        const val MIUI_EXTRA_PKGNAME = "extra_pkgname"
+    }
 }

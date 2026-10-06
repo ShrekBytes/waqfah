@@ -31,6 +31,12 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Some ROMs gate background activity starts behind their own
+             permission, which lives in the vendor settings app rather than in
+             Settings. Package visibility filtering hides that app from
+             resolveActivity unless it is declared here, which would make the
+             capability probe answer "no" on every device (ADR-0008). -->
+        <package android:name="com.miui.securitycenter" />
     </queries>
 
     <application
