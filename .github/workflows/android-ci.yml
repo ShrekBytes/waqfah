@@ -66,9 +66,11 @@ jobs:
           name: app-play-debug
           path: app/build/outputs/apk/play/debug/app-play-debug.apk
 
-  # The five androidTest suites (Room migration safety net, download gate,
-  # package policy, corruption heuristic, repository contracts) run nowhere
-  # else — see docs/audits/2026-09-06-health.md §5, recommendation 3.
+  # The androidTest suites (Room migration safety net, download gate, package
+  # policy, corruption heuristic, repository contracts, and the reading card's
+  # TalkBack announcements) run nowhere else — see
+  # docs/audits/2026-09-06-health.md §5, recommendation 3. Deliberately no count
+  # here: it is wrong the moment a suite is added, and nothing flags it.
   instrumented:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
