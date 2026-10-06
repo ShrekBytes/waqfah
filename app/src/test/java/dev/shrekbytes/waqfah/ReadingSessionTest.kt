@@ -671,13 +671,18 @@ class ReadingSessionTest {
 
     // The session's content *is* the collection, so unsaving the ayah on
     // screen leaves nothing to show: the empty state, not a blank card and not
-    // an unrelated ayah.
+    // an unrelated ayah. Nothing about the ayah that left survives into it —
+    // the state is not the last verse greyed out.
     @Test
     fun bookmarksSession_unsavingTheShownAyah_landsOnTheEmptyState() = runTest {
         bookmarks.toggle(3)
         val session = bookmarksSession()
         runCurrent()
         assertEquals("1:3", session.uiState.value.ayahLabel)
+        session.markCurrentRead()
+        runCurrent()
+        assertTrue(session.uiState.value.isSaved)
+        assertTrue(session.uiState.value.isMarkedRead)
 
         session.toggleBookmark()
         runCurrent()
@@ -685,6 +690,9 @@ class ReadingSessionTest {
         assertFalse(bookmarks.isSaved(3))
         assertFalse(session.uiState.value.isLoading)
         assertTrue(session.uiState.value.isEmpty)
+        assertFalse(session.uiState.value.isSaved)
+        assertFalse(session.uiState.value.isMarkedRead)
+        assertEquals("", session.uiState.value.ayahLabel)
     }
 
     // The other half of that rule: while anything is still saved, unsaving the
@@ -759,6 +767,26 @@ class ReadingSessionTest {
         // A reload would re-land the session on the collection's first ayah,
         // 1:1 — the card is still on 1:3, so nothing reloaded.
         assertEquals("1:3", session.uiState.value.ayahLabel)
+    }
+
+    // Not moving is only half of it: the wipe makes what the card shows stale,
+    // because the ayah on screen may have been in the wiped history. The pill
+    // must stop claiming it was read even though the position holds.
+    @Test
+    fun bookmarksSession_progressResetFromSettings_dropsTheStaleReadState() = runTest {
+        bookmarks.toggle(3)
+        val session = bookmarksSession()
+        runCurrent()
+        session.markCurrentRead()
+        runCurrent()
+        assertTrue(session.uiState.value.isMarkedRead)
+
+        readIds.clear() // what ReadingProgressRepository.resetAll() wipes
+        resetSignal.value++
+        runCurrent()
+
+        assertEquals("1:3", session.uiState.value.ayahLabel) // position kept
+        assertFalse(session.uiState.value.isMarkedRead) // read state refreshed
     }
 
     // The collection is not read progress: marking a saved ayah read must not

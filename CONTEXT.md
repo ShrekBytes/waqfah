@@ -119,6 +119,14 @@ signals it subscribes to. The repositories are adapted to it by
 DefaultReadingPorts; tests fake it inline.
 _Avoid_: probe bundle, session callbacks
 
+**Verse sequence**:
+The verses a reading session walks: which verse a fresh session opens on, and
+which verse comes next or previous, wrapping at the ends. Two implementations,
+deliberately siblings — verse selection walks the whole mushaf, the
+bookmarked-ayah stepper walks the collection — and the session is handed
+whichever applies.
+_Avoid_: verse walk, verse order
+
 **Verse selection**:
 The choice of which verse to show: the fresh-session start (sequential
 first-unread, random random-unread, each with its everything-read fallback),

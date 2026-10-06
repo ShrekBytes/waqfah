@@ -23,7 +23,10 @@ import javax.inject.Inject
 // A ViewModel of its own rather than a second session inside ReadingViewModel:
 // TriggerActivity hosts a ReadingViewModel too, and it would otherwise build a
 // bookmarks session it can never show. Like ReadingViewModel, this is only the
-// session's Android adapter.
+// session's Android adapter, and the wiring below mirrors its sibling's on
+// purpose — the scope must be tied to this ViewModel's own lifetime, and a
+// shared builder would only forward the same seven arguments to the same
+// constructor.
 @HiltViewModel
 class BookmarksViewModel @Inject constructor(
     settingsRepository: SettingsRepository,

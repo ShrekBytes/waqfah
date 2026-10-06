@@ -168,22 +168,29 @@ class ReadingSession(
                 }
             }
         }
-        // Same idea for "Reset progress" in Settings: if this screen is already
-        // showing an ayah, jump to a fresh starting verse instead of leaving
-        // stale read/completion state on screen until a restart. The session's
-        // own resets (startOver / switchModeAndRestart) echo through this same
-        // signal — but they reload synchronously under the lock and record the
-        // echo below, so the collector skips their emission instead of paying
-        // a second reload.
+        // Same idea for "Reset progress" in Settings: whatever this screen
+        // shows is stale once someone else wipes the read history, so it must
+        // not be left there until a restart. The session's own resets
+        // (startOver / switchModeAndRestart) echo through this same signal —
+        // but they reload synchronously under the lock and record the echo
+        // below, so the collector skips their emission instead of paying a
+        // second reload.
         scope.launch {
             progressReset.drop(1).collect { value ->
                 mutationMutex.withLock {
                     if (value <= lastSelfInitiatedReset) return@withLock
-                    // Read progress governs the mushaf-wide walk only. A
-                    // collection-scoped session is not a progress surface, so
-                    // wiping progress in Settings must not move its card.
-                    if (!verseSelection.isMushafWide) return@withLock
-                    if (currentVerse != null) beginFreshSessionLocked()
+                    if (currentVerse == null) return@withLock
+                    // The wipe happened elsewhere, so whatever is on screen is
+                    // stale either way. The mushaf-wide walk starts over from a
+                    // fresh verse; a collection-scoped session is not a progress
+                    // surface and must not move, so it re-renders instead — the
+                    // ayah it shows may well have been in the wiped history, and
+                    // the card must not keep claiming it was read.
+                    if (verseSelection.isMushafWide) {
+                        beginFreshSessionLocked()
+                    } else {
+                        render(latestPrefs)
+                    }
                 }
             }
         }
@@ -287,11 +294,15 @@ class ReadingSession(
     // show": a presentable state — an empty bookmark collection is the
     // invitation to start one (ADR-0005) — not a load that never resolves.
     // There is no verse to show, step from, or mark, so the session holds
-    // none; render() is what clears this again when one comes back.
+    // none, and the state goes back to its initial values rather than a
+    // patched copy of the last verse's: a leftover isMarkedRead or isSaved
+    // would be a claim about an ayah that isn't there. triggeredAppLabel is
+    // the host's, not the verse's, and survives; render() is what fills the
+    // verse fields in again when one comes back.
     private fun showEmptyStateLocked() {
         currentVerse = null
-        _uiState.update {
-            it.copy(isLoading = false, isEmpty = true, isCompleted = false, nextPreview = null, previousPreview = null)
+        _uiState.update { current ->
+            ReadingUiState(isLoading = false, isEmpty = true, triggeredAppLabel = current.triggeredAppLabel)
         }
     }
 

@@ -613,7 +613,8 @@ private fun SkeletonBar(width: Dp, height: Dp, color: Color) {
 // session can reach it — the mushaf always has an ayah — so the copy is the
 // bookmarks tab's, and the ribbon shows the control the message asks the
 // reader to look for. No header, no pager, no action row: there is no ayah for
-// any of them to be about.
+// any of them to be about. Title and body are the pair the tour's own message
+// blocks use, so a card-sized message reads the same wherever it appears.
 @Composable
 private fun BookmarkEmptyState(modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors
@@ -627,15 +628,15 @@ private fun BookmarkEmptyState(modifier: Modifier = Modifier) {
         Text(
             stringResource(R.string.bookmarks_empty_title),
             color = colors.ink,
-            fontSize = 15.sp,
+            fontSize = 14.5.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(10.dp))
         Text(
             stringResource(R.string.bookmarks_empty_body),
             color = colors.inkMuted,
-            fontSize = 13.5.sp,
-            lineHeight = 21.sp,
+            fontSize = 13.sp,
+            lineHeight = 20.sp,
             textAlign = TextAlign.Center,
         )
     }
