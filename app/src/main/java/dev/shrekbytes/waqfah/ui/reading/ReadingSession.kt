@@ -1,5 +1,6 @@
 package dev.shrekbytes.waqfah.ui.reading
 
+import dev.shrekbytes.waqfah.data.bookmark.BookmarkCollection
 import dev.shrekbytes.waqfah.data.local.core.SurahEntity
 import dev.shrekbytes.waqfah.data.local.core.VerseEntity
 import dev.shrekbytes.waqfah.data.model.AidLanguage
@@ -35,13 +36,15 @@ import kotlinx.coroutines.sync.withLock
 // bookkeeping happens behind one mutex — this module's internal invariant,
 // not a convention callers must know about.
 //
-// Everything impure arrives through the constructor: the three signals it
+// Everything impure arrives through the constructor: the signals it
 // subscribes to (preferences, downloaded translation ids, the progress-reset
-// nudge) as flows, verse movement as VerseSelection, and the remaining
+// nudge) as flows, the bookmark collection — its published set and its toggle
+// — as BookmarkCollection, verse movement as VerseSelection, and the remaining
 // verse/progress/translation probes behind one interface — ReadingPorts —
 // that DefaultReadingPorts adapts the repositories to. The whole machine is
-// unit-testable with a fake ReadingPorts, a fake VerseLookups behind a real
-// VerseSelection, and virtual time (see ReadingSessionTest).
+// unit-testable with a fake ReadingPorts, a fake BookmarkCollection, a fake
+// VerseLookups behind a real VerseSelection, and virtual time (see
+// ReadingSessionTest).
 class ReadingSession(
     private val preferences: Flow<UserPreferences>,
     private val downloadedIds: StateFlow<Set<String>>,
@@ -51,6 +54,11 @@ class ReadingSession(
     private val progressReset: StateFlow<Int>,
     private val ports: ReadingPorts,
     private val verseSelection: VerseSelection,
+    // The bookmark collection (see CONTEXT.md). The session subscribes to the
+    // set it publishes and reads membership back from the store — it holds no
+    // copy of an ayah's saved state, so the toggle cannot drift from what is
+    // actually stored, whichever surface saved the ayah (ADR-0005).
+    private val bookmarks: BookmarkCollection,
     private val scope: CoroutineScope,
 ) {
 
@@ -158,6 +166,18 @@ class ReadingSession(
                 }
             }
         }
+        // The collection's published set is the change signal for the saved
+        // state of the ayah on screen: a save made anywhere else — the
+        // interstitial today, another card later — must land here without a
+        // re-render or a manual refresh. The set itself is not held; membership
+        // is read back from the store, so no copy of it can go stale.
+        scope.launch {
+            bookmarks.savedVerseIds.collect {
+                mutationMutex.withLock {
+                    currentVerse?.let { verse -> refreshSavedStateLocked(verse) }
+                }
+            }
+        }
     }
 
     // Suspend so the card can await these mid-gesture to sequence the swipe
@@ -199,6 +219,29 @@ class ReadingSession(
             }
             refreshCompletionState()
         }
+    }
+
+    // The bookmark toggle (see CONTEXT.md). Verse-keyed like mark-read — the
+    // decision and target verse are captured under the same lock as the write,
+    // so a swipe committing mid-gesture cannot apply this tap to the wrong
+    // ayah. Deliberately NOT optimistic, unlike mark-read: the collection is a
+    // place users look things up, so the icon reflects what the store holds.
+    // A failed write throws out of the lock leaving the icon on the state it
+    // already had (the store's) and still reaches the host's handler, so there
+    // is no optimistic flip to roll back.
+    fun toggleBookmark() = scope.launch {
+        mutationMutex.withLock {
+            val verse = currentVerse ?: return@withLock
+            bookmarks.toggle(verse.id)
+            refreshSavedStateLocked(verse)
+        }
+    }
+
+    // Caller must hold mutationMutex. Membership is asked of the store every
+    // time rather than cached on this session, so two cards — and the
+    // interstitial — can never disagree about a verse.
+    private suspend fun refreshSavedStateLocked(verse: VerseEntity) {
+        _uiState.update { it.copy(isSaved = bookmarks.isSaved(verse.id)) }
     }
 
     // Launched so the flag flips under the same mutex render() reads it from.
@@ -359,6 +402,7 @@ class ReadingSession(
         coroutineScope {
             val surahDeferred = async { surah(verse.surahNo) }
             val isReadDeferred = async { isRead(verse.id) }
+            val isSavedDeferred = async { bookmarks.isSaved(verse.id) }
             val allReadDeferred = async { isEverythingRead() }
             val nextPreviewDeferred =
                 async { verseSelection.next(verse.id)?.let { buildPreview(it, prefs, downloaded) } }
@@ -391,6 +435,7 @@ class ReadingSession(
                     translationSourceName = shownMeta?.name,
                     translationHasAlternates = availableTranslations.size > 1,
                     isMarkedRead = isReadDeferred.await(),
+                    isSaved = isSavedDeferred.await(),
                     readingMode = prefs.readingMode,
                     isCompleted = allReadDeferred.await() && !completionDismissed,
                     // triggeredAppLabel untouched — owned by setTriggeredAppLabel()

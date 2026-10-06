@@ -1,5 +1,6 @@
 package dev.shrekbytes.waqfah
 
+import dev.shrekbytes.waqfah.data.bookmark.BookmarkCollection
 import dev.shrekbytes.waqfah.data.local.core.SurahEntity
 import dev.shrekbytes.waqfah.data.local.core.VerseEntity
 import dev.shrekbytes.waqfah.data.model.ReadingMode
@@ -16,7 +17,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -86,6 +89,26 @@ class ReadingSessionTest {
     // (disk pressure, SQLITE_BUSY, an I/O error). Null means writes succeed.
     private var writeFailure: Throwable? = null
 
+    // The collection as the session sees it: one published set, plus the verbs.
+    // Failing the bookmark write is a separate trap from the read-status one so
+    // the two seams can be failed independently.
+    private var bookmarkWriteFailure: Throwable? = null
+
+    private val bookmarks = object : BookmarkCollection {
+        private val saved = MutableStateFlow<Set<Int>>(emptySet())
+
+        override val savedVerseIds: Flow<Set<Int>> = saved
+
+        override suspend fun toggle(verseId: Int) {
+            bookmarkWriteFailure?.let { throw it }
+            saved.update { if (verseId in it) it - verseId else it + verseId }
+        }
+
+        override suspend fun isSaved(verseId: Int): Boolean = verseId in saved.value
+
+        override suspend fun savedVerseIdsSnapshot(): List<Int> = saved.value.sorted()
+    }
+
     private val lookups = object : VerseLookups {
         override suspend fun getVerseById(id: Int) = verses.firstOrNull { it.id == id }
         override suspend fun getAllVerseIds(): List<Int> {
@@ -151,6 +174,7 @@ class ReadingSessionTest {
             }
         },
         verseSelection = VerseSelection(lookups, Random(0)),
+        bookmarks = bookmarks,
         scope = scope,
     )
 
@@ -500,5 +524,85 @@ class ReadingSessionTest {
         assertTrue(session.uiState.value.translationHasAlternates)
         assertEquals("1:1", session.uiState.value.ayahLabel) // same ayah: re-render, no reload
         assertEquals(1, startingVerseLoads)
+    }
+
+    @Test
+    fun bookmarkToggle_savesThenUnsavesTheCurrentAyah() = runTest {
+        val session = session()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.isSaved)
+
+        session.toggleBookmark()
+        runCurrent()
+        assertTrue(session.uiState.value.isSaved)
+        assertTrue(bookmarks.isSaved(1))
+
+        session.toggleBookmark()
+        runCurrent()
+        assertFalse(session.uiState.value.isSaved)
+        assertFalse(bookmarks.isSaved(1))
+    }
+
+    // Saved state is a fact about an ayah, not about the card: stepping has to
+    // show whichever ayah arrived, never the one that just left.
+    @Test
+    fun bookmark_steppingShowsEachAyahsOwnState() = runTest {
+        val session = session()
+        runCurrent()
+        session.toggleBookmark() // saves 1:1
+        runCurrent()
+
+        session.next()
+        runCurrent()
+        assertEquals("1:2", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.isSaved)
+
+        session.previous()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertTrue(session.uiState.value.isSaved)
+    }
+
+    // The collection is published as one observable set precisely so a save
+    // made on another surface — the interstitial, another card — reaches this
+    // one. Nothing here taps this session's toggle: the set is the only signal.
+    @Test
+    fun bookmark_changeMadeElsewhere_landsWithoutAReload() = runTest {
+        val session = session()
+        runCurrent()
+        assertFalse(session.uiState.value.isSaved)
+
+        bookmarks.toggle(1) // as another card would
+        runCurrent()
+
+        assertTrue(session.uiState.value.isSaved)
+        assertEquals("1:1", session.uiState.value.ayahLabel) // same ayah: no reload
+        assertEquals(1, startingVerseLoads)
+    }
+
+    // The deliberate divergence from mark-read: the toggle never flips ahead of
+    // the write. A failed write leaves the store holding the old truth, so the
+    // ribbon must keep showing that truth rather than the state the tap hoped
+    // for — there is no optimistic flip to roll back, and none to leak.
+    @Test
+    fun bookmark_writeFails_leavesTheToggleOnWhatIsStored() = runTest {
+        val session = session(
+            scope = CoroutineScope(
+                backgroundScope.coroutineContext + SupervisorJob() +
+                    CoroutineExceptionHandler { _, t -> capturedFailures += t },
+            ),
+        )
+        runCurrent()
+        assertFalse(session.uiState.value.isSaved)
+
+        val failure = IllegalStateException("disk full")
+        bookmarkWriteFailure = failure
+        session.toggleBookmark()
+        runCurrent()
+
+        assertFalse(bookmarks.isSaved(1)) // the write never landed
+        assertFalse(session.uiState.value.isSaved) // and the ribbon agrees
+        assertEquals(listOf(failure), capturedFailures) // still surfaced to the host
     }
 }

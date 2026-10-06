@@ -3,6 +3,7 @@ package dev.shrekbytes.waqfah.ui.reading
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.shrekbytes.waqfah.data.bookmark.BookmarkCollection
 import dev.shrekbytes.waqfah.data.installedapp.InstalledAppCatalog
 import dev.shrekbytes.waqfah.data.repository.ReadingProgressRepository
 import dev.shrekbytes.waqfah.data.repository.SettingsRepository
@@ -17,7 +18,8 @@ import javax.inject.Inject
 
 // HomeScreen and ReadingScreen live in separate Activities (MainActivity and
 // TriggerActivity), so each gets its own instance. Everything that must survive
-// across them — read status — is persisted in Room, not held in memory.
+// across them — read status and the bookmark collection — is persisted in Room,
+// not held in memory.
 //
 // The reading machine itself lives in ReadingSession; this class is only its
 // Android adapter: it hands the session its three signals, exposes the session
@@ -33,6 +35,7 @@ class ReadingViewModel @Inject constructor(
     private val installedAppCatalog: InstalledAppCatalog,
     ports: ReadingPorts,
     verseSelection: VerseSelection,
+    bookmarks: BookmarkCollection,
 ) : ViewModel() {
 
     // The session's host scope: the same job as viewModelScope (so clearing
@@ -54,6 +57,7 @@ class ReadingViewModel @Inject constructor(
         progressReset = readingProgressRepository.progressReset,
         ports = ports,
         verseSelection = verseSelection,
+        bookmarks = bookmarks,
         scope = sessionScope,
     )
 
