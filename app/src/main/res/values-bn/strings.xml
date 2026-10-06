@@ -55,7 +55,7 @@
     <string name="perm_battery_desc">Waqfah নিরবচ্ছিন্নভাবে চালু রাখে (পরের স্ক্রিনে Battery অপশনে গিয়ে Unrestricted নির্বাচন করুন)</string>
     <string name="perm_notifications_name">নোটিফিকেশন</string>
     <string name="perm_notifications_desc">Waqfah-এর নীরব মনিটরিং নোটিফিকেশনটি দেখায়</string>
-    <string name="perm_vendor_bg_name">ব্যাকগ্রাউন্ডে নতুন উইন্ডো খোলা</string>
+    <string name="perm_vendor_bg_name">ব্যাকগ্রাউন্ডে চলার সময় নতুন উইন্ডো খোলা</string>
     <string name="perm_vendor_bg_desc">খোলা অ্যাপের ওপর তিলাওয়াত স্ক্রিন দেখাতে আপনার ডিভাইসে এটি চালু থাকা প্রয়োজন</string>
     <string name="perm_section_required">প্রয়োজনীয়</string>
     <string name="perm_section_optional">প্রস্তাবিত</string>
