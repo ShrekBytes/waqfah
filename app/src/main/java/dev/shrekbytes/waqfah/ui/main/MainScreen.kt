@@ -50,8 +50,7 @@ fun MainScreen(
     // ReadingViewModel above so each tab keeps its own position. Hoisted by
     // WaqfahNavDisplay rather than built here, because the Bookmarks list screen
     // has to be handed this exact instance — a second one would retarget a card
-    // the reader cannot see. The default keeps this screen self-contained for
-    // any host that composes it alone.
+    // the reader cannot see.
     bookmarksViewModel: BookmarksViewModel = hiltViewModel(),
 ) {
     // The tour machine is the FeatureTourViewModel's session: it owns the

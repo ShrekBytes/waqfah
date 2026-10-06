@@ -18,8 +18,11 @@ import org.junit.Test
 // caller. A test that passed ordered input would not pin that.
 class BookmarkListProjectionTest {
 
+    // id is deliberately not surahNo. They are separate columns, the projection
+    // groups by surahNo, and a fixture where the two coincide could not tell a
+    // mix-up in that grouping from correct code.
     private fun surah(no: Int, ayahCount: Int = 7) = SurahEntity(
-        id = no,
+        id = no + 100,
         surahNo = no,
         nameArabic = "ar-$no",
         nameEnglish = "en-$no",
