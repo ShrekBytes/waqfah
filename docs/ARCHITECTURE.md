@@ -160,3 +160,11 @@ TriggerDecision as a constructor probe.
   (Battery -> Unrestricted) rather than by any declared permission — while
   POST_NOTIFICATIONS only makes that notification visible on Android 13+.
   Denials never block onboarding nor affect detection.
+- Some ROMs block background activity starts behind a permission of their own,
+  which lives in the vendor settings app rather than in Settings. Those rows (see
+  PermissionCatalog.deviceSpecific) are offered by capability, not by brand: the
+  vendor package is declared in the manifest's `<queries>` and the row appears
+  only where resolving its settings intent succeeds, because the op that would
+  report the permission's state is vendor-private and not stable across builds.
+  The row therefore carries no state and never gates onboarding; the monitor gate
+  stays usage access plus overlay (ADR-0008).

@@ -78,14 +78,27 @@ reintroducing the unreadable value this ADR exists to avoid.
 - The `<queries>` list is static and will rot as vendors rename components. It
   rots safely: a package that no longer resolves simply produces no row, rather
   than a row that cannot be satisfied.
-- Because the row appears only when the vendor intent resolves, the failure mode
-  where a user is sent to a settings page that does not contain the setting
-  cannot occur. The row and a working deep-link are the same condition.
-- Only the vendor stack confirmed on a real device is seeded. Other OEMs are
-  documented to restrict background work, but for process killing rather than
-  for blocking activity starts, which is a different symptom with a different
-  remedy — the battery exemption row already covers it. An OEM gets a row when
-  someone reports the symptom, not when a brand list says it might.
+- Because the row appears only where the vendor intent resolves, the common
+  failure — a row pointing at a screen the device does not have — cannot occur.
+  Resolution is not quite the same as deliverability: `resolveActivity` does not
+  enforce `android:exported`, so a vendor activity that resolves but refuses the
+  caller would throw on tap. That is the same exposure every other settings row
+  in the app already carries, and it is left unguarded here for the same reason.
+- The seeded component is **unverified on a real device**. What is confirmed is
+  the *OEM*: MIUI/HyperOS imposes the restriction, and the permission lives in
+  its Security Center. Which activity inside it currently hosts the per-app
+  permission editor is a guess —
+  `com.miui.securitycenter` / `com.miui.permcenter.permissions.PermissionsEditorActivity`,
+  against AutoStarter's `…autostart.AutoStartManagementActivity`, which is a
+  different screen. If it is wrong the intent does not resolve and no row is
+  shown, so the failure is silent rather than misleading — but it is also a
+  no-op on the exact device this exists for. Confirming it on a HyperOS phone is
+  the first outstanding task.
+- No other OEM is seeded. They are documented to restrict background work, but
+  for process killing rather than for blocking activity starts, which is a
+  different symptom with a different remedy — the battery exemption row already
+  covers it. An OEM gets a row when someone reports the symptom, not when a
+  brand list says it might.
 - The honest limitation is that on a ROM imposing the restriction, a user who
   ignores the row still gets an app that silently does nothing. Closing that gap
   needs a signal the app has not got yet: watching for its own `TriggerActivity`
