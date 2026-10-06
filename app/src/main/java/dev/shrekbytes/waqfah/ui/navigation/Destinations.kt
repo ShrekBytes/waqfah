@@ -35,6 +35,13 @@ sealed interface WaqfahDestination : NavKey
 
 @Serializable data object GoToSurahList : WaqfahDestination
 
+// The Bookmarks card's own destination (see CONTEXT.md's "Bookmarks list"): the
+// surahs holding at least one saved ayah, each expanding to the ayahs saved in
+// it. A sibling of GoToSurahList rather than a mode of it — the picker is handed
+// the Home session and retargets the Home card, this one is handed the Bookmarks
+// session and retargets the Bookmarks card.
+@Serializable data object BookmarksList : WaqfahDestination
+
 @Serializable data object About : WaqfahDestination
 @Serializable data object PrivacyPolicy : WaqfahDestination
 @Serializable data object Faq : WaqfahDestination

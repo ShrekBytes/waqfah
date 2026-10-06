@@ -1,6 +1,7 @@
 package dev.shrekbytes.waqfah.ui.bookmarks
 
 import androidx.compose.runtime.Composable
+import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.ui.reading.BookmarksViewModel
 import dev.shrekbytes.waqfah.ui.reading.WaqfahReadingContent
 
@@ -11,13 +12,16 @@ import dev.shrekbytes.waqfah.ui.reading.WaqfahReadingContent
 // positions. No tour launcher and no bottom bar: the tab bar below it is the
 // whole chrome.
 //
-// The header is left un-tappable for now. On this card it opens the bookmarks
-// list, not Home's surah picker, and that list arrives in its own change; until
-// then the card names the surah the saved ayah belongs to and no more.
+// The header is tappable, and opens the Bookmarks list where Home's opens the
+// surah picker (ADR-0005). Hence the host-specific label: the header announces
+// where it leads, and "Surahs & ayahs" would name the wrong screen here. The
+// list is a pushed destination, so this screen only hands up the tap.
 @Composable
-fun BookmarksScreen(viewModel: BookmarksViewModel) {
+fun BookmarksScreen(viewModel: BookmarksViewModel, onOpenList: () -> Unit) {
     WaqfahReadingContent(
         session = viewModel.session,
+        onGoToAyah = onOpenList,
+        goToAyahLabelRes = R.string.cd_bookmarks_header,
         onToggleBookmark = viewModel.session::toggleBookmark,
         bottomBar = {},
     )

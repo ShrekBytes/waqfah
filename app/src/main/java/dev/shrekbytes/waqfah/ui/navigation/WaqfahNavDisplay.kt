@@ -14,7 +14,9 @@ import dev.shrekbytes.waqfah.ui.about.FaqScreen
 import dev.shrekbytes.waqfah.ui.about.GratitudeScreen
 import dev.shrekbytes.waqfah.ui.about.PrivacyPolicyScreen
 import dev.shrekbytes.waqfah.ui.ayahpicker.GoToSurahScreen
+import dev.shrekbytes.waqfah.ui.bookmarks.BookmarksListScreen
 import dev.shrekbytes.waqfah.ui.main.MainScreen
+import dev.shrekbytes.waqfah.ui.reading.BookmarksViewModel
 import dev.shrekbytes.waqfah.ui.reading.ReadingViewModel
 import dev.shrekbytes.waqfah.ui.onboarding.OnboardChooseAppsScreen
 import dev.shrekbytes.waqfah.ui.onboarding.OnboardPermissionsScreen
@@ -37,6 +39,13 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
     // GoTo screens (both inside MainActivity) see the same currentVerse.
     // TriggerActivity keeps its own separate instance via its own Activity.
     val sharedReadingViewModel: ReadingViewModel = hiltViewModel()
+
+    // The same reasoning for the Bookmarks tab's session (ADR-0005): hoisted so
+    // MainScreen's Bookmarks card and the Bookmarks list screen share ONE
+    // instance. Built inside the list's own entry it would be a second session,
+    // and a row tap would move a card the reader cannot see — the mistake #22's
+    // signature warning is about.
+    val bookmarksViewModel: BookmarksViewModel = hiltViewModel()
 
     // Guards against rapid double-taps pushing the same destination twice —
     // the second tap would otherwise stack an identical screen that only
@@ -98,12 +107,21 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                     onOpenFaq = { push(Faq) },
                     onOpenDonate = { push(Donate) },
                     onGoToSurah = { push(GoToSurahList) },
+                    onGoToBookmarksList = { push(BookmarksList) },
                     readingViewModel = sharedReadingViewModel,
+                    bookmarksViewModel = bookmarksViewModel,
                 )
             }
             entry<GoToSurahList> {
                 GoToSurahScreen(
                     readingViewModel = sharedReadingViewModel,
+                    onBack = { backStack.removeLastOrNull() },
+                    onJumped = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<BookmarksList> {
+                BookmarksListScreen(
+                    bookmarksViewModel = bookmarksViewModel,
                     onBack = { backStack.removeLastOrNull() },
                     onJumped = { backStack.removeLastOrNull() },
                 )

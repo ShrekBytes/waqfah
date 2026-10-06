@@ -1,6 +1,7 @@
 package dev.shrekbytes.waqfah.ui.reading
 
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -79,13 +80,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.data.model.ReadingMode
+import dev.shrekbytes.waqfah.ui.components.BookmarkEmptyState
 import dev.shrekbytes.waqfah.ui.components.BookmarkRibbonIcon
 import dev.shrekbytes.waqfah.ui.components.ChevronDirection
 import dev.shrekbytes.waqfah.ui.components.ChevronIcon
@@ -136,6 +137,12 @@ fun ReadingCard(
     onStartOver: () -> Unit,
     onSwitchModeAndRestart: () -> Unit,
     onGoToAyah: (() -> Unit)? = null,
+    // What the tappable header announces, when it is tappable. Home's header
+    // opens the surah picker and the Bookmarks card's opens the bookmarks list,
+    // so the destination is the host's and the announcement has to be too — a
+    // hardcoded "Surahs & ayahs" would name the wrong screen on the Bookmarks
+    // card.
+    @StringRes goToAyahLabelRes: Int = R.string.cd_goto_header,
     // The save control (see CONTEXT.md). null means this host shows no bookmark
     // toggle and the action row keeps its pre-toggle layout; the tour's practice
     // card is the one host that leaves it null, since the tour has no bookmark
@@ -185,7 +192,7 @@ fun ReadingCard(
             BookmarkEmptyState(Modifier.weight(1f).fillMaxWidth())
         } else {
             CompositionLocalProvider(LocalLayoutDirection provides state.surahNameDirection) {
-                val gotoAyahLabel = if (onGoToAyah != null) stringResource(R.string.cd_goto_header) else null
+                val gotoAyahLabel = if (onGoToAyah != null) stringResource(goToAyahLabelRes) else null
                 // Header tap affordance: the surah block is a floating pill mirroring
                 // WaqfahTabBar's capsule (barColor + hairline outline + spring press
                 // scale), so the tappable header at the top reads as a sibling of the
@@ -609,40 +616,6 @@ private fun ReadingSkeleton(modifier: Modifier = Modifier) {
 @Composable
 private fun SkeletonBar(width: Dp, height: Dp, color: Color) {
     Box(Modifier.width(width).height(height).clip(RoundedCornerShape(6.dp)).background(color))
-}
-
-// The collection-scoped session's "nothing saved yet" state: the invitation to
-// start a collection (ADR-0005), not an error and not a blank card. Only that
-// session can reach it — the mushaf always has an ayah — so the copy is the
-// bookmarks tab's, and the ribbon shows the control the message asks the
-// reader to look for. No header, no pager, no action row: there is no ayah for
-// any of them to be about. Title and body are the pair the tour's own message
-// blocks use, so a card-sized message reads the same wherever it appears.
-@Composable
-private fun BookmarkEmptyState(modifier: Modifier = Modifier) {
-    val colors = WaqfahTheme.colors
-    Column(
-        modifier.padding(horizontal = 44.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        BookmarkRibbonIcon(filled = false, tint = colors.inkSoft, modifier = Modifier.size(26.dp))
-        Spacer(Modifier.height(18.dp))
-        Text(
-            stringResource(R.string.bookmarks_empty_title),
-            color = colors.ink,
-            fontSize = 14.5.sp,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(Modifier.height(10.dp))
-        Text(
-            stringResource(R.string.bookmarks_empty_body),
-            color = colors.inkMuted,
-            fontSize = 13.sp,
-            lineHeight = 20.sp,
-            textAlign = TextAlign.Center,
-        )
-    }
 }
 
 @Composable
