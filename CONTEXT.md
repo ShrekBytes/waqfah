@@ -106,10 +106,10 @@ _Avoid_: last shown, cooldown write
 ### Reading
 
 **ReadingSession**:
-The reading machine shared by both hosts — the Home tab and the
-interstitial. It steps between verses, renders the current one, and marks
-verses read, owning its own ordering; the ViewModel only adapts it to
-Android.
+The reading machine shared by all three hosts — the Home tab, the
+Bookmarks tab and the interstitial. It steps between verses, renders the
+current one, and marks verses read, owning its own ordering; the ViewModels
+only adapt it to Android.
 _Avoid_: reading engine, reader, reading manager
 
 **ReadingPorts**:

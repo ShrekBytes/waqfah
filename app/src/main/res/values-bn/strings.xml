@@ -23,6 +23,7 @@
 
     <!-- Tabs -->
     <string name="tab_home">হোম</string>
+    <string name="tab_bookmarks">বুকমার্ক</string>
     <string name="tab_settings">সেটিংস</string>
 
     <!-- Onboarding -->
@@ -172,6 +173,10 @@
     <string name="reset_dialog_title">অগ্রগতি রিসেট করতে চান?</string>
     <string name="reset_dialog_body">এটি আপনার পঠিত হিসেবে চিহ্নিত সকল আয়াত মুছে ফেলবে এবং আবার প্রথম থেকে শুরু হবে।</string>
     <string name="reset_mode_note"> তিলাওয়াতের মোডও পরিবর্তিত হবে।</string>
+
+    <!-- Bookmarks -->
+    <string name="bookmarks_empty_title">এখনও কোনো বুকমার্ক নেই</string>
+    <string name="bookmarks_empty_body">যেকোনো আয়াতের বুকমার্ক রিবনে ট্যাপ করে এটি এখানে সংরক্ষণ করুন। সংরক্ষিত আয়াতগুলো কুরআনের ক্রম অনুসারে সাজানো থাকে, যখনই ফিরে আসবেন তখনই প্রস্তুত।</string>
 
     <!-- About -->
     <string name="about_title">পরিচিতি</string>

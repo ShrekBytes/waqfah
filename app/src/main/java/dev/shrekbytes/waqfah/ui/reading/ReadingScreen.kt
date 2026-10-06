@@ -23,24 +23,28 @@ import dev.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 // TriggerActivity): the header is only tappable on the current Home page, and
 // the bookmark toggle is only on the Home card for now — the interstitial
 // gains it in its own change, and until then it keeps its existing layout.
+//
+// Takes the session, not the ViewModel that hosts it: the card is the same
+// machine whichever sequence the session walks, so the Bookmarks tab renders
+// it from its own session with no second copy of this wiring.
 @Composable
 fun WaqfahReadingContent(
-    viewModel: ReadingViewModel,
+    session: ReadingSession,
     onGoToAyah: (() -> Unit)? = null,
     onToggleBookmark: (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit,
 ) {
-    val state by viewModel.session.uiState.collectAsStateWithLifecycle()
+    val state by session.uiState.collectAsStateWithLifecycle()
     ReadingCard(
         state = state,
-        onMarkRead = viewModel.session::markCurrentRead,
-        onNext = viewModel.session::next,
-        onPrevious = viewModel.session::previous,
-        onCycleTranslation = viewModel.session::cycleTranslationSource,
-        onResetTranslation = viewModel.session::resetTranslationSource,
-        onCompletionDismiss = viewModel.session::dismissCompletion,
-        onStartOver = viewModel.session::startOver,
-        onSwitchModeAndRestart = viewModel.session::switchModeAndRestart,
+        onMarkRead = session::markCurrentRead,
+        onNext = session::next,
+        onPrevious = session::previous,
+        onCycleTranslation = session::cycleTranslationSource,
+        onResetTranslation = session::resetTranslationSource,
+        onCompletionDismiss = session::dismissCompletion,
+        onStartOver = session::startOver,
+        onSwitchModeAndRestart = session::switchModeAndRestart,
         onGoToAyah = onGoToAyah,
         onToggleBookmark = onToggleBookmark,
         bottomBar = bottomBar,
@@ -72,7 +76,7 @@ fun ReadingScreen(
 
     BackHandler(onBack = ::requestDismiss)
 
-    WaqfahReadingContent(viewModel = viewModel, onGoToAyah = null) {
+    WaqfahReadingContent(session = viewModel.session, onGoToAyah = null) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
             WaqfahPrimaryButton(
                 text = stringResource(R.string.open_app_button, state.triggeredAppLabel ?: stringResource(R.string.app_name)),

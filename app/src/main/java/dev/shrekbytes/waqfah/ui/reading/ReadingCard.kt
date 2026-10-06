@@ -79,6 +79,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -177,6 +178,8 @@ fun ReadingCard(
     Column(modifier.fillMaxSize()) {
         if (state.isLoading) {
             ReadingSkeleton(Modifier.weight(1f).fillMaxWidth())
+        } else if (state.isEmpty) {
+            BookmarkEmptyState(Modifier.weight(1f).fillMaxWidth())
         } else {
             CompositionLocalProvider(LocalLayoutDirection provides state.surahNameDirection) {
                 val gotoAyahLabel = if (onGoToAyah != null) stringResource(R.string.cd_goto_header) else null
@@ -603,6 +606,39 @@ private fun ReadingSkeleton(modifier: Modifier = Modifier) {
 @Composable
 private fun SkeletonBar(width: Dp, height: Dp, color: Color) {
     Box(Modifier.width(width).height(height).clip(RoundedCornerShape(6.dp)).background(color))
+}
+
+// The collection-scoped session's "nothing saved yet" state: the invitation to
+// start a collection (ADR-0005), not an error and not a blank card. Only that
+// session can reach it — the mushaf always has an ayah — so the copy is the
+// bookmarks tab's, and the ribbon shows the control the message asks the
+// reader to look for. No header, no pager, no action row: there is no ayah for
+// any of them to be about.
+@Composable
+private fun BookmarkEmptyState(modifier: Modifier = Modifier) {
+    val colors = WaqfahTheme.colors
+    Column(
+        modifier.padding(horizontal = 44.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        BookmarkRibbonIcon(filled = false, tint = colors.inkSoft, modifier = Modifier.size(26.dp))
+        Spacer(Modifier.height(18.dp))
+        Text(
+            stringResource(R.string.bookmarks_empty_title),
+            color = colors.ink,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            stringResource(R.string.bookmarks_empty_body),
+            color = colors.inkMuted,
+            fontSize = 13.5.sp,
+            lineHeight = 21.sp,
+            textAlign = TextAlign.Center,
+        )
+    }
 }
 
 @Composable

@@ -20,6 +20,12 @@ data class AyahPreview(
 
 data class ReadingUiState(
     val isLoading: Boolean = true,
+    // The sequence this session walks has nothing to show. Only a
+    // collection-scoped session can reach this — an empty bookmark collection
+    // is a state to present, not a failure (ADR-0005), while the mushaf
+    // always has an ayah. The card renders its empty-state message rather
+    // than a blank one; every other field describes a verse that isn't there.
+    val isEmpty: Boolean = false,
     val surahName: String = "",
     val surahNameDirection: LayoutDirection = LayoutDirection.Ltr,
     val ayahLabel: String = "",

@@ -6,8 +6,10 @@ import dev.shrekbytes.waqfah.data.local.core.VerseEntity
 import dev.shrekbytes.waqfah.data.model.ReadingMode
 import dev.shrekbytes.waqfah.data.model.TranslationMeta
 import dev.shrekbytes.waqfah.data.model.UserPreferences
+import dev.shrekbytes.waqfah.data.repository.BookmarkedAyahStepper
 import dev.shrekbytes.waqfah.data.repository.VerseLookups
 import dev.shrekbytes.waqfah.data.repository.VerseSelection
+import dev.shrekbytes.waqfah.data.repository.VerseSequence
 import dev.shrekbytes.waqfah.ui.reading.ReadingPorts
 import dev.shrekbytes.waqfah.ui.reading.ReadingSession
 import dev.shrekbytes.waqfah.ui.theme.AppTheme
@@ -139,6 +141,11 @@ class ReadingSessionTest {
 
     private fun TestScope.session(
         scope: CoroutineScope = backgroundScope,
+        // The sequence the session walks. Defaults to the mushaf-wide
+        // selection, so every pre-existing test drives that path exactly as it
+        // did before the Bookmarks tab existed; the collection-scoped tests
+        // below hand it the bookmarked-ayah stepper instead (ADR-0005).
+        sequence: VerseSequence = VerseSelection(lookups, Random(0)),
     ) = ReadingSession(
         preferences = prefs,
         downloadedIds = downloadedIds,
@@ -173,7 +180,7 @@ class ReadingSessionTest {
                 prefs.value = prefs.value.copy(readingMode = mode)
             }
         },
-        verseSelection = VerseSelection(lookups, Random(0)),
+        verseSelection = sequence,
         bookmarks = bookmarks,
         scope = scope,
     )
@@ -604,5 +611,192 @@ class ReadingSessionTest {
         assertFalse(bookmarks.isSaved(1)) // the write never landed
         assertFalse(session.uiState.value.isSaved) // and the ribbon agrees
         assertEquals(listOf(failure), capturedFailures) // still surfaced to the host
+    }
+
+    // The Bookmarks tab's session: the same machine, handed the
+    // collection-scoped stepper instead of the mushaf-wide selection. Every
+    // test here is about what that one difference does — which ayah a fresh
+    // session opens on, how stepping moves, what an empty collection shows,
+    // and which of the mushaf's bookkeeping the walk is still subject to.
+
+    private fun TestScope.bookmarksSession(
+        scope: CoroutineScope = backgroundScope,
+    ) = session(scope = scope, sequence = BookmarkedAyahStepper(lookups, bookmarks))
+
+    // Quran order, not order of saving: 4 was saved first, but the collection
+    // opens on 2.
+    @Test
+    fun bookmarksSession_opensOnTheCollectionFirstAyahInQuranOrder() = runTest {
+        bookmarks.toggle(4)
+        bookmarks.toggle(2)
+        val session = bookmarksSession()
+        runCurrent()
+
+        assertFalse(session.uiState.value.isLoading)
+        assertEquals("1:2", session.uiState.value.ayahLabel)
+        assertTrue(session.uiState.value.isSaved)
+    }
+
+    @Test
+    fun bookmarksSession_steppingMovesOnlyBetweenSavedAyahs_wrappingAtBothEnds() = runTest {
+        bookmarks.toggle(1)
+        bookmarks.toggle(4)
+        val session = bookmarksSession()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+
+        session.next()
+        runCurrent()
+        assertEquals("1:4", session.uiState.value.ayahLabel) // 2 and 3 are skipped
+
+        session.next()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel) // wraps forward
+
+        session.previous()
+        runCurrent()
+        assertEquals("1:4", session.uiState.value.ayahLabel) // and back
+    }
+
+    // An empty collection is a state to present, not a load that never
+    // resolves — the card must not sit on a skeleton forever.
+    @Test
+    fun bookmarksSession_emptyCollection_showsTheEmptyState() = runTest {
+        val session = bookmarksSession()
+        runCurrent()
+
+        assertFalse(session.uiState.value.isLoading)
+        assertTrue(session.uiState.value.isEmpty)
+    }
+
+    // The session's content *is* the collection, so unsaving the ayah on
+    // screen leaves nothing to show: the empty state, not a blank card and not
+    // an unrelated ayah.
+    @Test
+    fun bookmarksSession_unsavingTheShownAyah_landsOnTheEmptyState() = runTest {
+        bookmarks.toggle(3)
+        val session = bookmarksSession()
+        runCurrent()
+        assertEquals("1:3", session.uiState.value.ayahLabel)
+
+        session.toggleBookmark()
+        runCurrent()
+
+        assertFalse(bookmarks.isSaved(3))
+        assertFalse(session.uiState.value.isLoading)
+        assertTrue(session.uiState.value.isEmpty)
+    }
+
+    // The other half of that rule: while anything is still saved, unsaving the
+    // ayah on screen leaves the card where it is — the tab does not teleport
+    // to another ayah, and the next swipe continues from where the reader was.
+    @Test
+    fun bookmarksSession_unsavingOneOfSeveral_leavesTheCardWhereItIs() = runTest {
+        bookmarks.toggle(1)
+        bookmarks.toggle(3)
+        val session = bookmarksSession()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+
+        session.toggleBookmark()
+        runCurrent()
+
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.isSaved)
+        assertFalse(session.uiState.value.isEmpty)
+
+        session.next()
+        runCurrent()
+        assertEquals("1:3", session.uiState.value.ayahLabel)
+    }
+
+    // Filling an empty collection from elsewhere — Home's card or the
+    // interstitial — must bring the tab to life rather than leave it stuck on
+    // the empty-state message.
+    @Test
+    fun bookmarksSession_savingWhileEmpty_loadsTheCollectionFirstAyah() = runTest {
+        val session = bookmarksSession()
+        runCurrent()
+        assertTrue(session.uiState.value.isEmpty)
+
+        bookmarks.toggle(5) // as another card would
+        runCurrent()
+
+        assertFalse(session.uiState.value.isEmpty)
+        assertEquals("1:5", session.uiState.value.ayahLabel)
+        assertTrue(session.uiState.value.isSaved)
+    }
+
+    // The completion popup and the progress-wiping "Start Again" it offers
+    // belong to walking the whole Quran. A collection-scoped session must never
+    // raise them, however much of the mushaf has been read (#19's closeout
+    // note asked this ticket to decide; this is the decision).
+    @Test
+    fun bookmarksSession_neverReportsQuranCompletion() = runTest {
+        readIds += (1..VERSE_COUNT).toSet()
+        bookmarks.toggle(1)
+        val session = bookmarksSession()
+        runCurrent()
+
+        assertFalse(session.uiState.value.isCompleted)
+    }
+
+    // Read progress is the mushaf's bookkeeping: wiping it in Settings moves
+    // Home, and must leave the Bookmarks card exactly where it was.
+    @Test
+    fun bookmarksSession_progressResetFromSettings_doesNotMoveTheCard() = runTest {
+        bookmarks.toggle(1)
+        bookmarks.toggle(3)
+        val session = bookmarksSession()
+        runCurrent()
+        session.next()
+        runCurrent()
+        assertEquals("1:3", session.uiState.value.ayahLabel)
+
+        resetSignal.value++ // "Reset progress" in Settings
+        runCurrent()
+
+        // A reload would re-land the session on the collection's first ayah,
+        // 1:1 — the card is still on 1:3, so nothing reloaded.
+        assertEquals("1:3", session.uiState.value.ayahLabel)
+    }
+
+    // The collection is not read progress: marking a saved ayah read must not
+    // take it out of the tab.
+    @Test
+    fun bookmarksSession_markingASavedAyahRead_leavesItInTheCollection() = runTest {
+        bookmarks.toggle(1)
+        val session = bookmarksSession()
+        runCurrent()
+
+        session.markCurrentRead()
+        runCurrent()
+
+        assertEquals(setOf(1), readIds)
+        assertTrue(session.uiState.value.isSaved)
+        assertTrue(bookmarks.isSaved(1))
+    }
+
+    // Two hosts, two sessions, two positions: this is what makes the tabs
+    // independent, so moving one card must never move the other (ADR-0005).
+    @Test
+    fun homeAndBookmarksSessions_holdIndependentPositions() = runTest {
+        bookmarks.toggle(3)
+        bookmarks.toggle(5)
+        val home = session()
+        val bookmarksTab = bookmarksSession()
+        runCurrent()
+        assertEquals("1:1", home.uiState.value.ayahLabel)
+        assertEquals("1:3", bookmarksTab.uiState.value.ayahLabel)
+
+        home.next()
+        runCurrent()
+        assertEquals("1:2", home.uiState.value.ayahLabel)
+        assertEquals("1:3", bookmarksTab.uiState.value.ayahLabel)
+
+        bookmarksTab.next()
+        runCurrent()
+        assertEquals("1:5", bookmarksTab.uiState.value.ayahLabel)
+        assertEquals("1:2", home.uiState.value.ayahLabel)
     }
 }
