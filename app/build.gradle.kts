@@ -121,6 +121,60 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// Store release notes are keyed by versionCode, not versionName: a name can be
+// reused and a code cannot. F-Droid reads them for the listing's "What's new"
+// and Play's notes should mirror the same text, so a versionCode with no
+// changelog ships with nothing to show and nothing to flag it — the failure is
+// silent by construction, which is the whole reason this exists.
+//
+// Every locale under fastlane/metadata/android/ that carries store metadata
+// must carry a changelog for the version being released, so adding a locale
+// later cannot leave a silent hole behind. The release artifact tasks depend on
+// this, which is also how CI gets it for free: the R8 check assembles both
+// release variants and the AAB check bundles play.
+//
+// Deliberately declares no outputs — a task with no outputs is never up to
+// date, so it re-checks on every release build instead of being skipped.
+val storeMetadataDir = rootProject.layout.projectDirectory.dir("fastlane/metadata/android")
+val releasedVersionCode = android.defaultConfig.versionCode
+    ?: error("versionCode is not set in defaultConfig")
+
+val checkChangelog by tasks.registering {
+    group = "verification"
+    description = "Fails unless every store locale has release notes for this versionCode."
+
+    val metadataDir = storeMetadataDir
+    val versionCode = releasedVersionCode
+    val versionName = android.defaultConfig.versionName
+    inputs.property("versionCode", versionCode)
+
+    doLast {
+        val locales = metadataDir.asFile.listFiles { file -> file.isDirectory }.orEmpty()
+        check(locales.isNotEmpty()) {
+            "No store locales found under ${metadataDir.asFile}."
+        }
+
+        val missing = locales.sortedBy { it.name }
+            .map { it.resolve("changelogs/$versionCode.txt") }
+            .filterNot { it.isFile }
+            .map { it.relativeTo(metadataDir.asFile).path }
+
+        if (missing.isNotEmpty()) {
+            throw GradleException(
+                "No release notes for version $versionName (versionCode $versionCode). " +
+                    "Add " + missing.joinToString(", ") + " — the store listing shows them " +
+                    "as \"What's new\", and a release with none ships silently. " +
+                    "See docs/RELEASING.md.",
+            )
+        }
+    }
+}
+
+tasks.matching { task ->
+    task.name.endsWith("Release") &&
+        (task.name.startsWith("assemble") || task.name.startsWith("bundle"))
+}.configureEach { dependsOn(checkChangelog) }
+
 dependencies {
     // Compose
     implementation(platform(libs.androidx.compose.bom))

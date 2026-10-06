@@ -351,15 +351,10 @@ Nothing is outstanding. The app is live at
 <https://f-droid.org/packages/dev.shrekbytes.waqfah.fdroid/>; that page shows
 the version currently published.
 
-What every later release needs — and all it needs — is the tagging step:
-
-1. Tag `v<versionName>` upstream once the repo is final. F-Droid reads the
-   fastlane metadata from the tagged commit, so the tag has to come after the
-   screenshots and changelog are committed.
-2. Bump `versionCode` in the same commit, then push the tag.
-
-`UpdateCheckMode: Tags` + `AutoUpdateMode: Version` do the rest. No metadata
-merge request per release, and no edit to `fdroiddata` — or to this file.
+What every later release needs is the tagging step; `UpdateCheckMode: Tags` +
+`AutoUpdateMode: Version` do the rest, with no metadata merge request per
+release and no edit to `fdroiddata` — or to this file. The full per-release
+checklist, covering both stores, lives in `docs/RELEASING.md`.
 
 Done, recorded here so they are not re-checked:
 
