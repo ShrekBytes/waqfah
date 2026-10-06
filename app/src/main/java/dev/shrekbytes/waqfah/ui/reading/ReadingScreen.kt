@@ -17,12 +17,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 
-// Shared wiring for ReadingCard's callbacks: both hosts (the Home tab and the
-// TriggerActivity interstitial) render the same card and differ only in their
-// bottom bar. onGoToAyah stays Home-only (null for TriggerActivity) — the
-// header is tappable only where it leads somewhere, and the pause screen has no
-// header affordance. onToggleBookmark is passed by every host: the save control
-// is on the Home card, the Bookmarks card and the pause screen alike.
+// Shared wiring for ReadingCard's callbacks. Every reading surface renders the
+// same card — the Home tab, the Bookmarks tab and the TriggerActivity
+// interstitial — and they differ only in their bottom bar and in which
+// callbacks they pass. onGoToAyah is Home-only (null for the others): the header
+// is tappable only where it leads somewhere, and the pause screen has no header
+// affordance. onToggleBookmark is passed by all three; the tour's practice card
+// passes neither (see ReadingCard).
 //
 // Takes the session, not the ViewModel that hosts it: the card is the same
 // machine whichever sequence the session walks, so the Bookmarks tab renders
