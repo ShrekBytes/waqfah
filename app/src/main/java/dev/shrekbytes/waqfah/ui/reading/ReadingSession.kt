@@ -12,6 +12,7 @@ import dev.shrekbytes.waqfah.data.model.UserPreferences
 import dev.shrekbytes.waqfah.data.model.toTranslationLanguage
 import dev.shrekbytes.waqfah.data.repository.VerseSelection
 import androidx.compose.ui.unit.LayoutDirection
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -175,10 +176,26 @@ class ReadingSession(
             val newIsRead = !isRead(verse.id)
             // Optimistic UI update before the write keeps feedback instant.
             _uiState.update { it.copy(isMarkedRead = newIsRead) }
-            if (newIsRead) {
-                markRead(verse.id)
-            } else {
-                unmarkRead(verse.id)
+            try {
+                if (newIsRead) {
+                    markRead(verse.id)
+                } else {
+                    unmarkRead(verse.id)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // The optimistic flip is only correct while it is temporary.
+                // A failed write leaves the DB holding the old truth, so the
+                // pill must go back to it — otherwise it disagrees with the
+                // database until something unrelated re-renders the card.
+                // Completion is deliberately not refreshed: the write it would
+                // have reflected never landed. Rethrown so the host scope's
+                // CoroutineExceptionHandler (ReadingViewModel) still logs the
+                // failure — this machine does no Android logging of its own,
+                // which is what keeps it JVM-testable.
+                _uiState.update { it.copy(isMarkedRead = !newIsRead) }
+                throw e
             }
             refreshCompletionState()
         }

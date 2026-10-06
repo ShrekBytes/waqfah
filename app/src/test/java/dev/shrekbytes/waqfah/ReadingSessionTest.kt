@@ -11,7 +11,10 @@ import dev.shrekbytes.waqfah.ui.reading.ReadingPorts
 import dev.shrekbytes.waqfah.ui.reading.ReadingSession
 import dev.shrekbytes.waqfah.ui.theme.AppTheme
 import kotlin.random.Random
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -79,6 +82,10 @@ class ReadingSessionTest {
     private var isReadDelayMs = 0L
     private var nextDelayMs = 0L
 
+    // Opened only by the failed-write test, to simulate a Room write throwing
+    // (disk pressure, SQLITE_BUSY, an I/O error). Null means writes succeed.
+    private var writeFailure: Throwable? = null
+
     private val lookups = object : VerseLookups {
         override suspend fun getVerseById(id: Int) = verses.firstOrNull { it.id == id }
         override suspend fun getAllVerseIds(): List<Int> {
@@ -99,7 +106,17 @@ class ReadingSessionTest {
             verses.lastOrNull { it.id < beforeId }
     }
 
-    private fun TestScope.session() = ReadingSession(
+    // Failures that reach the session's host scope. Only the failed-write test
+    // installs the trap: production (ReadingViewModel's
+    // CoroutineExceptionHandler) catches the rethrown write failure so it gets
+    // logged, and without an equivalent here runTest would fail the test as an
+    // unhandled background exception instead. Every other test keeps the plain
+    // backgroundScope, unchanged.
+    private val capturedFailures = mutableListOf<Throwable>()
+
+    private fun TestScope.session(
+        scope: CoroutineScope = backgroundScope,
+    ) = ReadingSession(
         preferences = prefs,
         downloadedIds = downloadedIds,
         progressReset = resetSignal,
@@ -115,8 +132,14 @@ class ReadingSessionTest {
                 if (isReadDelayMs > 0) delay(isReadDelayMs)
                 return verseId in readIds
             }
-            override suspend fun markRead(verseId: Int) { readIds += verseId }
-            override suspend fun unmarkRead(verseId: Int) { readIds -= verseId }
+            override suspend fun markRead(verseId: Int) {
+                writeFailure?.let { throw it }
+                readIds += verseId
+            }
+            override suspend fun unmarkRead(verseId: Int) {
+                writeFailure?.let { throw it }
+                readIds -= verseId
+            }
             override suspend fun countRead() = readIds.size
             // Mirrors ReadingProgressRepository.resetAll: clears, then bumps the
             // signal the session's own collector watches.
@@ -128,7 +151,7 @@ class ReadingSessionTest {
             }
         },
         verseSelection = VerseSelection(lookups, Random(0)),
-        scope = backgroundScope,
+        scope = scope,
     )
 
     @Test
@@ -185,6 +208,44 @@ class ReadingSessionTest {
         assertEquals(setOf(1), readIds)
         assertEquals("1:2", session.uiState.value.ayahLabel)
         assertFalse(session.uiState.value.isMarkedRead)
+    }
+
+    // markCurrentRead() flips isMarkedRead optimistically before the write, so
+    // a failed write must roll that flip back — otherwise the pill disagrees
+    // with the database until some unrelated event re-renders. Failures here
+    // are simulated at the port seam, not by forcing real SQLite errors.
+    //
+    // This test was run red against the unfixed markCurrentRead(): the write
+    // threw, readIds stayed empty, and the pill was left flipped true. Every
+    // other verse is pre-read so a successful write would have completed the
+    // Quran — the failed write must report neither.
+    @Test
+    fun markRead_writeFails_revertsTheOptimisticFlip() = runTest {
+        // Same failure trap production has: the rethrow must reach the host,
+        // where ReadingViewModel's CoroutineExceptionHandler logs it. Without
+        // this, runTest would fail the test as an unhandled background
+        // exception instead of letting the assertions run.
+        readIds += setOf(1, 2, 3, 4)
+        val session = session(
+            scope = CoroutineScope(
+                backgroundScope.coroutineContext + SupervisorJob() +
+                    CoroutineExceptionHandler { _, t -> capturedFailures += t },
+            ),
+        )
+        runCurrent()
+        assertEquals("1:5", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.isMarkedRead)
+        assertFalse(session.uiState.value.isCompleted)
+
+        val failure = IllegalStateException("disk full")
+        writeFailure = failure
+        session.markCurrentRead()
+        runCurrent()
+
+        assertEquals(setOf(1, 2, 3, 4), readIds) // the write never landed
+        assertFalse(session.uiState.value.isMarkedRead) // and the pill agrees
+        assertFalse(session.uiState.value.isCompleted) // nor did completion open
+        assertEquals(listOf(failure), capturedFailures) // still surfaced to the host
     }
 
     @Test
