@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" data-page-node-id="yFOothb4x1Ma9asVF8lgOf">
+<head data-page-node-id="dq8byV6rJlL0PqHOtJ1KSG">
+<meta charset="utf-8" data-page-node-id="VKBdyv689JDCENWRvA7wvW">
+<meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="nUtk7YNBtSXzuFS15BiGSH">
+<title>Waqfah — share image, final</title>
+<style>
+  :root{
+    --page:#131313; --edge:#333; --txt:#EDEDED; --muted:#9A9A9A;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+    --arabic:"Noto Naskh Arabic","Amiri","Scheherazade New","Traditional Arabic","Geeza Pro",serif;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--page);color:var(--txt);font-family:var(--sans);margin:0;padding:36px 22px 80px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:13.5px;line-height:1.65;max-width:740px;margin:0 0 14px}
+  h2{font-size:12px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);margin:50px 0 6px;padding-bottom:9px;border-bottom:1px solid var(--edge)}
+  h2 + p{color:var(--muted);font-size:13px;line-height:1.65;max-width:740px;margin:14px 0 22px}
+  .row{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+  .item{width:400px}
+  .cap{font-size:12.5px;color:var(--muted);margin:0 0 9px;line-height:1.5}
+  .cap b{color:var(--txt);font-weight:600}
+  .note{font-size:12px;color:var(--muted);line-height:1.65;max-width:740px;margin:16px 0 0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+  .spec{font-size:12.5px;line-height:1.9;color:var(--muted);max-width:740px;margin:0;padding-left:18px}
+  .spec b{color:var(--txt);font-weight:600}
+
+  .p-light{background:#F6F3EC;--bg:#F6F3EC;--ink:#2A2823;--mut:#8A8275;--soft:#B7AF9C;--line:#E4DFD2;--acc:#71835F;--bar:#FDFDFC;--accsoft:#E3E8DA;--accink:#FBFAF6}
+  .p-dark{background:#1E1C18;--bg:#1E1C18;--ink:#ECE7DA;--mut:#9C9484;--soft:#584F41;--line:#332E27;--acc:#93A87D;--bar:#2E2C28;--accsoft:#323A28;--accink:#1E1C18}
+  .p-mid{background:#0C0B09;--bg:#0C0B09;--ink:#ECE6D6;--mut:#8F8674;--soft:#433D32;--line:#241F18;--acc:#C9A96B;--bar:#1D1C1A;--accsoft:#2E2717;--accink:#1A1610}
+
+  /* ---- the share image ---- */
+  .img{position:relative;width:400px;outline:1px solid var(--edge)}
+  .inner{text-align:center;padding:52px 31px}
+  .name{font-size:15px;font-weight:500;color:var(--ink)}
+  .num{display:flex;align-items:center;justify-content:center;gap:11px;margin-top:15.5px}
+  .num span{font-size:14px;font-weight:500;color:var(--mut);letter-spacing:.28px}
+  .rule{width:22px;height:1px;background:var(--line)}
+  .ar{margin-top:26.5px;direction:rtl;font-family:var(--arabic);font-size:29px;line-height:1.95;color:var(--ink)}
+  .tr{margin:22px auto 0;max-width:280px;font-size:20px;font-style:italic;line-height:1.7;color:var(--mut)}
+  .div{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:27px}
+  .div .rule{width:44px}
+  .tl{margin:26.5px auto 0;max-width:280px;font-size:20px;line-height:1.7;color:var(--mut)}
+  .mark{font-size:12px;font-weight:500;letter-spacing:2px;line-height:14px;color:var(--soft);opacity:.55}
+  .st{width:17px;height:17px;display:block;fill:currentColor;color:var(--acc)}
+  .f{position:absolute;background:var(--line);pointer-events:none}
+  .f.t{top:18px;left:18px;right:18px;height:1px}
+  .f.l{left:18px;top:18px;bottom:18px;width:1px}
+  .f.r{right:18px;top:18px;bottom:18px;width:1px}
+  .f.b1{bottom:18px;left:18px;width:132px;height:1px}
+  .f.b2{bottom:18px;right:18px;width:132px;height:1px}
+  .onrule{position:absolute;bottom:18px;left:50%;transform:translate(-50%,50%);background:var(--bg);padding:0 12px}
+
+  /* ---- app screens ---- */
+  .screen{width:258px;outline:1px solid var(--edge);padding-bottom:8px;position:relative}
+  .screentop{position:relative;padding-top:10px;height:46px}
+  .hdr{position:absolute;left:50%;transform:translateX(-50%);background:var(--bar);border:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-radius:999px;padding:4px 34px;text-align:center;white-space:nowrap}
+  .hdr .n{font-size:9px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:3px;justify-content:center}
+  .hdr .s{font-size:8px;color:var(--mut);margin-top:2px}
+  .sharebtn{position:absolute;right:11px;top:9px;width:29px;height:29px;display:flex;align-items:center;justify-content:center;color:var(--mut)}
+  .sbody{padding:0 18px}
+  .b-num{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:4px}
+  .b-num span{font-size:8.5px;font-weight:600;color:var(--mut);letter-spacing:.2px}
+  .b-rule{width:14px;height:1px;background:var(--line)}
+  .b-ar{margin-top:16px;direction:rtl;font-family:var(--arabic);font-size:18px;line-height:1.95;color:var(--ink);text-align:center}
+  .b-tr{margin:12px auto 0;max-width:186px;font-size:12px;font-style:italic;line-height:1.65;color:var(--mut);text-align:center}
+  .b-sep{width:22px;height:1px;background:var(--line);margin:15px auto 0}
+  .b-tl{margin:15px auto 0;max-width:186px;font-size:12px;line-height:1.65;color:var(--mut);text-align:center}
+  .actions{display:flex;align-items:center;justify-content:center;gap:7px;padding:15px 0 12px}
+  .arrow{width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:var(--mut)}
+  .markpill{background:var(--acc);color:var(--accink);border-radius:999px;font-size:8.5px;font-weight:600;padding:7px 16px;white-space:nowrap}
+  .tabbar{margin:2px 14px 0;display:flex;border-radius:999px;background:var(--bar);border:1px solid color-mix(in srgb,var(--line) 60%,transparent);padding:5px}
+  .tab{flex:1;text-align:center;font-size:8px;font-weight:600;color:var(--mut);padding:5px 0;border-radius:999px}
+  .tab.on{background:var(--accsoft);color:var(--acc)}
+  .cta{margin:6px 18px 4px;background:var(--acc);color:var(--accink);border-radius:999px;text-align:center;font-size:10px;font-weight:600;padding:10px 0}
+
+  /* ---- faq ---- */
+  .faq{width:400px;outline:1px solid var(--edge);padding:16px 22px 24px}
+  .faq .bar{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .faq .ttl{font-size:15px;font-weight:600;color:var(--ink)}
+  .faq .intro{font-size:12.5px;line-height:1.6;color:var(--mut)}
+  .faq .start{margin:14px 0 6px;background:var(--acc);color:var(--accink);border-radius:999px;text-align:center;font-size:12px;font-weight:600;padding:12px 0}
+  .faq .qrow{display:flex;align-items:center;gap:8px;padding:11px 0;border-top:1px solid var(--line)}
+  .faq .q{flex:1;font-size:12.5px;font-weight:500;color:var(--ink)}
+</style>
+</head>
+<body data-page-node-id="3M1w1v1inzglufVjiBe1jH">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" data-page-node-id="4Fum55ZI5K3ZSSAb92e3Bj"><defs data-page-node-id="IkA156jnuc05NzGuSFq5F6"><symbol id="star" viewBox="0 0 24 24" data-page-node-id="rdE1qNRUinh5ssIA7ytyfO"><path d="M12 1.6 14.3 9.7 22.4 12 14.3 14.3 12 22.4 9.7 14.3 1.6 12 9.7 9.7Z" data-page-node-id="kDKMyxTiL2stiMErw3Uv9w"/></symbol></defs></svg>
+<div class="wrap" data-page-node-id="SfHh1JkJUHuBRpz7CvPXqZ">
+
+  <h1 data-page-node-id="cpHPGyuwNaKBCz3rLaWYl8">Share image — final</h1>
+  <p class="lede" data-page-node-id="Fa46qtrmlhjZSi3GdDPdM2">Every decision from this session, drawn. Width 1080px; height follows the content; the palette and the content settings are the reader's.</p>
+  <ul class="spec" data-page-node-id="9ewCd13quTibWTRInb1dQj">
+    <li data-page-node-id="2HpOG3hZYjVUnYDn49JJvQ"><b data-page-node-id="tZ0DtETdPr695QKaru47z2">Frame</b> — 1dp <code data-page-node-id="l2jxZ0Ww2IHOTYptC4EMuG">line</code>, inset uniformly 18px on all four sides, bottom rule interrupted behind the wordmark.</li>
+    <li data-page-node-id="zI9zpArbIBlbqgt7vLAEWK"><b data-page-node-id="2srPZLlljJpVH8lWvHncIQ">Ornament</b> — accent four-point star on the divider above the aids, flanked by 44px hairlines, drawn as a path.</li>
+    <li data-page-node-id="LESDQguml2tDNT3j0NrNkU"><b data-page-node-id="uFDJiSUGMXKWRZXVtH9unZ">Content</b> — padded 52px top and bottom, so it sits centred between the rules.</li>
+    <li data-page-node-id="SmrvDXxTbGy9tPT0LIZyxz"><b data-page-node-id="hvZMdd8gqeCkG3JqXrfcvy">Wordmark</b> — <code data-page-node-id="XGtIVvRcE9eM1FILLNcoGx">inkSoft</code> at 55% alpha, centred on the bottom rule, letterspaced 2px.</li>
+    <li data-page-node-id="220eD3PhTnDiGrZIptYS8k"><b data-page-node-id="B6nyUnwGJWvIiafkpkFL5L">Mirror</b> — the active palette, and pronunciation and translation only if the reader has them on. A peeked translation is what gets shared.</li>
+  </ul>
+
+  <h2 data-page-node-id="4828Cc4lKXA2FklcshhQa7">1 · The three palettes</h2>
+  <p data-page-node-id="uxFe8BtNkBdCCRVV0N9zVe">112:1, everything on. Sage on paper, sage on charcoal, lamplight gold on near-black — the same page in each, only the ink changes.</p>
+  <div class="row" data-page-node-id="ea58KXQHBgNi3zpv023X6b">
+    <div class="item" data-page-node-id="uoj02wcWoVshjM4wTIeLt3">
+      <p class="cap" data-page-node-id="k2MFsnQVADTxQERw0GJJcx"><b data-page-node-id="LBGnlOq9HtECerMDqBIpsp">Light + Sage</b></p>
+      <div class="img p-light" data-page-node-id="Nrv36jgf2cjpAZQv5BSW4z">
+        <div class="f t" data-page-node-id="KkCZtpbJAHYixTYXb0FbXX"></div><div class="f l" data-page-node-id="3aTfJczXJDX4WKHh9w2ynb"></div><div class="f r" data-page-node-id="gXd44nukQkh1mPY0qYmdAx"></div><div class="f b1" data-page-node-id="Q7dCI5XilFfFdhU3DUOxI5"></div><div class="f b2" data-page-node-id="EgYMX8azDFOrYnzS12xLw0"></div>
+        <div class="inner" data-page-node-id="UcpcfRNsHcuws1a20Vu58B">
+          <div class="name" data-page-node-id="75uMKrjLGoUTO4ECpq0xEr">Al-Ikhlas</div>
+          <div class="num" data-page-node-id="0IKtB5JAp7mbWmjlbafPLj"><div class="rule" data-page-node-id="Fw8qVmKQzSFR0qVlasDEio"></div><span data-page-node-id="d3V8GvnRSJ9MxberxrUs94">112:1</span><div class="rule" data-page-node-id="5gEGaww1VW3dO6LvaHJeoq"></div></div>
+          <div class="ar" data-page-node-id="8RXBABwPDodLgfesxfBUWT">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div>
+          <div class="tr" data-page-node-id="YG2aLZpNyuSv8B5E1BjHB0">Qul huwa Allāhu aḥad.</div>
+          <div class="div" data-page-node-id="THUT8ipujNf7MJ1ZAKBOCO"><div class="rule" data-page-node-id="BY5SaeR7HDUI42Gqkoiuj7"></div><svg class="st" data-page-node-id="Gj1VbSYtps4l3PJACPwjyR"><use href="#star" data-page-node-id="pEn6CoyPriws7yKC2r5k6T"/></svg><div class="rule" data-page-node-id="E0Al7Y6Rhfie1VThtE44DB"></div></div>
+          <div class="tl" data-page-node-id="B2ykwfMEVuEqEWK2X0mFGD">Say: He is God, the One.</div>
+        </div>
+        <div class="onrule" data-page-node-id="ux38TXulZ1oGR0CFRC2kGH"><span class="mark" data-page-node-id="BmEGouDTkxkVJ5MDXZnlPT">WAQFAH</span></div>
+      </div>
+    </div>
+    <div class="item" data-page-node-id="osiKNt3IdaXvRJXwDFErrK">
+      <p class="cap" data-page-node-id="j045W1B8mITt0Krs2Gnz5H"><b data-page-node-id="n7GfwtSz52hjlx4BZUi9VV">Dark + Sage</b></p>
+      <div class="img p-dark" data-page-node-id="S90TrI5valMCUE8sAlgMYx">
+        <div class="f t" data-page-node-id="GeRccRdZFNGrjhkEYIvITh"></div><div class="f l" data-page-node-id="q3RHh4kuS13HrCmIA0QeCR"></div><div class="f r" data-page-node-id="bdPZrouBRe9YuKOZtW9wTW"></div><div class="f b1" data-page-node-id="jlexzqvNPNo7aswBuxkj0D"></div><div class="f b2" data-page-node-id="uoEqQ1q4vgng80SDcsENJw"></div>
+        <div class="inner" data-page-node-id="YwnmeplevSUmJFwLmAG63o">
+          <div class="name" data-page-node-id="cPXhfBTzeh2DSl5I0jAAH4">Al-Ikhlas</div>
+          <div class="num" data-page-node-id="aoqXIoNqsr3BY0pWwaoqHP"><div class="rule" data-page-node-id="8vZWQL6rvDnfQ2vTeMplq0"></div><span data-page-node-id="uQ3BfYfvlx2LylBns1AVU1">112:1</span><div class="rule" data-page-node-id="BD6sD77h8UHtfwG3zKdANl"></div></div>
+          <div class="ar" data-page-node-id="iDnxUsB2ttsYIVAfmFFEsU">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div>
+          <div class="tr" data-page-node-id="oR847VTT0BfVpHyoScAKAS">Qul huwa Allāhu aḥad.</div>
+          <div class="div" data-page-node-id="f3VfnlfjSF0IiKEM4iJJNE"><div class="rule" data-page-node-id="PctNDTQDGMuY4lUgLNCh69"></div><svg class="st" data-page-node-id="LozfWM8HnXqBmMnqnpSJbu"><use href="#star" data-page-node-id="m9OgFBgBZR9QtM9lg8dq76"/></svg><div class="rule" data-page-node-id="iM2pmPqeBGZctBuLvVZoXF"></div></div>
+          <div class="tl" data-page-node-id="GlZhB1mD9i2JPbXVAOEHwW">Say: He is God, the One.</div>
+        </div>
+        <div class="onrule" data-page-node-id="Ae4akSXwJUuot6nc4Xvt2b"><span class="mark" data-page-node-id="Wy3upEctKz5XTUtsjzS6DF">WAQFAH</span></div>
+      </div>
+    </div>
+    <div class="item" data-page-node-id="dhC0Kyn2DN6Qw1RPNbJqpw">
+      <p class="cap" data-page-node-id="CQciM8vOHJlG1cYBeQTEbI"><b data-page-node-id="4sspHkWe5xuZOQT2gmdznI">Midnight</b></p>
+      <div class="img p-mid" data-page-node-id="xTf45cin9eWjDAinjagFQD">
+        <div class="f t" data-page-node-id="G8HJyRxvaO0dFMh4xbhtUp"></div><div class="f l" data-page-node-id="eRINCpf4LKWBQ31MZMeLDI"></div><div class="f r" data-page-node-id="4R9BYLly3jjaW0ggo3fMKB"></div><div class="f b1" data-page-node-id="vgju29yUGhIKoerXMTJcPy"></div><div class="f b2" data-page-node-id="nezyDLqTMUUuynTubTTACU"></div>
+        <div class="inner" data-page-node-id="9c5conGZTmivJl2Kp4CLHD">
+          <div class="name" data-page-node-id="yvT0zv3Pcuc7jI3bGqXFM2">Al-Ikhlas</div>
+          <div class="num" data-page-node-id="5aFeQSkC4uUHUKxljgNngO"><div class="rule" data-page-node-id="AjWUTO6UJe0tsGsuNMxKDw"></div><span data-page-node-id="OHdrqBDL3Uo1wbhwBjfJhC">112:1</span><div class="rule" data-page-node-id="J3DRIzLUnqHTcWYIz2hMUo"></div></div>
+          <div class="ar" data-page-node-id="zI3JqKeI6CEt5uEfmKeDLH">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div>
+          <div class="tr" data-page-node-id="EKmcVfYaOn1ZbjtgeJS2fY">Qul huwa Allāhu aḥad.</div>
+          <div class="div" data-page-node-id="sMMsU9IYm1tRNicYLI5qcG"><div class="rule" data-page-node-id="dlbLJAYP43pkodp4ksnERL"></div><svg class="st" data-page-node-id="MCKbrsooLPlzEhtWsjtIgY"><use href="#star" data-page-node-id="foGQpk4huRVKGhifP4CVXV"/></svg><div class="rule" data-page-node-id="E50oPWRkEze780eUGy7arJ"></div></div>
+          <div class="tl" data-page-node-id="hplJ6gzL0idSOc8Rd636PN">Say: He is God, the One.</div>
+        </div>
+        <div class="onrule" data-page-node-id="15NRCD3j6OqtKVlHNdMm1u"><span class="mark" data-page-node-id="wSlEhnZnBRzMEw58JClexF">WAQFAH</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="note" data-page-node-id="VeYNpF1HT5qPXYukJO4CWx">The star is sage on the light and charcoal palettes and lamplight gold on Midnight, because it takes the accent. That is the whole colour budget of the page — one ornament, one voice.</p>
+
+  <h2 data-page-node-id="D2rdH1XvKFwOSzJz1HpZ9w">2 · A long ayah</h2>
+  <p data-page-node-id="y6tWrLsbNHUqLwXgnam3Rn">2:255. Same width, same frame, same ornament, same signature — the page simply gets taller. This is the case that justifies refusing a height cap, and it is also the check that the frame's rules stretch without the ornament drifting.</p>
+  <div class="row" data-page-node-id="0A3EtYHupzRNMvruuzPsjl">
+    <div class="item" data-page-node-id="B8bwN6hK2c2qVASzPpVz0G">
+      <p class="cap" data-page-node-id="BppGt2Frufl01qndoqXaL1"><b data-page-node-id="DVxm1XRHEv1F3krDmuN7Gy">Light + Sage</b> · 2:255 · pronunciation shortened for space</p>
+      <div class="img p-light" data-page-node-id="hKT1HrFDNCCoz8HoSTVLqh">
+        <div class="f t" data-page-node-id="YeK7vb6Qg57WbLngSOjy1G"></div><div class="f l" data-page-node-id="C87x3oCy4kvKXJaL3qZauO"></div><div class="f r" data-page-node-id="VtoAmUg0gSjoAMoCnaXnSM"></div><div class="f b1" data-page-node-id="tsc5FZAgodBjpFD96YSSHD"></div><div class="f b2" data-page-node-id="CeQr3pNGpCdsS5EzAOmUvE"></div>
+        <div class="inner" data-page-node-id="dL96Aj38SMCVkdlaOZNE2r">
+          <div class="name" data-page-node-id="tvGeJ2Y2lDGT06o9WemPsX">Al-Baqarah</div>
+          <div class="num" data-page-node-id="AAF9bKnvuG8mj9f6TEVysL"><div class="rule" data-page-node-id="pUQJNXlwT7IbNbjOxnoPfC"></div><span data-page-node-id="ADgddO5pDvRj0fEg9kBVwD">2:255</span><div class="rule" data-page-node-id="HigPNNBUeuRohQw8dkJlWW"></div></div>
+          <div class="ar" data-page-node-id="HqTfj92gI5FzHupp9u8VkX">ٱللَّهُ لَآ إِلَٰهَ إِلَّا هُوَ ٱلْحَىُّ ٱلْقَيُّومُ لَا تَأْخُذُهُۥ سِنَةٌ وَلَا نَوْمٌ لَّهُۥ مَا فِى ٱلسَّمَٰوَٰتِ وَمَا فِى ٱلْأَرْضِ مَن ذَا ٱلَّذِى يَشْفَعُ عِندَهُۥٓ إِلَّا بِإِذْنِهِۦ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ وَلَا يُحِيطُونَ بِشَىْءٍ مِّنْ عِلْمِهِۦٓ إِلَّا بِمَا شَآءَ وَسِعَ كُرْسِيُّهُ ٱلسَّمَٰوَٰتِ وَٱلْأَرْضَ وَلَا يَـُٔودُهُۥ حِفْظُهُمَا وَهُوَ ٱلْعَلِىُّ ٱلْعَظِيمُ</div>
+          <div class="tr" data-page-node-id="2VHcxniYBz2sT70Y4bgJhy">Allāhu lā ilāha illā huwal-ḥayyul-qayyūm.</div>
+          <div class="div" data-page-node-id="kGSFaTW9Sbg9odwXHwmg0M"><div class="rule" data-page-node-id="HBGfrA5LTbNqVO1vgYBRIl"></div><svg class="st" data-page-node-id="R4GfbEJthR6P5ybZ7jxtiq"><use href="#star" data-page-node-id="jAgEq8HRjtzBTjTAYBuVZC"/></svg><div class="rule" data-page-node-id="vDSLz27IPp4KYddHKZ6m3m"></div></div>
+          <div class="tl" data-page-node-id="iFsJnHOWoqoC604rVnM8Iv">Allah — there is no deity except Him, the Ever-Living, the Sustainer of existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great.</div>
+        </div>
+        <div class="onrule" data-page-node-id="Wgp02NeXnFWIEyCE7bJWR7"><span class="mark" data-page-node-id="xmHEDOChC6tOl7L8Zkb2EE">WAQFAH</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 data-page-node-id="LgolTEEZPZdjz6Vf2yAb7J">3 · What the reader has turned off</h2>
+  <p data-page-node-id="b0FBfJGamOn17Eoujr7J8P">Translation off, then everything off. The page loses the translation and the divider with it; the frame, the signature and the label stay, because they belong to the page rather than to the aids.</p>
+  <div class="row" data-page-node-id="MlrKMoOVy6H6cE6WDdQwf3">
+    <div class="item" data-page-node-id="gEAtfEeCgCeCeaFJ3kxKh8">
+      <p class="cap" data-page-node-id="XOpci04kIFZzbvEdloAVPB"><b data-page-node-id="8gF8YpdYcxvUAGI8T8Kx8N">Light + Sage</b> · 112:1 · translation off</p>
+      <div class="img p-light" data-page-node-id="yfBDaw8U9OobCOkd7lRCIs">
+        <div class="f t" data-page-node-id="wYZHOV7pva4xym1Ecz6uCi"></div><div class="f l" data-page-node-id="escFheqKvTCkq5IGekOEwp"></div><div class="f r" data-page-node-id="HIoJahwJDUx7cN71zkwpwx"></div><div class="f b1" data-page-node-id="hxMc9GTOk9z4eKJJ9PF5yr"></div><div class="f b2" data-page-node-id="TF5FRJ0K4HqzrAcxOLe9Yg"></div>
+        <div class="inner" data-page-node-id="w9FQTD6zsCNs8flLdScgfh">
+          <div class="name" data-page-node-id="XZqwfqX3QKYDYfiirUUHX3">Al-Ikhlas</div>
+          <div class="num" data-page-node-id="7X5tHoEbdn0g2NuiqBa4f5"><div class="rule" data-page-node-id="FAyV82Wwf8FKFG1doI2N3t"></div><span data-page-node-id="sUyfMrsRoK0Ks8y9NYGZi9">112:1</span><div class="rule" data-page-node-id="IDHH6oBt6qMR9Ri3kKUhqK"></div></div>
+          <div class="ar" data-page-node-id="QNbP1pdBkJp1ysqdJMTPcQ">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div>
+          <div class="tr" data-page-node-id="Fxqg9m44YMxekFXh1VrlQc">Qul huwa Allāhu aḥad.</div>
+        </div>
+        <div class="onrule" data-page-node-id="TZmZJjNQHLAsZxSEio0ENB"><span class="mark" data-page-node-id="IKB02C9iDviHFPXVwya2JH">WAQFAH</span></div>
+      </div>
+    </div>
+    <div class="item" data-page-node-id="hiYZvpYYGqQPiJ0rWrKJgX">
+      <p class="cap" data-page-node-id="EOQqvJZXnuK8MrU1U4Jyh8"><b data-page-node-id="CADkCOilXtTdWee5Mu22nu">Light + Sage</b> · 112:1 · pronunciation and translation off</p>
+      <div class="img p-light" data-page-node-id="kwTioWbKiUqL8YERvrEDcp">
+        <div class="f t" data-page-node-id="QU21JfZFGWREHFaebZol7s"></div><div class="f l" data-page-node-id="89UWCQR4GzHrD1AlvSbb4k"></div><div class="f r" data-page-node-id="puysA6eCloyNPIrjst9kSi"></div><div class="f b1" data-page-node-id="esp7BC3iL8zMdBBFGJEDe1"></div><div class="f b2" data-page-node-id="kYASBDezDfh24inVpHMDw3"></div>
+        <div class="inner" data-page-node-id="FAi7Qn7oAdjDqbH1QqaqEQ">
+          <div class="name" data-page-node-id="qgM9lvqCtQdOXuWeWDezuQ">Al-Ikhlas</div>
+          <div class="num" data-page-node-id="DfksZ3ocDtsrGXXWw6EtxH"><div class="rule" data-page-node-id="ZSiGUyv7WR7h03UKmNQn7O"></div><span data-page-node-id="S1eIMmVt3ihUESEDzYlhQk">112:1</span><div class="rule" data-page-node-id="fACX5YVByEUcb4qw8cYXTg"></div></div>
+          <div class="ar" data-page-node-id="40aonVaAFPWPErZxLCHerf">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div>
+        </div>
+        <div class="onrule" data-page-node-id="BiT7AFFb4frrBBCDQvMXmA"><span class="mark" data-page-node-id="KmiSGBXA5EjHFKQ8qWX6hI">WAQFAH</span></div>
+      </div>
+    </div>
+    <div class="item" data-page-node-id="ZHQkCuW6CukgaYRTQmeJeZ">
+      <p class="cap" data-page-node-id="ZV5UDY5phssHxibYwKuNjz"><b data-page-node-id="LGEdvt6xNpAkmO4MF3V0ch">Light + Sage</b> · ১১২:১ · Bengali names, aids and numerals</p>
+      <div class="img p-light" data-page-node-id="D7fTkIVDFdraqGXXfirs0N">
+        <div class="f t" data-page-node-id="4ZvfGLcrFrA6tmwToF1Z9y"></div><div class="f l" data-page-node-id="CGGyebhhMRvqWxZCgfCj3m"></div><div class="f r" data-page-node-id="KUMR7EL9SoAEJECn0UUZ7d"></div><div class="f b1" data-page-node-id="2bd6ajwx11wWj74OrvyP1T"></div><div class="f b2" data-page-node-id="jGNaaS7uXp6cMjk0kea83B"></div>
+        <div class="inner" data-page-node-id="EPfXOz1enHGhNt4ZD9BxmP">
+          <div class="name" data-page-node-id="rgGMNg69xEC4aWYFEoC3LY">আল-ইখলাস</div>
+          <div class="num" data-page-node-id="0Wldxul1G7EhWNu8YAl6a0"><div class="rule" data-page-node-id="kMSa36iKAC7yjFqnsPNB4t"></div><span data-page-node-id="1TywU08mN2prSTETHzlE6d">১১২:১</span><div class="rule" data-page-node-id="7Hcq99VHqhNUicz30obZFx"></div></div>
+          <div class="ar" data-page-node-id="PnIpToBFz1WrWMI60bAaTa">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div>
+          <div class="tr" data-page-node-id="vc1ZcnYJU0w28eRxxc9UgE">কুল হুওয়াল্লা-হু আহাদ।</div>
+          <div class="div" data-page-node-id="ESKdMDwFSIs1rsSJAeFhmg"><div class="rule" data-page-node-id="uHzG43fZYBtrtxljkxf1DS"></div><svg class="st" data-page-node-id="ArDm7AACRXjRFQeAbWJq1R"><use href="#star" data-page-node-id="azXHKCcVcrU7hxTTRECWgk"/></svg><div class="rule" data-page-node-id="HQKJzzMT8ZFlE1rr1g0lu7"></div></div>
+          <div class="tl" data-page-node-id="yrp5Sq7qhknFnQEAfz4vwP">বল, তিনি আল্লাহ্‌, এক অদ্বিতীয়।</div>
+        </div>
+        <div class="onrule" data-page-node-id="0BAxxWvIILYCP6MOByWqBO"><span class="mark" data-page-node-id="3PVvWayHwWZtFM0jGAea9G">WAQFAH</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="note" data-page-node-id="EVvKOZCZTvG3t7E44ugKRa">Bengali keeps the Latin wordmark. It is a signature, not content, and it is the one element on the page that does not follow the reader's language.</p>
+
+  <h2 data-page-node-id="HhWn2oWHEp6zvdyyzhtfqW">4 · Where the share control goes</h2>
+  <p data-page-node-id="ycXwLnJ4qFHOS5qLlDBCLA">Top-right on all three hosts, in the slot the <code data-page-node-id="LdTKa9f6AH4qwONkoTNrdB">?</code> occupies on Home today: 14dp from the top, 16dp from the end, bare glyph in <code data-page-node-id="a5TxutQASEZtV34SX7gZve">inkMuted</code>, 44dp touch target. Nothing else on the card moves, and the <code data-page-node-id="dwuyGnBHBEZHXScK8oTjBi">?</code> is gone from Home.</p>
+  <div class="row" data-page-node-id="fflHgsJpYzN74SsFcmQCg2">
+    <div class="item" style="width:258px" data-page-node-id="Ld4aX4d6Ze8lnR2XXhbz9H">
+      <p class="cap" data-page-node-id="OS1sTcXXIuAUrziiPjorBu"><b data-page-node-id="691f2uP7jDLPTqbfWzJpjY">Home</b></p>
+      <div class="screen p-light" data-page-node-id="l1mZmOttXOSF1PDv8IL70Y">
+        <div class="screentop" data-page-node-id="Hzk3R0WqhGhGfmGeioxhb1">
+          <div class="hdr" data-page-node-id="1oDu3I6N9PJ0mfDVpHEuMw"><div class="n" data-page-node-id="F0MvGznkQ0YCTEBYs6NgwA">Al-Ikhlas <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--mut)" data-page-node-id="J3jC1wYg6IQNuGORXSJnnn"><path d="M2 4l4 4 4-4" data-page-node-id="ds1H8HkOaFE71AC1MYk2Ns"/></svg></div><div class="s" data-page-node-id="WGHrA1xRtX4GEvY7k6WHJD">7 ayat</div></div>
+          <div class="sharebtn" data-page-node-id="NAFnPI5364Rge09ulJnN9q"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="bL6uGcf5xGCtEPTtkIKabl"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" data-page-node-id="sYlIlmaHWsDJRvR6pY96dU"/></svg></div>
+        </div>
+        <div class="sbody" data-page-node-id="tD2jnyUzsj0Wf03eSg2vDB">
+          <div class="b-num" data-page-node-id="485iR5vZzlZXMjvA4KAzPL"><div class="b-rule" data-page-node-id="jz9BZjCaCuayWkBsOZRfBu"></div><span data-page-node-id="kgw84O1DGdhKDkO8nWoLDZ">112:1</span><div class="b-rule" data-page-node-id="o8p3B88On9WkZ51nZPqK7E"></div></div>
+          <div class="b-ar" data-page-node-id="2DHGnQF6Zw9oRjGbIACOTd">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div>
+          <div class="b-tr" data-page-node-id="n628ZnvCjBwdO3I4tzpGoM">Qul huwa Allāhu aḥad.</div>
+          <div class="b-sep" data-page-node-id="WIAHSWWryFPPmwqKf070tv"></div>
+          <div class="b-tl" data-page-node-id="rkBTY6Spjee3TJAhT3QlwR">Say: He is God, the One.</div>
+          <div class="actions" data-page-node-id="UTQ2i6G7XqUDbmLMFzJXYa">
+            <div class="arrow" data-page-node-id="F1FGnS42yXMsL5dSXXPLAQ"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" data-page-node-id="cAYyz2VULEltOOFmTvxgPc"><path d="M8 2L4 6l4 4" data-page-node-id="Yh7nPcFo471WsnxxeRlx3r"/></svg></div>
+            <div class="markpill" data-page-node-id="Y5QqGCkJfEBCCKHsZjDgM5">Mark read</div>
+            <div class="arrow" data-page-node-id="8PKczAE9iAhTs4TU5KwZ9G"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" data-page-node-id="WFqn4IPEX4S93t36E9fHq3"><path d="M4 2l4 4-4 4" data-page-node-id="d1F5Gv4j1N0YACkwKnGrWY"/></svg></div>
+            <div class="arrow" style="width:18px" data-page-node-id="dqCTfU0GhUHNnom3ZC4hdO"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" data-page-node-id="WvEXUqmqHJdcoTjNHLC0cy"><path d="M3 1.5h6v9l-3-2.4-3 2.4z" data-page-node-id="J5VeuG9mbUNjQNEdUukHdD"/></svg></div>
+          </div>
+        </div>
+        <div class="tabbar" data-page-node-id="70l0LzVixRXkcona143wN3"><div class="tab on" data-page-node-id="QuKNRZS6xTEB9WADS8FXsf">Home</div><div class="tab" data-page-node-id="JV0LiK62LRfFBE1uSthFh5">Bookmarks</div><div class="tab" data-page-node-id="5Chno5NUUvDybiw0hUwzwf">Settings</div></div>
+      </div>
+    </div>
+    <div class="item" style="width:258px" data-page-node-id="GxXiq7aLn7rEt074BVlQTv">
+      <p class="cap" data-page-node-id="cRd1Fcia3uND8XoZu0fB2Q"><b data-page-node-id="WJhAW5cAEyvoEYuVfij2Ld">Bookmarks tab</b></p>
+      <div class="screen p-light" data-page-node-id="j01BgiIV70DN4C7rDpWPWZ">
+        <div class="screentop" data-page-node-id="xSlsNiGkbPXfEJGUkK1oyB">
+          <div class="hdr" data-page-node-id="4DzoDAN4Y6bZRWl7BSumVw"><div class="n" data-page-node-id="QvvCeejg2KQMCfZJ4RkmR0">Al-Ikhlas <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--mut)" data-page-node-id="E6PxpAZEvuih6e5KJEZefA"><path d="M2 4l4 4 4-4" data-page-node-id="Y5lnhbl50hj6bT1lw6yKDl"/></svg></div><div class="s" data-page-node-id="4XqWozGAyFYT4GSjwH6Q1P">12 saved</div></div>
+          <div class="sharebtn" data-page-node-id="YLW6it6xCb0qYiWSmmvdmU"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="xpHvDnIcHpVZ2mkQ03IASU"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" data-page-node-id="qNz6gVj7i9Laoe9Nq1ni9v"/></svg></div>
+        </div>
+        <div class="sbody" data-page-node-id="Sh9M3hQR2Rg88n240DLo3K">
+          <div class="b-num" data-page-node-id="yVLKd1VsChhIAYth9kgQs9"><div class="b-rule" data-page-node-id="HVzK0bKVIquwxVMGAIlRsm"></div><span data-page-node-id="MxrPx5uhLj2l7yKzrT2J91">112:1</span><div class="b-rule" data-page-node-id="tZvjPxN4SLmd2fJdFb8GBy"></div></div>
+          <div class="b-ar" data-page-node-id="RkcoA1kEmG4AyfVkWRsdTw">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div>
+          <div class="b-tr" data-page-node-id="UozKCRgJkJYan2696P6xs1">Qul huwa Allāhu aḥad.</div>
+          <div class="b-sep" data-page-node-id="GCe0W0HCsjq36LgJhuo61B"></div>
+          <div class="b-tl" data-page-node-id="UUEOp7gyTdck6javlh5flJ">Say: He is God, the One.</div>
+          <div class="actions" data-page-node-id="j8KmbdWCtfqMFPNgUmK4ut">
+            <div class="arrow" data-page-node-id="yGEQAv4e8uG5oj9k8qzGXF"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" data-page-node-id="DhaFY3Z067llGQDqQPlD4E"><path d="M8 2L4 6l4 4" data-page-node-id="9jLQ6u0tIpIP9ueEwx21cm"/></svg></div>
+            <div class="markpill" data-page-node-id="7605MKJhklnPYiVWIYEkFs">Mark read</div>
+            <div class="arrow" data-page-node-id="tLnY4yd7JHaFZCDFRIsiOy"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" data-page-node-id="BEoGQIoqh0wfscfXPI12MS"><path d="M4 2l4 4-4 4" data-page-node-id="6vjJBmG5B46vIUm9mnGzub"/></svg></div>
+            <div class="arrow" style="width:18px;color:var(--acc)" data-page-node-id="MIteIDCp84Bs0Sjtd5tFGa"><svg width="13" height="13" viewBox="0 0 12 12" fill="currentColor" data-page-node-id="boeg0N3saig2VCUWldWvJM"><path d="M3 1.5h6v9l-3-2.4-3 2.4z" data-page-node-id="q5nHS4PaSXupVixDRoNEni"/></svg></div>
+          </div>
+        </div>
+        <div class="tabbar" data-page-node-id="tpDe4BlRBKE04nWHaAOxdf"><div class="tab" data-page-node-id="InjRi6xoFEaQIYGiMNXhTM">Home</div><div class="tab on" data-page-node-id="xAP4LP5fQNJRIfy6iRrVd8">Bookmarks</div><div class="tab" data-page-node-id="C2Bn2CpQQuGZKxxyrMjgey">Settings</div></div>
+      </div>
+    </div>
+    <div class="item" style="width:258px" data-page-node-id="ix5IeCuDXOvvTxOUGX8AMR">
+      <p class="cap" data-page-node-id="Y3WejWBVGdkPtrsZLZ1in1"><b data-page-node-id="hIfonancHprYtLx1vftmxn">Interstitial</b></p>
+      <div class="screen p-dark" data-page-node-id="TTA2VEhfxb7zQ3Q5ORDV7r">
+        <div class="screentop" data-page-node-id="tM6I4dr9BOVgYYAoG0vKYE">
+          <div class="hdr" style="background:none;border:none;padding:4px 34px" data-page-node-id="r1QTAMn2S3IH2JP7Cl9TvM"><div class="n" style="font-size:9.5px" data-page-node-id="F65yIUOac9SLObePCUecOY">Al-Ikhlas</div><div class="s" data-page-node-id="WtHpgfk3W8YBf0uxNNRkvG">7 ayat</div></div>
+          <div class="sharebtn" data-page-node-id="sLeV9YyXpQDptxfL65buFQ"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="bmxAOhX6DwzpBjovVOSXI2"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" data-page-node-id="koX3Jk8GeLGXpWKjAPFNBw"/></svg></div>
+        </div>
+        <div class="sbody" data-page-node-id="jWLCKlOv1cxS74LCklbcoh">
+          <div class="b-num" data-page-node-id="lF2VfZ8iN4eyuc2wLaDIco"><div class="b-rule" data-page-node-id="KyFWEB83VuzXoKP6iEdRcT"></div><span data-page-node-id="Ic3cqUYaJC9znicRoXXUGT">112:1</span><div class="b-rule" data-page-node-id="eJuY2QgtO1zK77Nsfwskha"></div></div>
+          <div class="b-ar" data-page-node-id="bOqW9YRRY5czjpbDFvPVzA">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div>
+          <div class="b-tr" data-page-node-id="6VEnOC0zM5OeF8EatGnpAw">Qul huwa Allāhu aḥad.</div>
+          <div class="b-sep" data-page-node-id="rWLovdERFagViTJgJv0fMr"></div>
+          <div class="b-tl" data-page-node-id="zCFv933cd7DixZcvdhuVCz">Say: He is God, the One.</div>
+          <div class="actions" data-page-node-id="rgIepOrfz1djazTBjVWFuw">
+            <div class="arrow" data-page-node-id="EuaCJkoFbGsEQcdgEQN9bX"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" data-page-node-id="dCpt64pvILTB4WoRMudEEO"><path d="M8 2L4 6l4 4" data-page-node-id="jk33CtQzZ6YMrSvuOEf1Hk"/></svg></div>
+            <div class="markpill" data-page-node-id="GepBRObX1nQbUzXF3idb2B">Mark read</div>
+            <div class="arrow" data-page-node-id="lTgH1gVSXMv53gILNOUwsp"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" data-page-node-id="alCcSsRFErvCBi902JrcND"><path d="M4 2l4 4-4 4" data-page-node-id="Q3ZrUVKEgLCjn1hlqHATF1"/></svg></div>
+            <div class="arrow" style="width:18px" data-page-node-id="fnrXfmhS9ZZ8NIq8mx4qlF"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" data-page-node-id="LRmX8HhDkaTRAYW6m8OCI1"><path d="M3 1.5h6v9l-3-2.4-3 2.4z" data-page-node-id="Pfn2QiGjI8LuKti5LHzxOv"/></svg></div>
+          </div>
+          <div class="cta" data-page-node-id="l6SpSnV4r5HjLCjU8iHbQc">Open Instagram</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note" data-page-node-id="7ardSe7NalNmrv5FgmLCwR">On the interstitial the header is not a pill and has no chevron — it leads nowhere, which is already true today. The share control sits in the same slot, and the pause re-asserts as it does now when the share sheet covers it. Choosing a monitored app in the sheet is an indirect entry, so it cannot earn a second trigger.</p>
+
+  <h2 data-page-node-id="Y6daKk9oCTFOmSEw8zP9ii">5 · The tour relauncher</h2>
+  <p data-page-node-id="BIVZtnzDuG2jR7HHKj4BXk">FAQ &amp; troubleshooting, as a pill under the intro line — not a row in the list. The body is a list of expandable questions and "Start tour" is an action; it must not look like one more question. Reuses the existing <code data-page-node-id="TzOCrs866Pfxi5Y6VmA89I">tour_start_button</code> string, so no new Bengali mirror.</p>
+  <div class="row" data-page-node-id="8b8AUDCbHXl7igRkaZ0PN8">
+    <div class="item" data-page-node-id="lMNOD6rBw9YDqrYHAzOHLg">
+      <p class="cap" data-page-node-id="67JsXRfkdXcbRKYkt2ukAC"><b data-page-node-id="2gMgEZMPdd9EbzFg3qoNy8">FAQ &amp; troubleshooting</b></p>
+      <div class="faq p-light" data-page-node-id="1LcVnLlR4B8kxYgHQ61BK2">
+        <div class="bar" data-page-node-id="6lX4rMVPIKEJfVGCtRBGqu">
+          <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="#8A8275" stroke-width="1.6" data-page-node-id="4zc8IkDRnKmkCuy0531yAR"><path d="M8 2L4 6l4 4" data-page-node-id="zpu9gg0iRUgGiBLMwlloLb"/></svg>
+          <div class="ttl" data-page-node-id="F8uaeldtwBWCTihASGKA7U">FAQ &amp; troubleshooting</div>
+        </div>
+        <div class="intro" data-page-node-id="mwuF4cKmdb2GZguTAcuUOh">Short answers to the things that come up most. Still stuck? Write to us.</div>
+        <div class="start" data-page-node-id="LIB3sgzbXp7Qn6kd3BXsGe">Start tour</div>
+        <div class="qrow" data-page-node-id="PWjZEc68kwliv8hiGuWAam"><div class="q" data-page-node-id="ilWsOEkUZkkugUntnvxCIN">Waqfah is not showing a pause</div><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#B7AF9C" stroke-width="1.6" data-page-node-id="I70Nv3GMpGua0xhw3W018H"><path d="M4 2l4 4-4 4" data-page-node-id="bWuMSKBqbXrvEaIsajr04o"/></svg></div>
+        <div class="qrow" data-page-node-id="xItB4oElt2MRkeXAwXP7P6"><div class="q" data-page-node-id="VG1BEsnq3KP0fmI7hqy8Y5">Does Waqfah block the app?</div><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#B7AF9C" stroke-width="1.6" data-page-node-id="w0iIYiZHpBOO4dhJNrtpFD"><path d="M4 2l4 4-4 4" data-page-node-id="o8X8BJJggYSQEZezBwxPt1"/></svg></div>
+        <div class="qrow" data-page-node-id="DUVFtO1clDUOxoprBMswHO"><div class="q" data-page-node-id="sDDLTirpIJqdfnK5Zi54Ta">Where is my reading progress kept?</div><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#B7AF9C" stroke-width="1.6" data-page-node-id="gT3DmiohwOfcUln2jeb573"><path d="M4 2l4 4-4 4" data-page-node-id="oVE3497LBAe27wP1JBKAYE"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

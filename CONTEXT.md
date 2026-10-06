@@ -191,6 +191,19 @@ The bookmarks card's top pill. There and on Home it opens the list; on the
 interstitial there is no header at all.
 _Avoid_: bookmark go-to
 
+### Sharing
+
+**Share image**:
+The ayah as it leaves Waqfah — the reading card's content without its controls
+and without the surah's ayah count, at a height that follows its content. Not a
+reading surface: nothing about it is stateful, and no host reads from it.
+_Avoid_: share card, screenshot, export
+
+**Share control**:
+The entry point that produces a share image, and the only thing that does.
+Present on every reading host.
+_Avoid_: share button, share icon
+
 ### Feature tour
 
 **Feature tour**:
