@@ -17,6 +17,13 @@ interface VerseDao {
     @Query("SELECT * FROM verses WHERE id = :id")
     suspend fun getVerseById(id: Int): VerseEntity?
 
+    // One query for a whole set of ids, for callers holding an id collection
+    // rather than a position — the bookmark collection is one. Room expands
+    // IN (:ids) into one placeholder per id, so an empty list is not a valid
+    // call; QuranRepository.getVersesByIds is where that is handled.
+    @Query("SELECT * FROM verses WHERE id IN (:ids)")
+    suspend fun getVersesByIds(ids: List<Int>): List<VerseEntity>
+
     @Query("SELECT * FROM verses WHERE id > :afterId ORDER BY id LIMIT 1")
     suspend fun getNextVerse(afterId: Int): VerseEntity?
 

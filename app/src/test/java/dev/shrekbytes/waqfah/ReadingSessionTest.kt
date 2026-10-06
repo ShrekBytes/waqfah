@@ -864,4 +864,31 @@ class ReadingSessionTest {
         assertEquals("1:5", bookmarksTab.uiState.value.ayahLabel)
         assertEquals("1:2", home.uiState.value.ayahLabel)
     }
+
+    // #22's hazard, pinned at the seam it lives on. The Bookmarks list must be
+    // handed the bookmarks session; copying the surah picker's signature (which
+    // takes the shared Home session) would hand it Home's, and a row tap would
+    // move a card the reader cannot see. Independence has to hold under
+    // jumpToVerse, not only under stepping — a jump is what a list row does.
+    @Test
+    fun bookmarksSession_jumpLeavesTheHomeCardUnmoved_andTheCollectionContinuesFromThere() = runTest {
+        bookmarks.toggle(3)
+        bookmarks.toggle(5)
+        val home = session()
+        val bookmarksTab = bookmarksSession()
+        runCurrent()
+        assertEquals("1:1", home.uiState.value.ayahLabel)
+        assertEquals("1:3", bookmarksTab.uiState.value.ayahLabel)
+
+        bookmarksTab.jumpToVerse(5) // a row tap on the Bookmarks list
+        runCurrent()
+        assertEquals("1:5", bookmarksTab.uiState.value.ayahLabel)
+        assertEquals("1:1", home.uiState.value.ayahLabel) // Home did not move
+
+        // ...and stepping carries on inside the collection, wrapping at the end.
+        bookmarksTab.next()
+        runCurrent()
+        assertEquals("1:3", bookmarksTab.uiState.value.ayahLabel)
+        assertEquals("1:1", home.uiState.value.ayahLabel)
+    }
 }

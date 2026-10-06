@@ -177,6 +177,9 @@
     <!-- Bookmarks -->
     <string name="bookmarks_empty_title">এখনও কোনো বুকমার্ক নেই</string>
     <string name="bookmarks_empty_body">যেকোনো আয়াতের বুকমার্ক রিবনে ট্যাপ করে এটি এখানে সংরক্ষণ করুন। সংরক্ষিত আয়াতগুলো কুরআনের ক্রম অনুসারে সাজানো থাকে, যখনই ফিরে আসবেন তখনই প্রস্তুত।</string>
+    <string name="bookmarks_list_title">বুকমার্ক</string>
+    <string name="bookmarks_saved_count_fmt">%1$s সংরক্ষিত</string>
+    <string name="cd_bookmarks_header">বুকমার্ক</string>
 
     <!-- About -->
     <string name="about_title">পরিচিতি</string>

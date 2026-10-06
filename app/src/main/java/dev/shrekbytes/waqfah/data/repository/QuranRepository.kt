@@ -17,6 +17,15 @@ class QuranRepository @Inject constructor(
 
     override suspend fun getVerseById(id: Int): VerseEntity? = quranDatabase.verseDao().getVerseById(id)
 
+    // The set form of getVerseById, one round-trip instead of one per id. The
+    // bookmark collection is a set of ids and re-emits on every toggle, so the
+    // loop it replaces would cost a query per saved ayah per emission — the same
+    // shape getAllVerseSurahPairs exists to avoid. An empty set is answered here
+    // rather than in SQL: Room expands the IN list into placeholders, and none
+    // of them is not a query.
+    suspend fun getVersesByIds(ids: List<Int>): List<VerseEntity> =
+        if (ids.isEmpty()) emptyList() else quranDatabase.verseDao().getVersesByIds(ids)
+
     suspend fun getVerse(surahNo: Int, ayahNo: Int): VerseEntity? =
         quranDatabase.verseDao().getBySurahAndAyah(surahNo, ayahNo)
 

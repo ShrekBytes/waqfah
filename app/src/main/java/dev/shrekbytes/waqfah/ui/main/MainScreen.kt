@@ -44,11 +44,14 @@ fun MainScreen(
     onOpenFaq: () -> Unit,
     onOpenDonate: () -> Unit,
     onGoToSurah: () -> Unit = {},
+    onGoToBookmarksList: () -> Unit = {},
     readingViewModel: dev.shrekbytes.waqfah.ui.reading.ReadingViewModel = hiltViewModel(),
     // The Bookmarks tab's own session (ADR-0005), separate from the shared
-    // ReadingViewModel above so each tab keeps its own position. Scoped to
-    // this destination's ViewModelStore, which outlives the pushes over it —
-    // so the bookmarks card is where the reader left it on return.
+    // ReadingViewModel above so each tab keeps its own position. Hoisted by
+    // WaqfahNavDisplay rather than built here, because the Bookmarks list screen
+    // has to be handed this exact instance — a second one would retarget a card
+    // the reader cannot see. The default keeps this screen self-contained for
+    // any host that composes it alone.
     bookmarksViewModel: BookmarksViewModel = hiltViewModel(),
 ) {
     // The tour machine is the FeatureTourViewModel's session: it owns the
@@ -86,7 +89,10 @@ fun MainScreen(
                             onGoToAyah = onGoToSurah,
                             viewModel = readingViewModel,
                         )
-                        WaqfahTab.BOOKMARKS -> BookmarksScreen(viewModel = bookmarksViewModel)
+                        WaqfahTab.BOOKMARKS -> BookmarksScreen(
+                            viewModel = bookmarksViewModel,
+                            onOpenList = onGoToBookmarksList,
+                        )
                         WaqfahTab.SETTINGS -> SettingsScreen(
                             onOpenReadingDisplay = onOpenReadingDisplay,
                             onOpenApps = onOpenApps,

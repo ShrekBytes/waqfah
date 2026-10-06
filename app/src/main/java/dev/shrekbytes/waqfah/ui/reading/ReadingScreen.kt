@@ -2,6 +2,7 @@ package dev.shrekbytes.waqfah.ui.reading
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -32,6 +33,9 @@ import dev.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 fun WaqfahReadingContent(
     session: ReadingSession,
     onGoToAyah: (() -> Unit)? = null,
+    // Only consulted when onGoToAyah is non-null: the header's label names the
+    // destination, and the destination differs per host.
+    @StringRes goToAyahLabelRes: Int = R.string.cd_goto_header,
     onToggleBookmark: (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit,
 ) {
@@ -47,6 +51,7 @@ fun WaqfahReadingContent(
         onStartOver = session::startOver,
         onSwitchModeAndRestart = session::switchModeAndRestart,
         onGoToAyah = onGoToAyah,
+        goToAyahLabelRes = goToAyahLabelRes,
         onToggleBookmark = onToggleBookmark,
         bottomBar = bottomBar,
     )

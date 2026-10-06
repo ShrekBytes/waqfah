@@ -177,6 +177,9 @@
     <!-- Bookmarks -->
     <string name="bookmarks_empty_title">No bookmarks yet</string>
     <string name="bookmarks_empty_body">Tap the bookmark ribbon on any ayah to keep it here. Saved ayahs stay in Quran order, ready whenever you return.</string>
+    <string name="bookmarks_list_title">Bookmarks</string>
+    <string name="bookmarks_saved_count_fmt">%1$s saved</string>
+    <string name="cd_bookmarks_header">Bookmarks</string>
 
     <!-- About -->
     <string name="about_title">About</string>
