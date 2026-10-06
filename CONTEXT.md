@@ -167,7 +167,9 @@ _Avoid_: favourites tab
 
 **Bookmarks card**:
 The bookmarks tab's reading surface — the same card as Home, over the
-bookmark collection instead of the whole Quran.
+bookmark collection instead of the whole Quran. Its header is the one thing
+that differs: a ribbon tile and the collection total in place of Home's ayah
+count, so the two cards are told apart at a glance.
 _Avoid_: favourites screen
 
 **Bookmarked-ayah stepper**:

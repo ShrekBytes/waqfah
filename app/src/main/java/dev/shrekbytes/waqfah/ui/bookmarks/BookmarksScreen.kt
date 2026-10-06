@@ -16,12 +16,17 @@ import dev.shrekbytes.waqfah.ui.reading.WaqfahReadingContent
 // surah picker (ADR-0005). Hence the host-specific label: the header announces
 // where it leads, and "Surahs & ayahs" would name the wrong screen here. The
 // list is a pushed destination, so this screen only hands up the tap.
+//
+// It also carries the collection mark — the ribbon tile and the collection
+// total — which is what tells this header apart from Home's at a glance. That
+// is this host's alone, so it is stated here rather than inferred by the card.
 @Composable
 fun BookmarksScreen(viewModel: BookmarksViewModel, onOpenList: () -> Unit) {
     WaqfahReadingContent(
         session = viewModel.session,
         onGoToAyah = onOpenList,
         goToAyahLabelRes = R.string.cd_bookmarks_header,
+        showCollectionMark = true,
         onToggleBookmark = viewModel.session::toggleBookmark,
         bottomBar = {},
     )

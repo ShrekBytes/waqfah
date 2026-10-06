@@ -205,6 +205,12 @@ class ReadingSession(
         scope.launch {
             bookmarks.savedVerseIds.collect { saved ->
                 mutationMutex.withLock {
+                    // The header's collection total (see ReadingCard) rides this
+                    // same emission: it is a fact about the collection, not about
+                    // the ayah on screen, so it is published here and not in
+                    // render(), which runs on every swipe. An empty state below
+                    // resets it to zero, which is what an empty collection means.
+                    _uiState.update { it.copy(savedCount = saved.size) }
                     when {
                         // Nothing saved: the card has nothing to show and must
                         // say so, rather than keep rendering an ayah that is no
@@ -492,6 +498,7 @@ class ReadingSession(
                     isEmpty = false,
                     surahName = surahDeferred.await()?.let { surahDisplayName(it, prefs.surahNameLanguage) } ?: "",
                     surahNameDirection = if (prefs.surahNameLanguage == NameDisplayLanguage.ARABIC) LayoutDirection.Rtl else LayoutDirection.Ltr,
+                    surahNameLanguage = prefs.surahNameLanguage,
                     ayahLabel = ayahLabel(verse, prefs.surahNameLanguage),
                     totalLabel = surahDeferred.await()?.let { "${localizeDigits(it.ayahCount, prefs.surahNameLanguage)} ${ayahWord(prefs.surahNameLanguage)}" } ?: "",
                     arabicText = verse.arabicTextFor(prefs.arabicScript),

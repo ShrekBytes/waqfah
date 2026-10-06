@@ -37,6 +37,11 @@ fun WaqfahReadingContent(
     // destination, and the destination differs per host.
     @StringRes goToAyahLabelRes: Int = R.string.cd_goto_header,
     onToggleBookmark: (() -> Unit)? = null,
+    // The Bookmarks tab's header marks the collection it walks; every other
+    // host's describes the surah it is showing. Passed by the host rather than
+    // derived from goToAyahLabelRes or the session's sequence — it is a
+    // presentation choice, not a fact about either.
+    showCollectionMark: Boolean = false,
     bottomBar: @Composable () -> Unit,
 ) {
     val state by session.uiState.collectAsStateWithLifecycle()
@@ -52,6 +57,7 @@ fun WaqfahReadingContent(
         onSwitchModeAndRestart = session::switchModeAndRestart,
         onGoToAyah = onGoToAyah,
         goToAyahLabelRes = goToAyahLabelRes,
+        showCollectionMark = showCollectionMark,
         onToggleBookmark = onToggleBookmark,
         bottomBar = bottomBar,
     )

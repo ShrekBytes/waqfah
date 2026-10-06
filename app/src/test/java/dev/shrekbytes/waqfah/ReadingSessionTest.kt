@@ -539,16 +539,21 @@ class ReadingSessionTest {
         runCurrent()
         assertEquals("1:1", session.uiState.value.ayahLabel)
         assertFalse(session.uiState.value.isSaved)
+        // The collection total the Bookmarks header reads, published from the
+        // collection's own emissions rather than from a render.
+        assertEquals(0, session.uiState.value.savedCount)
 
         session.toggleBookmark()
         runCurrent()
         assertTrue(session.uiState.value.isSaved)
         assertTrue(bookmarks.isSaved(1))
+        assertEquals(1, session.uiState.value.savedCount)
 
         session.toggleBookmark()
         runCurrent()
         assertFalse(session.uiState.value.isSaved)
         assertFalse(bookmarks.isSaved(1))
+        assertEquals(0, session.uiState.value.savedCount)
     }
 
     // Saved state is a fact about an ayah, not about the card: stepping has to

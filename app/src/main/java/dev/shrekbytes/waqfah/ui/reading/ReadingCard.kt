@@ -63,6 +63,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -143,6 +144,14 @@ fun ReadingCard(
     // hardcoded "Surahs & ayahs" would name the wrong screen on the Bookmarks
     // card.
     @StringRes goToAyahLabelRes: Int = R.string.cd_goto_header,
+    // Whether the header marks the collection this card walks: a ribbon tile
+    // pinned into the pill's left padding, and the collection total in place of
+    // the surah's ayah count. Only the Bookmarks tab passes true — the header
+    // has to say which of the two cards this is, and Home's is already right.
+    // The host states it rather than the card inferring it from
+    // goToAyahLabelRes or from the session's sequence: it is a presentation
+    // choice, not a fact about either.
+    showCollectionMark: Boolean = false,
     // The save control (see CONTEXT.md). null means this host shows no bookmark
     // toggle and the action row keeps its pre-toggle layout; the tour's practice
     // card is the one host that leaves it null, and that is settled rather than
@@ -194,6 +203,18 @@ fun ReadingCard(
         } else {
             CompositionLocalProvider(LocalLayoutDirection provides state.surahNameDirection) {
                 val gotoAyahLabel = if (onGoToAyah != null) stringResource(goToAyahLabelRes) else null
+                // The header's second line. The surah's ayah count is what it
+                // means on Home, where the header opens the surah picker; on the
+                // Bookmarks card the same slot carries the collection total
+                // instead, because there the collection is what the card walks.
+                val secondaryLabel = if (showCollectionMark) {
+                    stringResource(
+                        R.string.bookmarks_saved_count_fmt,
+                        localizeDigits(state.savedCount, state.surahNameLanguage),
+                    )
+                } else {
+                    state.totalLabel
+                }
                 // Header tap affordance: the surah block is a floating pill mirroring
                 // WaqfahTabBar's capsule (barColor + hairline outline + spring press
                 // scale), so the tappable header at the top reads as a sibling of the
@@ -216,7 +237,7 @@ fun ReadingCard(
                         .padding(top = 10.dp, bottom = 2.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Column(
+                    Box(
                         Modifier
                             .then(
                                 if (onGoToAyah != null) Modifier
@@ -232,26 +253,57 @@ fun ReadingCard(
                                 else Modifier
                             )
                             .semantics(mergeDescendants = true) {
-                                if (gotoAyahLabel != null) contentDescription = gotoAyahLabel + ", " + state.surahName + ", " + state.totalLabel
-                            }
-                            .padding(horizontal = 64.dp, vertical = 3.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                                if (gotoAyahLabel != null) contentDescription = gotoAyahLabel + ", " + state.surahName + ", " + secondaryLabel
+                            },
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
-                            if (onGoToAyah != null) {
-                                Spacer(Modifier.width(4.dp))
-                                ChevronIcon(
-                                    direction = ChevronDirection.RIGHT,
-                                    tint = colors.inkMuted,
-                                    modifier = Modifier
-                                        .size(13.dp)
-                                        .rotate(90f),
+                        Column(
+                            Modifier.padding(horizontal = 64.dp, vertical = 3.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
+                                if (onGoToAyah != null) {
+                                    Spacer(Modifier.width(4.dp))
+                                    ChevronIcon(
+                                        direction = ChevronDirection.RIGHT,
+                                        tint = colors.inkMuted,
+                                        modifier = Modifier
+                                            .size(13.dp)
+                                            .rotate(90f),
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(3.dp))
+                            Text(secondaryLabel, color = colors.inkMuted, fontSize = 12.sp)
+                        }
+                        // Pinned into the pill's own side padding rather than
+                        // laid out beside the text: the text column has to stay
+                        // on the pill's centre line — the same axis as the ayah
+                        // divider and the Mark Read pill — and a tile sharing its
+                        // row would push it off. The 64dp of padding is already
+                        // reserved, so the tile costs the pill no width.
+                        //
+                        // Physically left rather than start: the header flips
+                        // LocalLayoutDirection for an Arabic surah name, and the
+                        // tile is the one cue that stays put whichever way the
+                        // name reads.
+                        if (showCollectionMark) {
+                            Box(
+                                Modifier
+                                    .align(AbsoluteAlignment.CenterLeft)
+                                    .offset(x = 16.dp)
+                                    .size(24.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(colors.accentSoft),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                BookmarkRibbonIcon(
+                                    filled = true,
+                                    tint = colors.accent,
+                                    modifier = Modifier.size(12.dp),
                                 )
                             }
                         }
-                        Spacer(Modifier.height(3.dp))
-                        Text(state.totalLabel, color = colors.inkMuted, fontSize = 12.sp)
                     }
                 }
             }

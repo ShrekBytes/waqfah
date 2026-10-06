@@ -2,6 +2,7 @@ package dev.shrekbytes.waqfah.ui.reading
 
 import androidx.compose.ui.unit.LayoutDirection
 import dev.shrekbytes.waqfah.data.model.ArabicFont
+import dev.shrekbytes.waqfah.data.model.NameDisplayLanguage
 import dev.shrekbytes.waqfah.data.model.ReadingMode
 
 // The subset of an ayah's rendered content needed to peek at a neighbouring
@@ -28,6 +29,11 @@ data class ReadingUiState(
     val isEmpty: Boolean = false,
     val surahName: String = "",
     val surahNameDirection: LayoutDirection = LayoutDirection.Ltr,
+    // The language the header is rendered in. The card localises the header's
+    // numeric line itself — the surah's ayah count arrives pre-formatted as
+    // totalLabel, but the collection total does not — and localizeDigits needs
+    // the language to do it.
+    val surahNameLanguage: NameDisplayLanguage = NameDisplayLanguage.ENGLISH,
     val ayahLabel: String = "",
     val totalLabel: String = "",
     val arabicText: String = "",
@@ -47,6 +53,11 @@ data class ReadingUiState(
     // isMarkedRead this is never flipped ahead of the write: the collection is
     // a lookup surface, so the toggle reflects what the store holds (ADR-0005).
     val isSaved: Boolean = false,
+    // How many ayahs the collection holds — the Bookmarks header's second line
+    // (see ReadingCard). Published from the collection's own emissions rather
+    // than from render(), so saving an ayah updates the header without a swipe
+    // paying for the count.
+    val savedCount: Int = 0,
     // Every ayah marked read — drives the completion popup.
     val isCompleted: Boolean = false,
     // Active mode, echoed here so the completion popup can label its
