@@ -2,6 +2,11 @@
 
 Working notes for getting Waqfah into Google Play.
 
+**Live in closed testing:**
+<https://play.google.com/store/apps/details?id=dev.shrekbytes.waqfah> — the
+listing resolves only for testers who opted in, so it 404s for everyone else.
+Production access is still pending; see §8.
+
 - **Application ID (Play build):** `dev.shrekbytes.waqfah`
 - **Application ID (F-Droid build):** `dev.shrekbytes.waqfah.fdroid`
 - **Developer account:** **personal**, created after 2023-11-13 — so the
@@ -14,7 +19,9 @@ Working notes for getting Waqfah into Google Play.
 - **Metadata already in this repo:** `fastlane/metadata/android/en-US/` — title,
   short description, full description, icon, feature graphic, five phone
   screenshots, and changelog `4.txt` for `versionCode 4`.
-- **Release being submitted:** `2.0.0` / `versionCode 4`.
+- **First release (closed testing):** `2.0.0` / `versionCode 4`. The version
+  numbers throughout this document describe that submission, which is frozen;
+  they are not a statement about whatever is live now.
 
 The two store channels are separate Gradle flavours with separate application
 IDs, so both can be installed side by side. Nothing in this document affects
@@ -522,9 +529,11 @@ The account is **personal**, so the closed test is the critical path and
 everything else is parallel work that fits inside its 14 days.
 
 **Submission is behind us.** The app content declarations cleared review and
-the app is in closed testing with a tester roster above the 12 minimum, so what
-remains is the testing window and the production application. Everything that
-used to be on this list is in the done section below.
+the app is live in closed testing at
+<https://play.google.com/store/apps/details?id=dev.shrekbytes.waqfah> with a
+tester roster above the 12 minimum, so what remains is the testing window and
+the production application. Everything that used to be on this list is in the
+done section below.
 
 1. **Record the day the 12th tester opted in.** That date starts the 14
    continuous days, and nothing else on this list is on the critical path. Play
@@ -572,10 +581,10 @@ Nothing here changes `versionCode 4` / `versionName 2.0.0` — that is a valid
 first Play release. After it, each channel's `versionCode` only needs to
 increase within itself, since the two application IDs are independent.
 
-### Outstanding on the F-Droid side
+### F-Droid is done
 
-Not a Play blocker, but do not drop it: the F-Droid MR
-([!50834](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/50834)) still
-has two unanswered reviewer requests — enable **Squash commits**, and add the
-`NonFreeAssets` reason under ~69 characters. See `docs/fdroid-submission.md`
-§4.
+The F-Droid MR
+([!50834](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/50834)) merged,
+and the app is published at
+<https://f-droid.org/packages/dev.shrekbytes.waqfah.fdroid/>. Nothing there is
+on the Play critical path; see `docs/fdroid-submission.md` §4.

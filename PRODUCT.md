@@ -47,7 +47,8 @@ no tracking, no lectures. Digital-wellbeing blockers prevent; Waqfah pauses.
   renders RTL.
 - Distribution: separate F-Droid and Google Play builds, each with its own
   application ID; the earlier GitHub Releases APK was dropped when the two
-  store channels split.
+  store channels split. F-Droid is published; Play is in closed testing,
+  awaiting production access.
 
 ## Capabilities and Constraints
 

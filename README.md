@@ -10,6 +10,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/License-AGPL_v3-skyblue?style=for-the-badge" alt="License: AGPL v3">
   <img src="https://img.shields.io/badge/platform-Android%209%2B-3DDC84?style=for-the-badge&logo=android" alt="Platform: Android 9 or newer">
+  <a href="https://f-droid.org/packages/dev.shrekbytes.waqfah.fdroid/"><img src="https://img.shields.io/f-droid/v/dev.shrekbytes.waqfah.fdroid?style=for-the-badge&logo=f-droid&label=F-Droid" alt="F-Droid: latest published version"></a>
 </p>
 
 **Waqfah** (وقفة — "a pause") shows a single Quranic ayah before the apps you
@@ -74,8 +75,15 @@ declining them never blocks anything.
 
 ## Download
 
-Waqfah is coming soon — in shaa Allah — to F-Droid and Google Play. Until
-then, you can [build it yourself](#development).
+- **F-Droid** — [published](https://f-droid.org/packages/dev.shrekbytes.waqfah.fdroid/).
+  Install it through the F-Droid client, or download the APK from the package
+  page, which always shows the current version.
+- **Google Play** — in closed testing, so the
+  [listing](https://play.google.com/store/apps/details?id=dev.shrekbytes.waqfah)
+  opens only for testers who opted in. There is no public install yet.
+
+Until Play opens to everyone, F-Droid is how you install Waqfah — or
+[build it yourself](#development).
 
 The F-Droid and Play builds are separate — signed by different keys and
 installed side by side, but one can't update the other. Switching between

@@ -2,14 +2,21 @@
 
 Working notes for getting Waqfah into the F-Droid main repository.
 
+**Published:** <https://f-droid.org/packages/dev.shrekbytes.waqfah.fdroid/>.
+The merge request is merged. The notes below are the record of the *first*
+submission — `2.0.0` (`versionCode 4`), added 2026-10-05, built and signed by
+F-Droid from the `160271e` source tarball — not a description of the current
+release.
+
 - **Application ID (F-Droid build):** `dev.shrekbytes.waqfah.fdroid`
 - **Application ID (Play build):** `dev.shrekbytes.waqfah`
 - **Reference:** <https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/>,
   <https://f-droid.org/docs/Inclusion_Policy/>
 - **Metadata already in this repo:** `fastlane/metadata/android/en-US/`
   (short description, full description, icon, changelog `4.txt` for `versionCode 4`).
-- **Release being submitted:** `2.0.0` / `versionCode 4` — the first version with
-  the flavour split, so it is the first one F-Droid can actually build.
+- **First release:** `2.0.0` / `versionCode 4` — the first version with the
+  flavour split, so it is the first one F-Droid could actually build. Later
+  releases do not need this file edited; see §4.
 
 The two store channels are separate Gradle flavours with separate application
 IDs, so both can be installed side by side. F-Droid signs its own build with its
@@ -340,16 +347,21 @@ third party rights, including ... copyright and trade marks."
 
 ## 4. Remaining steps
 
-Everything the repo has to supply is in place: metadata, screenshots, a clean
-licence position, and `v2.0.0` tagged at `160271e`. That tag has been verified to
-build the way the buildserver builds it — a clean clone with no
-`keystore.properties` and no `local.properties`, JDK 21 only, and Gradle's
-toolchain auto-download disabled, produces `app-fdroid-release-unsigned.apk`.
+Nothing is outstanding. The app is live at
+<https://f-droid.org/packages/dev.shrekbytes.waqfah.fdroid/>; that page shows
+the version currently published.
 
-On the fork the metadata is in place and **the pipeline is fully green** — all
-nine jobs pass, `fdroid build` and `check apk` included.
+What every later release needs — and all it needs — is the tagging step:
 
-What is left:
+1. Tag `v<versionName>` upstream once the repo is final. F-Droid reads the
+   fastlane metadata from the tagged commit, so the tag has to come after the
+   screenshots and changelog are committed.
+2. Bump `versionCode` in the same commit, then push the tag.
+
+`UpdateCheckMode: Tags` + `AutoUpdateMode: Version` do the rest. No metadata
+merge request per release, and no edit to `fdroiddata` — or to this file.
+
+Done, recorded here so they are not re-checked:
 
 1. ~~Push `main` and the re-pointed tag~~ — **done.** The remote tag peels to
    `160271e`.
@@ -361,17 +373,19 @@ What is left:
    answered in the description rather than enabled: the two channels use different
    application IDs on purpose, so F-Droid's signing key never has to match the Play
    key and there is no published signature to reuse.
-4. **Answer the first review round — this is the outstanding action.** linsui
-   (2026-10-02) asked for two things, neither of which needs a rebase:
-   - *"Please enable 'Squash commits'."* — tick **Squash commits when merge
+4. ~~Answer the first review round~~ — **done.** linsui (2026-10-02) asked for
+   two things, neither of which needed a rebase:
+   - *"Please enable 'Squash commits'."* — ticked **Squash commits when merge
      request is accepted** in the MR edit page. This supersedes the older "do not
      squash" advice that used to sit here; the reviewer asked for it directly.
    - *"Add the reason."* — an inline comment anchored to line 2 of the metadata,
-     i.e. the `NonFreeAssets` line. Replace it with the reason shown in §1,
-     keeping it under ~69 characters so `rewritemeta` does not fold it (§5).
-   Commit to the fork's `master`; the MR picks it up on its own. No force-push.
-5. Wait for a packager. Review happens in the MR, not by email. Once merged, the
-   app takes roughly 24–48 hours to appear, because signing is a human step.
+     i.e. the `NonFreeAssets` line. Replaced with the reason shown in §1, kept
+     under ~69 characters so `rewritemeta` does not fold it (§5).
+   Committed to the fork's `master`; the MR picked it up on its own. No force-push.
+5. ~~Wait for a packager~~ — **done.** The metadata merged into `fdroiddata`
+   unchanged from the draft in §1 — verified against the live
+   `metadata/dev.shrekbytes.waqfah.fdroid.yml` — and the signed build appeared on
+   2026-10-05, inside the expected 24–48 hour window.
 
 ## 5. Pipeline runs — what failed, and why
 
