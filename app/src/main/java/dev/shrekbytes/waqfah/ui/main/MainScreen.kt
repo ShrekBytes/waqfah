@@ -2,11 +2,14 @@ package dev.shrekbytes.waqfah.ui.main
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,8 +34,26 @@ import dev.shrekbytes.waqfah.ui.tour.FeatureTourOverlay
 import dev.shrekbytes.waqfah.ui.tour.FeatureTourViewModel
 import dev.shrekbytes.waqfah.ui.tour.tourVisible
 
-// Tab switch is a soft fade+scale pop in place — not a slide, which would read
-// as drill-down navigation. The tab bar composes once, outside AnimatedContent.
+// Tabs that render the shared reading card — the pair that gets the parallax
+// slide below. WaqfahTab's order is meaningful: Home=0, Bookmarks=1.
+private val READING_TABS = setOf(WaqfahTab.HOME, WaqfahTab.BOOKMARKS)
+
+// Travel distance for the Home <-> Bookmarks parallax slide, as a fraction of
+// the content width. A third reads clearly as "the page moved" without turning
+// the tab switch into a full pager slide.
+private const val PARALLAX_FRACTION = 0.3f
+
+// Tab switch motion is per-pair, not global, and it splits the job in two. The
+// tab bar's travelling pill (WaqfahTabBar) carries "which tab you are on"; this
+// carries "the page changed". Home <-> Bookmarks render the same card over a
+// different source, so a crossfade of the two frames has nothing to hide — that
+// pair gets a directional parallax slide, keyed to tab order (Home=0,
+// Bookmarks=1) so the motion says which way the reader moved. The pill is what
+// keeps it from reading as the ayah swipe: the slide is anchored by a chrome
+// change happening at the same moment. Anything touching Settings keeps the
+// soft fade+scale pop — Settings looks nothing like a reading card, so the
+// subtle spec already reads there. The tab bar composes once, outside
+// AnimatedContent.
 @Composable
 fun MainScreen(
     initialTab: WaqfahTab,
@@ -77,8 +98,30 @@ fun MainScreen(
                     targetState = selectedTab,
                     modifier = Modifier.weight(1f),
                     transitionSpec = {
-                        (fadeIn(tween(220)) + scaleIn(initialScale = 0.97f, animationSpec = tween(220)))
-                            .togetherWith(fadeOut(tween(140)) + scaleOut(targetScale = 1.03f, animationSpec = tween(140)))
+                        if (initialState in READING_TABS && targetState in READING_TABS) {
+                            // Home <-> Bookmarks: a directional parallax slide. The
+                            // incoming card enters from the side of the destination
+                            // tab and the outgoing card drifts the other way, so the
+                            // motion — not the near-identical content — carries the
+                            // change. Direction follows tab order: moving to the
+                            // higher index (Home -> Bookmarks) travels leftward,
+                            // matching the pill travelling right.
+                            val forward = targetState.ordinal > initialState.ordinal
+                            val enterFrom = if (forward) 1f else -1f
+                            val exitTo = if (forward) -1f else 1f
+                            (
+                                slideInHorizontally(
+                                    animationSpec = tween(300, easing = FastOutSlowInEasing),
+                                ) { (it * PARALLAX_FRACTION * enterFrom).toInt() } + fadeIn(tween(300))
+                                ).togetherWith(
+                                slideOutHorizontally(
+                                    animationSpec = tween(300, easing = FastOutSlowInEasing),
+                                ) { (it * PARALLAX_FRACTION * exitTo).toInt() } + fadeOut(tween(300)),
+                            )
+                        } else {
+                            (fadeIn(tween(220)) + scaleIn(initialScale = 0.97f, animationSpec = tween(220)))
+                                .togetherWith(fadeOut(tween(140)) + scaleOut(targetScale = 1.03f, animationSpec = tween(140)))
+                        }
                     },
                     label = "main_tab_content",
                 ) { tab ->
