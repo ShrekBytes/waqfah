@@ -74,7 +74,7 @@ class TourSession(
 
     // Finishing is once per SHOWING, not once per session: skip and back-out
     // share dismissedThisSession with the finish path's dismiss(), and a
-    // skipped tour the user reopens manually (Home's "?") must still be
+    // skipped tour the user reopens manually (FAQ's Start tour) must still be
     // finishable — or ADR-0003's "finishing persists completion" becomes
     // unreachable for the rest of the session. Visibility keeps using
     // dismissedThisSession, so this latch never re-enables auto-show.

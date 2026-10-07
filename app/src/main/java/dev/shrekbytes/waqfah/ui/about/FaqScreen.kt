@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,7 +44,7 @@ private val items = listOf(
 )
 
 @Composable
-fun FaqScreen(onBack: () -> Unit) {
+fun FaqScreen(onStartTour: () -> Unit, onBack: () -> Unit) {
     val colors = WaqfahTheme.colors
 
     SettingsScaffold(title = stringResource(R.string.faq_title), onBack = onBack) {
@@ -52,6 +54,23 @@ fun FaqScreen(onBack: () -> Unit) {
             fontSize = 14.sp,
             lineHeight = 21.sp,
         )
+        Spacer(Modifier.height(12.dp))
+        // The tour's relauncher: a pill above the list, not a row in it — the
+        // list is questions, and this is an action. The tour's closing copy
+        // already points readers here.
+        Surface(
+            onClick = onStartTour,
+            shape = RoundedCornerShape(50),
+            color = colors.accentSoft,
+            contentColor = colors.accent,
+        ) {
+            Text(
+                stringResource(R.string.tour_start_button),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
         Spacer(Modifier.height(12.dp))
         items.forEachIndexed { index, item ->
             ExpandableRow(item)

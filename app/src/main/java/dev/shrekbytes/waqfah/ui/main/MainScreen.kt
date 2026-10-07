@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -73,12 +74,14 @@ fun MainScreen(
     // has to be handed this exact instance — a second one would retarget a card
     // the reader cannot see.
     bookmarksViewModel: BookmarksViewModel = hiltViewModel(),
-) {
     // The tour machine is the FeatureTourViewModel's session: it owns the
     // gate's flags (manual open, this-session dismissal) alongside the steps,
     // so the whole tour survives the navigation pushes that dispose this
-    // screen mid-tour.
-    val tourViewModel: FeatureTourViewModel = hiltViewModel()
+    // screen mid-tour. Hoisted by WaqfahNavDisplay, because the tour's
+    // relauncher lives on the pushed FAQ screen and must reach this exact
+    // session — the one the overlay below reads.
+    tourViewModel: FeatureTourViewModel = hiltViewModel(),
+) {
     val tourSession = tourViewModel.session
     val tourUi by tourSession.uiState.collectAsStateWithLifecycle()
 
@@ -86,6 +89,14 @@ fun MainScreen(
     // when a settings sub-screen is pushed over it — and also restores the tab
     // across activity recreation (e.g. a per-app locale switch).
     var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
+
+    // A manual open comes from FAQ, reached via the Settings tab, but the
+    // tour only shows over Home — so an open tour turns this screen to Home.
+    // While the tour is up its overlay covers the tab bar, so this never
+    // fights a tab the reader picked.
+    LaunchedEffect(tourUi.openedManually) {
+        if (tourUi.openedManually) selectedTab = WaqfahTab.HOME
+    }
 
     val colors = WaqfahTheme.colors
 
@@ -127,7 +138,6 @@ fun MainScreen(
                 ) { tab ->
                     when (tab) {
                         WaqfahTab.HOME -> HomeScreen(
-                            onStartTour = { tourSession.onOpenedManually() },
                             onGoToAyah = onGoToSurah,
                             viewModel = readingViewModel,
                         )

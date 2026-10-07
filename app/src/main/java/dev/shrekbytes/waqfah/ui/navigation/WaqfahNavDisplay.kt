@@ -27,6 +27,7 @@ import dev.shrekbytes.waqfah.ui.settings.display.ReadingDisplayScreen
 import dev.shrekbytes.waqfah.ui.settings.permissions.PermissionsRationaleScreen
 import dev.shrekbytes.waqfah.ui.settings.permissions.PermissionsScreen
 import dev.shrekbytes.waqfah.ui.settings.translations.TranslationsScreen
+import dev.shrekbytes.waqfah.ui.tour.FeatureTourViewModel
 
 @Composable
 fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
@@ -46,6 +47,13 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
     // and a row tap would move a card the reader cannot see — the mistake #22's
     // signature warning is about.
     val bookmarksViewModel: BookmarksViewModel = hiltViewModel()
+
+    // And for the tour's session: MainScreen's overlay reads it, and FAQ —
+    // a pushed destination outside MainScreen — relaunches it. Both must be
+    // handed this one instance; two separate hiltViewModel() lookups would
+    // only agree by accident of scoping, and a relaunch on a session the
+    // overlay doesn't read shows nothing at all.
+    val tourViewModel: FeatureTourViewModel = hiltViewModel()
 
     // Guards against rapid double-taps pushing the same destination twice —
     // the second tap would otherwise stack an identical screen that only
@@ -110,6 +118,7 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                     onGoToBookmarksList = { push(BookmarksList) },
                     readingViewModel = sharedReadingViewModel,
                     bookmarksViewModel = bookmarksViewModel,
+                    tourViewModel = tourViewModel,
                 )
             }
             entry<GoToSurahList> {
@@ -153,7 +162,17 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                 )
             }
             entry<PrivacyPolicy> { PrivacyPolicyScreen(onBack = { backStack.removeLastOrNull() }) }
-            entry<Faq> { FaqScreen(onBack = { backStack.removeLastOrNull() }) }
+            entry<Faq> {
+                FaqScreen(
+                    onStartTour = {
+                        // FAQ is only pushed from Main's Settings tab, so popping
+                        // lands back on Main, which turns to Home for the open tour.
+                        tourViewModel.session.onOpenedManually()
+                        backStack.removeLastOrNull()
+                    },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
             entry<Gratitude> { GratitudeScreen(onBack = { backStack.removeLastOrNull() }) }
             entry<Donate> { DonateScreen(onBack = { backStack.removeLastOrNull() }) }
         },
