@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug-only manifest additions: the saved-mark prototype screen exists to
+     evaluate the three bookmark decorations on a real device. It merges only
+     into debug builds and must never ship. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name="dev.shrekbytes.waqfah.prototype.SavedMarkPrototypeActivity"
+            android:exported="true"
+            android:label="Saved-mark prototype"
+            android:theme="@style/Theme.Waqfah" />
+    </application>
+
+</manifest>
