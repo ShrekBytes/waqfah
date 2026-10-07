@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -72,11 +73,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -200,7 +203,6 @@ fun ReadingCard(
     // below); null means the host has no such control and the gesture no-ops.
     val latestOnShare = rememberUpdatedState(onShare)
     val latestOnToggleBookmark = rememberUpdatedState(onToggleBookmark)
-    val haptics = LocalHapticFeedback.current
 
     // What a drag commit ends with, and what the auto-next advance plays —
     // one definition so all three are the same motion: the current ayah
@@ -404,27 +406,21 @@ fun ReadingCard(
                             // coordinates don't flip with the surah name's
                             // direction, so the halves stay physical. Both
                             // actions stay one-handed and reach nothing the
-                            // reader has to aim at. The tick
-                            // comes before the action because the hold needs
-                            // its confirmation: a long-press fires while the
-                            // finger is still down, and the bookmark gesture in
-                            // particular may have no visible result at all when
-                            // its control is hidden (Advanced settings). A null
-                            // callback (the tour's practice card) no-ops without
-                            // ticking — the gesture doesn't exist on that host.
+                            // reader has to aim at. Their feedback is the card's
+                            // own vocabulary rather than a haptic: the share
+                            // sheet answers the left hold, and the right hold is
+                            // answered by the saved-mark changing on the ayah
+                            // itself — which is why the mark is drawn even where
+                            // the bookmark toggle is hidden (Advanced settings).
+                            // A null callback (the tour's practice card) no-ops —
+                            // the gesture doesn't exist on that host.
                             detectTapGestures(
                                 onDoubleTap = { latestHandleMarkRead.value() },
                                 onLongPress = { offset ->
                                     val halfWidth = size.width / 2f
                                     when {
-                                        offset.x < halfWidth && latestOnShare.value != null -> {
-                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            latestOnShare.value?.invoke()
-                                        }
-                                        offset.x >= halfWidth && latestOnToggleBookmark.value != null -> {
-                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            latestOnToggleBookmark.value?.invoke()
-                                        }
+                                        offset.x < halfWidth -> latestOnShare.value?.invoke()
+                                        offset.x >= halfWidth -> latestOnToggleBookmark.value?.invoke()
                                     }
                                 },
                             )
@@ -482,6 +478,27 @@ fun ReadingCard(
                             }
                         }
 
+                        // The saved-mark (see CONTEXT.md): while the shown ayah
+                        // is bookmarked, the content block borrows the share
+                        // image's page language — a hairline frame, the accent
+                        // star breaking its top rule, a pen stroke under the
+                        // Arabic — so the ayah reads as kept. The mark is the
+                        // bookmark state's indicator even where the bookmark
+                        // toggle is hidden (Advanced settings), and its change
+                        // is the bookmark long-press's feedback; its geometry
+                        // is reserved in both states, so toggling never shifts
+                        // the text. State is not content: none of it is ever
+                        // mirrored into the share image (ADR-0007).
+                        val markAlpha by animateFloatAsState(
+                            if (state.isSaved) 1f else 0f,
+                            tween(160),
+                            label = "saved_mark_alpha",
+                        )
+                        val frameColor by animateColorAsState(
+                            if (state.isSaved) colors.line else Color.Transparent,
+                            tween(160),
+                            label = "saved_mark_frame",
+                        )
                         // heightIn(min = viewport height) lets Arrangement.Center center short
                         // content while long content still lays out top-to-bottom and scrolls.
                         Column(
@@ -492,79 +509,111 @@ fun ReadingCard(
                                 // no recomposition per frame.
                                 .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
                                 .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 28.dp),
+                                .padding(horizontal = 14.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Spacer(Modifier.height(14.dp))
-                            NumDivider(state.ayahLabel)
-                            Spacer(Modifier.height(24.dp))
-                            AyahArabicText(state.arabicText, state.arabicFont, state.arabicFontSize)
-                            state.translitText?.let {
-                                Spacer(Modifier.height(20.dp))
-                                AyahTranslitText(it, state.translitFontSize)
-                            }
-                            state.translationText?.let { translationText ->
-                                Spacer(Modifier.height(24.dp))
-                                HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
-                                Spacer(Modifier.height(24.dp))
+                            Box(Modifier.fillMaxWidth()) {
+                                Column(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .border(1.dp, frameColor, RoundedCornerShape(14.dp))
+                                        .padding(top = 20.dp, bottom = 16.dp, start = 12.dp, end = 12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Spacer(Modifier.height(14.dp))
+                                    NumDivider(state.ayahLabel)
+                                    Spacer(Modifier.height(24.dp))
+                                    AyahArabicText(state.arabicText, state.arabicFont, state.arabicFontSize)
+                                    PenUnderline(
+                                        colors.accent,
+                                        Modifier
+                                            .fillMaxWidth(0.72f)
+                                            .padding(top = 5.dp)
+                                            .height(8.dp)
+                                            .graphicsLayer(alpha = markAlpha),
+                                    )
+                                    state.translitText?.let {
+                                        Spacer(Modifier.height(12.dp))
+                                        AyahTranslitText(it, state.translitFontSize)
+                                    }
+                                    state.translationText?.let { translationText ->
+                                        Spacer(Modifier.height(20.dp))
+                                        HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
+                                        Spacer(Modifier.height(24.dp))
 
-                                if (state.translationHasAlternates) {
-                                    AnimatedVisibility(
-                                        visible = translationSwitcherOpen,
-                                        enter = fadeIn() + expandVertically(),
-                                        exit = fadeOut() + shrinkVertically(),
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                (state.translationSourceName ?: "").uppercase(),
-                                                color = colors.accent,
-                                                fontSize = 10.5.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                letterSpacing = 0.6.sp,
-                                            )
-                                            Spacer(Modifier.height(10.dp))
-                                        }
-                                    }
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        AyahTranslationText(
-                                            translationText,
-                                            state.translationFontSize,
-                                            // Tapping toggles compare mode for this ayah only;
-                                            // closing reverts to the default. Claims single taps
-                                            // landing on the text, so double-tapping here won't
-                                            // also trigger mark-read.
-                                            modifier = Modifier
-                                                .clickable(
-                                                    interactionSource = remember { MutableInteractionSource() },
-                                                    indication = null,
-                                                ) {
-                                                    translationSwitcherOpen = !translationSwitcherOpen
-                                                    if (!translationSwitcherOpen) onResetTranslation()
+                                        if (state.translationHasAlternates) {
+                                            AnimatedVisibility(
+                                                visible = translationSwitcherOpen,
+                                                enter = fadeIn() + expandVertically(),
+                                                exit = fadeOut() + shrinkVertically(),
+                                            ) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Text(
+                                                        (state.translationSourceName ?: "").uppercase(),
+                                                        color = colors.accent,
+                                                        fontSize = 10.5.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        letterSpacing = 0.6.sp,
+                                                    )
+                                                    Spacer(Modifier.height(10.dp))
                                                 }
-                                                .padding(horizontal = 28.dp),
-                                        )
-                                        if (translationSwitcherOpen) {
-                                            TranslationSwitchArrow(
-                                                direction = ChevronDirection.LEFT,
-                                                onClick = { onCycleTranslation(false) },
-                                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 2.dp),
-                                            )
-                                            TranslationSwitchArrow(
-                                                direction = ChevronDirection.RIGHT,
-                                                onClick = { onCycleTranslation(true) },
-                                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 2.dp),
-                                            )
+                                            }
+                                            Box(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                AyahTranslationText(
+                                                    translationText,
+                                                    state.translationFontSize,
+                                                    // Tapping toggles compare mode for this ayah only;
+                                                    // closing reverts to the default. Claims single taps
+                                                    // landing on the text, so double-tapping here won't
+                                                    // also trigger mark-read.
+                                                    modifier = Modifier
+                                                        .clickable(
+                                                            interactionSource = remember { MutableInteractionSource() },
+                                                            indication = null,
+                                                        ) {
+                                                            translationSwitcherOpen = !translationSwitcherOpen
+                                                            if (!translationSwitcherOpen) onResetTranslation()
+                                                        }
+                                                        .padding(horizontal = 28.dp),
+                                                )
+                                                if (translationSwitcherOpen) {
+                                                    TranslationSwitchArrow(
+                                                        direction = ChevronDirection.LEFT,
+                                                        onClick = { onCycleTranslation(false) },
+                                                        modifier = Modifier.align(Alignment.CenterStart).padding(start = 2.dp),
+                                                    )
+                                                    TranslationSwitchArrow(
+                                                        direction = ChevronDirection.RIGHT,
+                                                        onClick = { onCycleTranslation(true) },
+                                                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 2.dp),
+                                                    )
+                                                }
+                                            }
+                                        } else {
+                                            AyahTranslationText(translationText, state.translationFontSize)
                                         }
                                     }
-                                } else {
-                                    AyahTranslationText(translationText, state.translationFontSize)
+                                    Spacer(Modifier.height(14.dp))
+                                }
+                                // The star breaks the frame's top rule, its
+                                // background interrupting the border behind it —
+                                // the same move as the share image's wordmark on
+                                // the bottom rule.
+                                Box(
+                                    Modifier
+                                        .align(Alignment.TopCenter)
+                                        .offset(y = (-8).dp)
+                                        .background(colors.background)
+                                        .padding(horizontal = 9.dp)
+                                        .graphicsLayer(alpha = markAlpha),
+                                ) {
+                                    StarOrnament(colors.accent, 15.dp)
                                 }
                             }
-                            Spacer(Modifier.height(14.dp))
                         }
                     }
                 }
@@ -951,5 +1000,56 @@ private fun BookmarkToggle(saved: Boolean, verseKey: Any?, onClick: () -> Unit) 
                 modifier = Modifier.size(18.dp).alpha(outlineAlpha),
             )
         }
+    }
+}
+
+// The accent four-point star, drawn as a path (ADR-0007) so it cannot fall
+// back to tofu on a device without the character. The path is the mockup's
+// 24-unit symbol, scaled to the requested size. internal so the share image
+// and the card's saved-mark render the exact same star — one path, no drift
+// between the page and the card.
+@Composable
+internal fun StarOrnament(accent: Color, starSize: Dp) {
+    Canvas(Modifier.size(starSize)) {
+        val s = size.width / 24f
+        val star = Path().apply {
+            moveTo(12f * s, 1.6f * s)
+            lineTo(14.3f * s, 9.7f * s)
+            lineTo(22.4f * s, 12f * s)
+            lineTo(14.3f * s, 14.3f * s)
+            lineTo(12f * s, 22.4f * s)
+            lineTo(9.7f * s, 14.3f * s)
+            lineTo(1.6f * s, 12f * s)
+            lineTo(9.7f * s, 9.7f * s)
+            close()
+        }
+        drawPath(star, accent)
+    }
+}
+
+// The saved-mark's pen stroke under the Arabic: two slightly wavering accent
+// lines, as if the reader had drawn them by hand. The 190x7-unit path scales
+// to whatever width the caller gives it.
+@Composable
+private fun PenUnderline(accent: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val sx = size.width / 190f
+        val sy = size.height / 7f
+        fun x(v: Float) = v * sx
+        fun y(v: Float) = v * sy
+
+        val main = Path().apply {
+            moveTo(x(2f), y(4f))
+            cubicTo(x(30f), y(1.5f), x(55f), y(5.5f), x(88f), y(3.5f))
+            cubicTo(x(112f), y(2.2f), x(150f), y(2f), x(188f), y(4.2f))
+        }
+        drawPath(main, accent, style = Stroke(width = 2.2f * sy, cap = StrokeCap.Round))
+
+        val echo = Path().apply {
+            moveTo(x(14f), y(5.6f))
+            cubicTo(x(48f), y(4.4f), x(90f), y(6f), x(128f), y(4.6f))
+            cubicTo(x(150f), y(3.9f), x(172f), y(4.8f), x(182f), y(5.4f))
+        }
+        drawPath(echo, accent.copy(alpha = accent.alpha * 0.55f), style = Stroke(width = 1.4f * sy, cap = StrokeCap.Round))
     }
 }

@@ -45,9 +45,12 @@ same content, drawn once, for a purpose outside the app.
 The mirror governs the content and the palette. It does not govern the page the
 content sits on. The image is a designed page rather than a crop of the card: a
 1dp `line` frame inset uniformly on all four sides, an accent four-point star on
-the divider above the aids, and the wordmark. None of those three has a
-counterpart in the reading card, and none of them changes a word of what is
-mirrored.
+the divider above the aids, and the wordmark. Two of the three — the frame and
+the star — later gained a counterpart on the reading card: the saved-mark
+borrows the page's language for a bookmarked ayah, drawn there only while the
+shown ayah is in the collection. None of them changes a word of what is
+mirrored, the mirror still runs one way — the image never carries the card's
+state — and the wordmark remains the one thing that exists on the image alone.
 
 Two of them earn their place by doing a job rather than by decorating. The frame
 gives the image an edge of its own, so it does not depend on a chat bubble to

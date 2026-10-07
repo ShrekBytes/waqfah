@@ -160,6 +160,15 @@ Saving a verse to, or removing it from, the bookmark collection. The only
 thing that changes the collection.
 _Avoid_: favourite action, star
 
+**Saved mark**:
+The reading card's decoration of a bookmarked ayah — the share image's page
+language (a hairline frame, the accent star breaking its top rule, the pen
+stroke under the Arabic) drawn while the shown ayah is in the collection. It
+is the bookmark state's indicator even where the bookmark toggle is hidden,
+and its change is the bookmark long-press's feedback. State is not content:
+it is never mirrored into the share image.
+_Avoid_: bookmark highlight, saved decoration
+
 **Bookmarks tab**:
 The Home tab's sibling holding the bookmarks card. Always present; when the
 collection is empty it shows the empty-state message rather than hiding.

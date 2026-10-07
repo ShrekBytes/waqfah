@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -32,6 +30,7 @@ import dev.shrekbytes.waqfah.ui.reading.AyahTranslationText
 import dev.shrekbytes.waqfah.ui.reading.AyahTranslitText
 import dev.shrekbytes.waqfah.ui.reading.NumDivider
 import dev.shrekbytes.waqfah.ui.reading.ReadingUiState
+import dev.shrekbytes.waqfah.ui.reading.StarOrnament
 import dev.shrekbytes.waqfah.ui.theme.WaqfahColors
 import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
@@ -97,7 +96,7 @@ fun ShareImagePage(state: ReadingUiState, modifier: Modifier = Modifier) {
                     horizontalArrangement = Arrangement.spacedBy(geometry.ornamentGap),
                 ) {
                     OrnamentHairline(colors.line)
-                    StarOrnament(colors.accent)
+                    StarOrnament(colors.accent, ShareImageGeometry.ornamentStarSize)
                     OrnamentHairline(colors.line)
                 }
                 Spacer(Modifier.height(24.dp))
@@ -122,28 +121,6 @@ private fun OrnamentHairline(line: Color) {
             end = Offset(size.width, size.height / 2f),
             strokeWidth = 1.dp.toPx(),
         )
-    }
-}
-
-// The accent four-point star, drawn as a path (ADR-0007) so it cannot fall
-// back to tofu on a device without the character. The path is the mockup's
-// 24-unit symbol scaled to the ornament's size.
-@Composable
-private fun StarOrnament(accent: Color) {
-    Canvas(Modifier.size(ShareImageGeometry.ornamentStarSize)) {
-        val s = size.width / 24f
-        val star = Path().apply {
-            moveTo(12f * s, 1.6f * s)
-            lineTo(14.3f * s, 9.7f * s)
-            lineTo(22.4f * s, 12f * s)
-            lineTo(14.3f * s, 14.3f * s)
-            lineTo(12f * s, 22.4f * s)
-            lineTo(9.7f * s, 14.3f * s)
-            lineTo(1.6f * s, 12f * s)
-            lineTo(9.7f * s, 9.7f * s)
-            close()
-        }
-        drawPath(star, accent)
     }
 }
 
