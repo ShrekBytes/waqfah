@@ -121,6 +121,13 @@ TriggerDecision as a constructor probe.
   hosts — MainScreen for the Home auto-show, WaqfahNavDisplay's FAQ entry for
   a manual start, sharing one session hoisted there —
   skip persists nothing (ADR-0003), finishing alone reaches persistence.
+  **Sharing** (`ui/sharing`) is the share control's flow, not a reading surface
+  (ADR-0007): `ShareImagePage` re-renders the reading state through the same
+  shared ayah-text components on the page frame ADR-0007 specifies, a pure
+  `ShareImageGeometry` holds the page's arithmetic (pinned by
+  ShareImageGeometryTest), and `ShareImageSender` captures it off-screen at the
+  image's fixed 1080px width and hands it to the system share sheet via
+  FileProvider, deleting the staged file when the sheet returns.
 
 ## Concurrency notes
 

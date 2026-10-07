@@ -17,14 +17,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
+import dev.shrekbytes.waqfah.ui.sharing.rememberShareAyahLauncher
 
 // Shared wiring for ReadingCard's callbacks. Every reading surface renders the
 // same card — the Home tab, the Bookmarks tab and the TriggerActivity
 // interstitial — and they differ only in their bottom bar and in which
 // callbacks they pass. onGoToAyah is Home-only (null for the others): the header
 // is tappable only where it leads somewhere, and the pause screen has no header
-// affordance. onToggleBookmark is passed by all three; the tour's practice card
-// passes neither (see ReadingCard).
+// affordance. onToggleBookmark and onShare are passed by all three; the tour's
+// practice card passes neither (see ReadingCard).
 //
 // Takes the session, not the ViewModel that hosts it: the card is the same
 // machine whichever sequence the session walks, so the Bookmarks tab renders
@@ -37,6 +38,7 @@ fun WaqfahReadingContent(
     // destination, and the destination differs per host.
     @StringRes goToAyahLabelRes: Int = R.string.cd_goto_header,
     onToggleBookmark: (() -> Unit)? = null,
+    onShare: (() -> Unit)? = null,
     // The Bookmarks tab's header marks the collection it walks; every other
     // host's describes the surah it is showing. Passed by the host rather than
     // derived from goToAyahLabelRes or the session's sequence — it is a
@@ -59,6 +61,7 @@ fun WaqfahReadingContent(
         goToAyahLabelRes = goToAyahLabelRes,
         showCollectionMark = showCollectionMark,
         onToggleBookmark = onToggleBookmark,
+        onShare = onShare,
         bottomBar = bottomBar,
     )
 }
@@ -98,6 +101,7 @@ fun ReadingScreen(
         session = viewModel.session,
         onGoToAyah = null,
         onToggleBookmark = viewModel.session::toggleBookmark,
+        onShare = rememberShareAyahLauncher(viewModel.session),
     ) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
             WaqfahPrimaryButton(

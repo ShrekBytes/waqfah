@@ -72,7 +72,9 @@ private fun resolveColors(theme: AppTheme, isSystemDark: Boolean, accentColor: A
 val LocalWaqfahColors = staticCompositionLocalOf { BasePalettes.Light }
 
 // Recursively unwraps ContextWrapper chains down to the hosting Activity.
-private tailrec fun Context.findActivity(): Activity? = when (this) {
+// internal so the share flow (ui/sharing) can find the activity to attach its
+// off-screen capture view to, the same way the theme itself does for bars.
+internal tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
     else -> null
