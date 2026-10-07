@@ -31,6 +31,10 @@ sealed interface WaqfahDestination : NavKey
 @Serializable data class TranslationsSettings(val languageCode: String) : WaqfahDestination
 @Serializable data object PermissionsSettings : WaqfahDestination
 @Serializable data object AppsSettings : WaqfahDestination
+// The settings that are refinements rather than setup — auto-next (#33) was
+// its first resident; the page exists so later ones don't bloat the main
+// Settings tab.
+@Serializable data object AdvancedSettings : WaqfahDestination
 @Serializable data object PermissionsRationale : WaqfahDestination
 
 @Serializable data object GoToSurahList : WaqfahDestination

@@ -58,6 +58,7 @@ fun SettingsScreen(
     onOpenReadingDisplay: () -> Unit,
     onOpenApps: () -> Unit,
     onOpenPermissions: () -> Unit,
+    onOpenAdvanced: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenFaq: () -> Unit,
     onOpenDonate: () -> Unit,
@@ -179,12 +180,7 @@ fun SettingsScreen(
         SettingsNavRow(stringResource(R.string.app_permissions_row), stringResource(R.string.review_anytime), onOpenPermissions)
 
         SectionTitle(stringResource(R.string.section_advanced))
-        SettingsToggleRow(
-            title = stringResource(R.string.auto_next_title),
-            subtitle = stringResource(R.string.auto_next_sub),
-            checked = state.autoNextOnMark,
-            onToggle = { viewModel.setAutoNextOnMark(!state.autoNextOnMark) },
-        )
+        SettingsNavRow(stringResource(R.string.advanced_row), stringResource(R.string.advanced_row_desc), onOpenAdvanced)
 
         SectionTitle(stringResource(R.string.more_section))
         SettingsNavRow(stringResource(R.string.donate_row), stringResource(R.string.donate_row_desc), onOpenDonate)

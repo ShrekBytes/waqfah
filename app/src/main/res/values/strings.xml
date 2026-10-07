@@ -133,6 +133,8 @@
     <string name="app_permissions_row">App permissions</string>
     <string name="review_anytime">Review anytime</string>
     <string name="section_advanced">Advanced</string>
+    <string name="advanced_row">Advanced settings</string>
+    <string name="advanced_row_desc">Auto-next and other options</string>
     <string name="auto_next_title">Auto-next ayah on mark read</string>
     <string name="auto_next_sub">Move to the next ayah automatically after marking one read</string>
     <string name="more_section">More</string>
