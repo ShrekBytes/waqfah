@@ -641,8 +641,14 @@ fun ReadingCard(
                 // arrow, outermost on the left — the two together bracket the
                 // row, and both are host choices: a host passing neither (the
                 // tour's practice card) keeps the row's pre-toggle shape.
+                // The row's two insets, deliberately not equal. Above, 2dp
+                // matches the header's bottom inset so the ayah's gap to the
+                // header and its gap to this row come out the same (see the
+                // page's content column). Below, 18dp puts the gap to whichever
+                // bottom chrome the host draws — the tab bar's own 6dp, the
+                // interstitial's button block — at 24dp on every surface.
                 Row(
-                    Modifier.fillMaxWidth().padding(vertical = 22.dp),
+                    Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
@@ -823,10 +829,17 @@ private fun AyahPage(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // The clearance the card reserves around the ayah, and the number that
+        // makes the two gaps it sits between equal: 10dp here plus the header's
+        // own 2dp bottom inset above it, and 10dp here plus the Mark Read row's
+        // 2dp top inset below it. Symmetric on purpose — an extra bottom padding
+        // here (the card used to carry 30dp against 4dp) pushes the ayah off the
+        // centre line the header, the divider and the Mark Read pill share, so
+        // the gap above it stops matching the gap below.
         Column(
             Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp, bottom = 16.dp, start = 12.dp, end = 12.dp),
+                .padding(top = 10.dp, bottom = 10.dp, start = 12.dp, end = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // The star crowns the ayah reference, sitting just above it so the
@@ -859,7 +872,6 @@ private fun AyahPage(
                 Spacer(Modifier.height(24.dp))
                 translation()
             }
-            Spacer(Modifier.height(14.dp))
         }
     }
 }

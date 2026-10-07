@@ -110,7 +110,12 @@ fun ReadingScreen(
         onShare = rememberShareAyahLauncher(viewModel.session),
         controls = controls,
     ) {
-        Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
+        // The top inset is the tab bar's own 6dp rather than the 20dp this block
+        // used to carry: the card's Mark Read row already reserves the space
+        // above it, so a deeper inset here made the gap between that row and the
+        // bottom chrome bigger on this screen than on Home and the Bookmarks
+        // tab. The bottom inset is unchanged at 20dp.
+        Box(Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 6.dp, bottom = 20.dp)) {
             WaqfahPrimaryButton(
                 text = stringResource(R.string.open_app_button, state.triggeredAppLabel ?: stringResource(R.string.app_name)),
                 // Cooldown bookkeeping happens in AppMonitorService at trigger

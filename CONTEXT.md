@@ -196,8 +196,10 @@ bookmarks card's header; a row jump retargets the card.
 _Avoid_: bookmark picker, favourites list
 
 **Bookmarks header**:
-The bookmarks card's top pill. There and on Home it opens the list; on the
-interstitial there is no header at all.
+The bookmarks card's top pill. There it opens the bookmarks list; on Home the
+same pill opens the surah picker. The interstitial draws the header too, as the
+surah name and its ayah count with no pill — the pause screen has nowhere to
+send the reader, so only the container is missing.
 _Avoid_: bookmark go-to
 
 ### Sharing

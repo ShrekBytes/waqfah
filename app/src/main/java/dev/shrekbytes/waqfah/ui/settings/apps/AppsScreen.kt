@@ -90,7 +90,9 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit) {
         )
 
         WaqfahSearchField(value = state.searchQuery, onValueChange = viewModel::setSearchQuery, placeholder = stringResource(R.string.search_apps_hint))
-        Spacer(Modifier.height(6.dp))
+        // The same gap the surah picker puts after its search field: both are
+        // "field, then the results list", so the two must not differ.
+        Spacer(Modifier.height(12.dp))
 
         when {
             state.isLoading -> AppsListSkeleton(Modifier.weight(1f))

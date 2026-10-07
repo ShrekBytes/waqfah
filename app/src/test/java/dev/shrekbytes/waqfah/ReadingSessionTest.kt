@@ -924,11 +924,14 @@ class ReadingSessionTest {
         assertEquals("", session.uiState.value.ayahLabel)
     }
 
-    // The other half of that rule: while anything is still saved, unsaving the
-    // ayah on screen leaves the card where it is — the tab does not teleport
-    // to another ayah, and the next swipe continues from where the reader was.
+    // The other half of that rule, one step milder: while anything is still
+    // saved the card does not go empty, but it cannot keep showing an ayah the
+    // walk no longer holds either — the collection *is* its content at any
+    // size. So it takes the slot the removed ayah vacated, the way a list does
+    // when a row is deleted. That is deliberately the same rule for a one-ayah
+    // collection and a ten-ayah one: the sizes cannot behave differently.
     @Test
-    fun bookmarksSession_unsavingOneOfSeveral_leavesTheCardWhereItIs() = runTest {
+    fun bookmarksSession_unsavingOneOfSeveral_takesTheSlotTheAyahVacated() = runTest {
         bookmarks.toggle(1)
         bookmarks.toggle(3)
         val session = bookmarksSession()
@@ -938,13 +941,31 @@ class ReadingSessionTest {
         session.toggleBookmark()
         runCurrent()
 
-        assertEquals("1:1", session.uiState.value.ayahLabel)
-        assertFalse(session.uiState.value.isSaved)
+        assertFalse(bookmarks.isSaved(1))
+        assertEquals("1:3", session.uiState.value.ayahLabel) // the next saved ayah takes the slot
+        assertTrue(session.uiState.value.isSaved)
         assertFalse(session.uiState.value.isEmpty)
+    }
 
+    // Read from the other end: the last ayah has no next to take its slot, so
+    // the new last does. Same rule, not a special case.
+    @Test
+    fun bookmarksSession_unsavingTheLastAyah_fallsBackToTheNewLast() = runTest {
+        bookmarks.toggle(1)
+        bookmarks.toggle(3)
+        val session = bookmarksSession()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
         session.next()
         runCurrent()
         assertEquals("1:3", session.uiState.value.ayahLabel)
+
+        session.toggleBookmark()
+        runCurrent()
+
+        assertFalse(bookmarks.isSaved(3))
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertTrue(session.uiState.value.isSaved)
     }
 
     // Filling an empty collection from elsewhere — Home's card or the

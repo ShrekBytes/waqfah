@@ -195,13 +195,15 @@ class ReadingSession(
                 }
             }
         }
-        // The collection's published set is the change signal for two things:
+        // The collection's published set is the change signal for three things:
         // the saved state of the ayah on screen — a save made anywhere else,
         // the interstitial or another card, must land here without a re-render
-        // or a manual refresh — and, on a collection-scoped session, the
-        // collection's own emptiness, because there the collection *is* the
-        // content. The set itself is not held; membership is read back from
-        // the store, so no copy of it can go stale.
+        // or a manual refresh — the collection's own emptiness, because on a
+        // collection-scoped session the collection *is* the content, and the
+        // same rule one step milder: the ayah on screen leaving the collection
+        // while others remain, which leaves the card showing a verse the walk
+        // no longer holds. The set itself is not held; membership is read back
+        // from the store, so no copy of it can go stale.
         scope.launch {
             bookmarks.savedVerseIds.collect { saved ->
                 mutationMutex.withLock {
@@ -211,6 +213,7 @@ class ReadingSession(
                     // render(), which runs on every swipe. An empty state below
                     // resets it to zero, which is what an empty collection means.
                     _uiState.update { it.copy(savedCount = saved.size) }
+                    val shown = currentVerse
                     when {
                         // Nothing saved: the card has nothing to show and must
                         // say so, rather than keep rendering an ayah that is no
@@ -222,10 +225,22 @@ class ReadingSession(
                         // the interstitial: pick up the collection's first
                         // ayah. Before the first load the session is loading,
                         // not empty, so this cannot jump ahead of preferences.
-                        currentVerse == null && _uiState.value.isEmpty ->
+                        shown == null && _uiState.value.isEmpty ->
                             beginFreshSessionLocked()
 
-                        else -> currentVerse?.let { verse -> refreshSavedStateLocked(verse) }
+                        // Un-saved while others remain: the milder half of the
+                        // same rule. A collection-scoped walk shows the
+                        // collection, so the card takes the removed ayah's slot
+                        // instead of staying on a verse that is no longer in
+                        // it — one rule for both sizes of the collection, so a
+                        // one-ayah collection and a ten-ayah one cannot behave
+                        // differently. The mushaf-wide walk is excluded: its
+                        // content is the Quran, so an ayah leaving the
+                        // collection says nothing about what it should show.
+                        !verseSelection.isMushafWide && shown != null && shown.id !in saved ->
+                            stepOffRemovedAyahLocked(saved)
+
+                        else -> shown?.let { verse -> refreshSavedStateLocked(verse) }
                     }
                 }
             }
@@ -314,6 +329,19 @@ class ReadingSession(
     // interstitial — can never disagree about a verse.
     private suspend fun refreshSavedStateLocked(verse: VerseEntity) {
         _uiState.update { it.copy(isSaved = bookmarks.isSaved(verse.id)) }
+    }
+
+    // Caller must hold mutationMutex. The ayah on screen left the collection
+    // while others remain, so the card takes the slot it vacated rather than
+    // keep showing a verse the walk no longer holds: the next saved ayah, or —
+    // when the last one was removed — the new last, which is what a list does
+    // when its final row is deleted. Read through step(), so the position it
+    // lands on, the render, and the cleared auto-advance request are the same
+    // ones a swipe produces; the arrows would have reached the same verse.
+    private suspend fun stepOffRemovedAyahLocked(saved: Set<Int>) {
+        step { removedId ->
+            if (saved.any { it > removedId }) verseSelection.next(removedId) else verseSelection.previous(removedId)
+        }
     }
 
     // Caller must hold mutationMutex. The selection answered "nothing to
