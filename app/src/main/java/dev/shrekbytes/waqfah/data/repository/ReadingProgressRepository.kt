@@ -16,7 +16,7 @@ class ReadingProgressRepository @Inject constructor(
     private val appDatabase: WaqfahAppDatabase,
     // Same injectable wall clock as MonitoredAppStateRepository — the data
     // layer has one clock idiom, not one per repository.
-    @Named("wallClock") private val nowWall: () -> Long,
+    @param:Named("wallClock") private val nowWall: () -> Long,
 ) {
     val readCount: Flow<Int> = appDatabase.readVerseDao().observeReadCount()
 

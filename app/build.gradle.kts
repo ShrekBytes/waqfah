@@ -108,7 +108,7 @@ android {
         // androidTest assets; without this AppStateMigrationTest fails on load
         // before running a single test.
         getByName("androidTest") {
-            assets.srcDir("$projectDir/schemas")
+            assets.directories.add("$projectDir/schemas")
         }
     }
 }

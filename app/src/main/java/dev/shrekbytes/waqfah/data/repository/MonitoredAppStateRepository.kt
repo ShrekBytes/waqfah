@@ -15,7 +15,7 @@ import java.util.UUID
 @Singleton
 class MonitoredAppStateRepository @Inject constructor(
     private val appDatabase: WaqfahAppDatabase,
-    @Named("wallClock") private val nowWall: () -> Long,
+    @param:Named("wallClock") private val nowWall: () -> Long,
 ) : MonitoredAppState {
 
     private val dao by lazy { appDatabase.monitoredAppDao() }

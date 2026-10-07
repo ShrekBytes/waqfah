@@ -1,5 +1,6 @@
 package dev.shrekbytes.waqfah.ui.about
 
+import android.content.ClipData
 import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,15 +22,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,12 +44,14 @@ import dev.shrekbytes.waqfah.ui.components.SettingsScaffold
 import dev.shrekbytes.waqfah.ui.components.launchExternal
 import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun DonateScreen(onBack: () -> Unit) {
     val colors = WaqfahTheme.colors
     val context = LocalContext.current
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     var copiedIndex by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(copiedIndex) {
@@ -88,7 +92,9 @@ fun DonateScreen(onBack: () -> Unit) {
                     .clip(RoundedCornerShape(16.dp))
                     .background(colors.accentSoft)
                     .clickable {
-                        clipboard.setText(AnnotatedString(account.number))
+                        scope.launch {
+                            clipboard.setClipEntry(ClipData.newPlainText(account.method, account.number).toClipEntry())
+                        }
                         copiedIndex = index
                     }
                     .padding(horizontal = 14.dp, vertical = 13.dp),

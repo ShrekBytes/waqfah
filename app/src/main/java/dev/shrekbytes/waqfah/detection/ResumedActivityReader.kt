@@ -11,7 +11,7 @@ import javax.inject.Inject
 // and the interstitial's re-assert check (via TriggerActivity). The
 // latest-in-window derivation is a pure core, tested directly.
 class ResumedActivityReader @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
     fun resumedActivities(from: Long, to: Long): List<ResumedActivity> =
         query(from, to).map { it.activity }

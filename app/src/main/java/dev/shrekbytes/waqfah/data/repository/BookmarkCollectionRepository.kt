@@ -15,7 +15,7 @@ class BookmarkCollectionRepository @Inject constructor(
     private val appDatabase: WaqfahAppDatabase,
     // Same injectable wall clock as the other appstate repositories — the data
     // layer has one clock idiom, not one per repository.
-    @Named("wallClock") private val nowWall: () -> Long,
+    @param:Named("wallClock") private val nowWall: () -> Long,
 ) : BookmarkCollection {
 
     private val dao by lazy { appDatabase.bookmarkDao() }

@@ -6,7 +6,7 @@ import dev.shrekbytes.waqfah.R
 // Stable identity for each permission row so screens never depend on list order.
 enum class PermissionKey { USAGE_ACCESS, OVERLAY, BATTERY, NOTIFICATIONS }
 
-data class PermissionInfo(val key: PermissionKey, @StringRes val nameRes: Int, @StringRes val descriptionRes: Int)
+data class PermissionInfo(val key: PermissionKey, @param:StringRes val nameRes: Int, @param:StringRes val descriptionRes: Int)
 
 object PermissionCatalog {
     val usage = PermissionInfo(

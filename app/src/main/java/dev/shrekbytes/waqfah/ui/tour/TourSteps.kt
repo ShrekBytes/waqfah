@@ -14,33 +14,33 @@ sealed interface TourStep {
     val titleRes: Int
 
     data class Flow(
-        @StringRes override val titleRes: Int,
+        @param:StringRes override val titleRes: Int,
         val steps: List<Int>,
     ) : TourStep
 
     data class Info(
-        @StringRes override val titleRes: Int,
-        @StringRes val bodyRes: Int,
+        @param:StringRes override val titleRes: Int,
+        @param:StringRes val bodyRes: Int,
         val icon: ImageVector,
     ) : TourStep
 
     data class TryIt(
         val kind: TourTaskKind,
-        @StringRes override val titleRes: Int,
-        @StringRes val bodyRes: Int,
+        @param:StringRes override val titleRes: Int,
+        @param:StringRes val bodyRes: Int,
     ) : TourStep
 
     data class SettingRows(
-        @StringRes override val titleRes: Int,
-        @StringRes val hintRes: Int,
+        @param:StringRes override val titleRes: Int,
+        @param:StringRes val hintRes: Int,
         val icon: ImageVector,
         val rows: List<SettingRow>,
     ) : TourStep
 }
 
 data class SettingRow(
-    @StringRes val labelRes: Int,
-    @StringRes val descRes: Int,
+    @param:StringRes val labelRes: Int,
+    @param:StringRes val descRes: Int,
 )
 
 val TOUR_STEPS = listOf<TourStep>(

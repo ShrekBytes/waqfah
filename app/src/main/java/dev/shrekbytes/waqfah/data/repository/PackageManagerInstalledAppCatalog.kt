@@ -20,7 +20,7 @@ import javax.inject.Singleton
 
 @Singleton
 class PackageManagerInstalledAppCatalog @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : InstalledAppCatalog {
 
     override fun labelFor(packageName: String): String? = try {

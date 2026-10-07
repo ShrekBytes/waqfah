@@ -36,7 +36,7 @@ import javax.inject.Singleton
 
 @Singleton
 class TranslationRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
     // Disk truth: which catalog translations have a file on disk right now.
     // Restated on init and after every download/delete/first-copy; equal sets

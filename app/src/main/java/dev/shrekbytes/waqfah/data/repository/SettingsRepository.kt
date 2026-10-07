@@ -31,7 +31,7 @@ private val Context.settingsDataStore by preferencesDataStore(name = "waqfah_set
 
 @Singleton
 class SettingsRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     scope: CoroutineScope,
 ) {
     // Await-then-act readers (the monitor supervisor, the toggle flip) use
