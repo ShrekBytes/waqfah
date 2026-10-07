@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -91,6 +92,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.shrekbytes.waqfah.R
+import dev.shrekbytes.waqfah.data.model.ArabicFont
 import dev.shrekbytes.waqfah.data.model.ReadingMode
 import dev.shrekbytes.waqfah.data.model.UserPreferences
 import dev.shrekbytes.waqfah.ui.components.BookmarkEmptyState
@@ -508,147 +510,82 @@ fun ReadingCard(
                             }
                         }
 
-                        // The saved-mark (see CONTEXT.md): while the shown ayah
-                        // is bookmarked, the content block borrows the share
-                        // image's page language — a hairline frame, the accent
-                        // star breaking its top rule, a pen stroke under the
-                        // Arabic — so the ayah reads as kept. The mark is the
-                        // bookmark state's indicator even where the bookmark
-                        // toggle is hidden (Advanced settings), and its change
-                        // is the bookmark long-press's feedback; its geometry
-                        // is reserved in both states, so toggling never shifts
-                        // the text. State is not content: none of it is ever
-                        // mirrored into the share image (ADR-0007). The snap
-                        // is positional — it holds only because these
-                        // animators live inside the keyed subtree; a control
-                        // outside it, like MarkReadPill, needs its own
-                        // explicit snap().
-                        val markAlpha by animateFloatAsState(
-                            if (state.isSaved) 1f else 0f,
-                            tween(160),
-                            label = "saved_mark_alpha",
-                        )
-                        val frameColor by animateColorAsState(
-                            if (state.isSaved) colors.line else Color.Transparent,
-                            tween(160),
-                            label = "saved_mark_frame",
-                        )
-                        // heightIn(min = viewport height) lets Arrangement.Center center short
-                        // content while long content still lays out top-to-bottom and scrolls.
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = maxHeight)
-                                // Layout-phase read: dragging updates position/redraw only,
-                                // no recomposition per frame.
-                                .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
-                                .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 14.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Box(Modifier.fillMaxWidth()) {
-                                Column(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .border(1.dp, frameColor, RoundedCornerShape(14.dp))
-                                        .padding(top = 20.dp, bottom = 16.dp, start = 12.dp, end = 12.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Spacer(Modifier.height(14.dp))
-                                    NumDivider(state.ayahLabel)
-                                    Spacer(Modifier.height(24.dp))
-                                    AyahArabicText(state.arabicText, state.arabicFont, state.arabicFontSize)
-                                    PenUnderline(
-                                        colors.accent,
-                                        Modifier
-                                            .fillMaxWidth(0.72f)
-                                            .padding(top = 5.dp)
-                                            .height(8.dp)
-                                            .graphicsLayer(alpha = markAlpha),
-                                    )
-                                    state.translitText?.let {
-                                        Spacer(Modifier.height(12.dp))
-                                        AyahTranslitText(it, state.translitFontSize)
-                                    }
-                                    state.translationText?.let { translationText ->
-                                        Spacer(Modifier.height(20.dp))
-                                        HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
-                                        Spacer(Modifier.height(24.dp))
-
-                                        if (state.translationHasAlternates) {
-                                            AnimatedVisibility(
-                                                visible = translationSwitcherOpen,
-                                                enter = fadeIn() + expandVertically(),
-                                                exit = fadeOut() + shrinkVertically(),
-                                            ) {
-                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                    Text(
-                                                        (state.translationSourceName ?: "").uppercase(),
-                                                        color = colors.accent,
-                                                        fontSize = 10.5.sp,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        letterSpacing = 0.6.sp,
-                                                    )
-                                                    Spacer(Modifier.height(10.dp))
-                                                }
-                                            }
-                                            Box(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                AyahTranslationText(
-                                                    translationText,
-                                                    state.translationFontSize,
-                                                    // Tapping toggles compare mode for this ayah only;
-                                                    // closing reverts to the default. Claims single taps
-                                                    // landing on the text, so double-tapping here won't
-                                                    // also trigger mark-read.
-                                                    modifier = Modifier
-                                                        .clickable(
-                                                            interactionSource = remember { MutableInteractionSource() },
-                                                            indication = null,
-                                                        ) {
-                                                            translationSwitcherOpen = !translationSwitcherOpen
-                                                            if (!translationSwitcherOpen) onResetTranslation()
-                                                        }
-                                                        .padding(horizontal = 28.dp),
+                        // The shown ayah's page, from the one definition this
+                        // and the peek pages share (AyahPage) — so the ayah the
+                        // reader drags towards is laid out by the same code as
+                        // the one it becomes. The key above is what makes the
+                        // mark's animators snap on a swap rather than tween.
+                        AyahPage(
+                            label = state.ayahLabel,
+                            arabicText = state.arabicText,
+                            arabicFont = state.arabicFont,
+                            arabicFontSize = state.arabicFontSize,
+                            translitText = state.translitText,
+                            translitFontSize = state.translitFontSize,
+                            isSaved = state.isSaved,
+                            minHeight = maxHeight,
+                            offsetPx = { dragOffset.value },
+                            // The one place this page differs from a peek: its
+                            // translation is interactive.
+                            translation = state.translationText?.let { translationText ->
+                                {
+                                    if (state.translationHasAlternates) {
+                                        AnimatedVisibility(
+                                            visible = translationSwitcherOpen,
+                                            enter = fadeIn() + expandVertically(),
+                                            exit = fadeOut() + shrinkVertically(),
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    (state.translationSourceName ?: "").uppercase(),
+                                                    color = colors.accent,
+                                                    fontSize = 10.5.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    letterSpacing = 0.6.sp,
                                                 )
-                                                if (translationSwitcherOpen) {
-                                                    TranslationSwitchArrow(
-                                                        direction = ChevronDirection.LEFT,
-                                                        onClick = { onCycleTranslation(false) },
-                                                        modifier = Modifier.align(Alignment.CenterStart).padding(start = 2.dp),
-                                                    )
-                                                    TranslationSwitchArrow(
-                                                        direction = ChevronDirection.RIGHT,
-                                                        onClick = { onCycleTranslation(true) },
-                                                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 2.dp),
-                                                    )
-                                                }
+                                                Spacer(Modifier.height(10.dp))
                                             }
-                                        } else {
-                                            AyahTranslationText(translationText, state.translationFontSize)
                                         }
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            AyahTranslationText(
+                                                translationText,
+                                                state.translationFontSize,
+                                                // Tapping toggles compare mode for this ayah only;
+                                                // closing reverts to the default. Claims single taps
+                                                // landing on the text, so double-tapping here won't
+                                                // also trigger mark-read.
+                                                modifier = Modifier
+                                                    .clickable(
+                                                        interactionSource = remember { MutableInteractionSource() },
+                                                        indication = null,
+                                                    ) {
+                                                        translationSwitcherOpen = !translationSwitcherOpen
+                                                        if (!translationSwitcherOpen) onResetTranslation()
+                                                    }
+                                                    .padding(horizontal = 28.dp),
+                                            )
+                                            if (translationSwitcherOpen) {
+                                                TranslationSwitchArrow(
+                                                    direction = ChevronDirection.LEFT,
+                                                    onClick = { onCycleTranslation(false) },
+                                                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 2.dp),
+                                                )
+                                                TranslationSwitchArrow(
+                                                    direction = ChevronDirection.RIGHT,
+                                                    onClick = { onCycleTranslation(true) },
+                                                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 2.dp),
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        AyahTranslationText(translationText, state.translationFontSize)
                                     }
-                                    Spacer(Modifier.height(14.dp))
                                 }
-                                // The star breaks the frame's top rule, its
-                                // background interrupting the border behind it —
-                                // the same move as the share image's wordmark on
-                                // the bottom rule.
-                                Box(
-                                    Modifier
-                                        .align(Alignment.TopCenter)
-                                        .offset(y = (-8).dp)
-                                        .background(colors.background)
-                                        .padding(horizontal = 9.dp)
-                                        .graphicsLayer(alpha = markAlpha),
-                                ) {
-                                    StarOrnament(colors.accent, 15.dp)
-                                }
-                            }
-                        }
+                            },
+                        )
                     }
                 }
                 // Mark Read is centred by construction rather than by luck: the
@@ -791,91 +728,145 @@ fun ReadingCard(
     }
 }
 
-// A non-interactive rendering of a neighbouring ayah, positioned just off to
-// one side and animated in lockstep with the drag gesture.
+// One ayah as a page: the frame, the label, the Arabic, the pen slot, the aids
+// and the saved-mark, inside the scroll and the centring that hold them. The
+// current page and the neighbouring-ayah peek pages both draw this, because they
+// draw the same ayah — the peek is the page the reader is dragging towards, so
+// anything reserved here and not there moves the ayah at the moment it lands.
+// That is exactly what the saved-mark once did by being added to the current
+// page alone, and why this geometry is stated once.
 //
-// It draws the current page's content column — the same frame, the same pen
-// slot, the same spacers — because it is the ayah the reader is dragging
-// towards: whatever the landed page reserves, this has to reserve too, or the
-// ayah moves at the moment it lands. The frame, the star and the pen are the
-// saved-mark (see CONTEXT.md), so the peek draws them for a neighbour that is
-// in the collection, and reserves their geometry whether or not it is.
+// The callers differ in two things, and both are parameters: where the page sits
+// (offsetPx) and what its translation is (the slot — the current page hands over
+// its interactive compare switcher, a peek plain text).
 //
-// Keyed per ayah for the current page's reason, which bites harder here: this
-// subtree is not rebuilt by a step, so without the key the mark's animators
-// would tween from the *previous* neighbour's state instead of snapping, and
-// a scroll position would leak into whichever ayah is peeked next.
+// The saved-mark (see CONTEXT.md): while the ayah is bookmarked, the content
+// block borrows the share image's page language — a hairline frame, the accent
+// star breaking its top rule, a pen stroke under the Arabic — so the ayah reads
+// as kept. The mark is the bookmark state's indicator even where the bookmark
+// toggle is hidden (Advanced settings), and its change is the bookmark
+// long-press's feedback; its geometry is reserved in both states, so toggling
+// never shifts the text. State is not content: none of it is ever mirrored into
+// the share image (ADR-0007). The snap is positional — it holds only because the
+// caller keys this subtree per ayah; a control outside that key, like
+// MarkReadPill, needs its own explicit snap().
 @Composable
-private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Float) {
+private fun AyahPage(
+    label: String,
+    arabicText: String,
+    arabicFont: ArabicFont,
+    arabicFontSize: Int,
+    translitText: String?,
+    translitFontSize: Int,
+    isSaved: Boolean,
+    minHeight: Dp,
+    offsetPx: () -> Float,
+    // The column's own scope, because that is where the body is placed: the
+    // current page's switcher needs it (AnimatedVisibility is a ColumnScope
+    // extension), and a peek's plain text simply ignores it.
+    translation: (@Composable ColumnScope.() -> Unit)?,
+) {
     val colors = WaqfahTheme.colors
+    val markAlpha by animateFloatAsState(
+        if (isSaved) 1f else 0f,
+        tween(160),
+        label = "saved_mark_alpha",
+    )
+    val frameColor by animateColorAsState(
+        if (isSaved) colors.line else Color.Transparent,
+        tween(160),
+        label = "saved_mark_frame",
+    )
 
-    key(preview.ayahLabel) {
-        val markAlpha by animateFloatAsState(
-            if (preview.isSaved) 1f else 0f,
-            tween(160),
-            label = "saved_mark_alpha",
-        )
-        val frameColor by animateColorAsState(
-            if (preview.isSaved) colors.line else Color.Transparent,
-            tween(160),
-            label = "saved_mark_frame",
-        )
-
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = minHeight)
-                // Lambda keeps this a layout-phase read — no recomposition per frame.
-                .offset { IntOffset(offsetPx().roundToInt(), 0) }
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(Modifier.fillMaxWidth()) {
-                Column(
+    // heightIn(min = viewport height) lets Arrangement.Center center short
+    // content while long content still lays out top-to-bottom and scrolls.
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = minHeight)
+            // Layout-phase read: dragging updates position/redraw only,
+            // no recomposition per frame.
+            .offset { IntOffset(offsetPx().roundToInt(), 0) }
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 14.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(Modifier.fillMaxWidth()) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, frameColor, RoundedCornerShape(14.dp))
+                    .padding(top = 20.dp, bottom = 16.dp, start = 12.dp, end = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Spacer(Modifier.height(14.dp))
+                NumDivider(label)
+                Spacer(Modifier.height(24.dp))
+                AyahArabicText(arabicText, arabicFont, arabicFontSize)
+                PenUnderline(
+                    colors.accent,
                     Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, frameColor, RoundedCornerShape(14.dp))
-                        .padding(top = 20.dp, bottom = 16.dp, start = 12.dp, end = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Spacer(Modifier.height(14.dp))
-                    NumDivider(preview.ayahLabel)
-                    Spacer(Modifier.height(24.dp))
-                    AyahArabicText(preview.arabicText, preview.arabicFont, preview.arabicFontSize)
-                    PenUnderline(
-                        colors.accent,
-                        Modifier
-                            .fillMaxWidth(0.72f)
-                            .padding(top = 5.dp)
-                            .height(8.dp)
-                            .graphicsLayer(alpha = markAlpha),
-                    )
-                    preview.translitText?.let {
-                        Spacer(Modifier.height(12.dp))
-                        AyahTranslitText(it, preview.translitFontSize)
-                    }
-                    preview.translationText?.let { translationText ->
-                        Spacer(Modifier.height(20.dp))
-                        HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
-                        Spacer(Modifier.height(24.dp))
-                        AyahTranslationText(translationText, preview.translationFontSize)
-                    }
-                    Spacer(Modifier.height(14.dp))
-                }
-                Box(
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = (-8).dp)
-                        .background(colors.background)
-                        .padding(horizontal = 9.dp)
+                        .fillMaxWidth(0.72f)
+                        .padding(top = 5.dp)
+                        .height(8.dp)
                         .graphicsLayer(alpha = markAlpha),
-                ) {
-                    StarOrnament(colors.accent, 15.dp)
+                )
+                translitText?.let {
+                    Spacer(Modifier.height(12.dp))
+                    AyahTranslitText(it, translitFontSize)
                 }
+                if (translation != null) {
+                    Spacer(Modifier.height(20.dp))
+                    HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
+                    Spacer(Modifier.height(24.dp))
+                    translation()
+                }
+                Spacer(Modifier.height(14.dp))
+            }
+            // The star breaks the frame's top rule, its background interrupting
+            // the border behind it — the same move as the share image's wordmark
+            // on the bottom rule.
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-8).dp)
+                    .background(colors.background)
+                    .padding(horizontal = 9.dp)
+                    .graphicsLayer(alpha = markAlpha),
+            ) {
+                StarOrnament(colors.accent, 15.dp)
             }
         }
+    }
+}
+
+// A non-interactive ayah, positioned just off to one side and animated in
+// lockstep with the drag gesture: a peek at a neighbour, drawn by the same page
+// the neighbour becomes once it lands. Its translation is plain text — a peeked
+// ayah isn't in compare mode — which is the only thing it passes differently.
+//
+// Keyed per ayah for a reason the current page does not have: a step does not
+// rebuild this subtree, so without the key the mark's animators would tween from
+// the *previous* neighbour's state instead of snapping, and a scroll position
+// would leak into whichever ayah is peeked next.
+@Composable
+private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Float) {
+    key(preview.ayahLabel) {
+        AyahPage(
+            label = preview.ayahLabel,
+            arabicText = preview.arabicText,
+            arabicFont = preview.arabicFont,
+            arabicFontSize = preview.arabicFontSize,
+            translitText = preview.translitText,
+            translitFontSize = preview.translitFontSize,
+            isSaved = preview.isSaved,
+            minHeight = minHeight,
+            offsetPx = offsetPx,
+            translation = preview.translationText?.let { translationText ->
+                { AyahTranslationText(translationText, preview.translationFontSize) }
+            },
+        )
     }
 }
 
