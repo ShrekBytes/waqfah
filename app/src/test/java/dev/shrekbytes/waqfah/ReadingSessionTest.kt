@@ -279,26 +279,37 @@ class ReadingSessionTest {
         assertEquals(listOf(failure), capturedFailures) // still surfaced to the host
     }
 
-    // #33: with auto-next on, a successful mark-read steps the card to the
-    // next ayah — the walk's own "next", the one the chevron uses, read or
-    // unread. Off by default: the card never moves by itself.
+    // #33: with auto-next on, a successful mark-read asks the card to advance:
+    // the session owns the decision (setting on, mark direction, not
+    // completing) and raises it as pendingAutoAdvance, but does not step —
+    // the card plays the mark confirmation and then fires next() itself, so
+    // the advance is seen (tick, then the swipe slide) instead of a teleport.
+    // The follow-through is the same public next() a swipe uses.
     @Test
-    fun markRead_autoNextOn_advancesToTheNextAyah() = runTest {
+    fun markRead_autoNextOn_flagsPending_thenTheFiredStepAdvances() = runTest {
         prefs.value = UserPreferences(autoNextOnMark = true)
         val session = session()
         runCurrent()
         assertEquals("1:1", session.uiState.value.ayahLabel)
 
-        session.markCurrentRead()
+        session.markCurrentRead() // the tap: marks and raises the request
         runCurrent()
 
         assertEquals(setOf(1), readIds)
+        assertTrue(session.uiState.value.isMarkedRead)
+        assertTrue(session.uiState.value.pendingAutoAdvance)
+        assertEquals("1:1", session.uiState.value.ayahLabel) // the hold: still on the marked ayah
+
+        session.next() // the card's follow-through once its slide completes
+        runCurrent()
+
         assertEquals("1:2", session.uiState.value.ayahLabel)
         assertFalse(session.uiState.value.isMarkedRead) // 1:2's own state, not 1:1's
+        assertFalse(session.uiState.value.pendingAutoAdvance) // consumed by the step
     }
 
     @Test
-    fun markRead_autoNextOff_theDefault_staysPut() = runTest {
+    fun markRead_autoNextOff_theDefault_staysPutAndNeverFlags() = runTest {
         val session = session()
         runCurrent()
 
@@ -308,35 +319,41 @@ class ReadingSessionTest {
         assertEquals(setOf(1), readIds)
         assertEquals("1:1", session.uiState.value.ayahLabel)
         assertTrue(session.uiState.value.isMarkedRead)
+        assertFalse(session.uiState.value.pendingAutoAdvance)
     }
 
-    // Unmarking is the toggle's undo and never a step: the only action that
-    // moves the card is a mark landing (unread → read). Here the advance
-    // after marking 1:1 lands on the already-read 1:2, whose pill tap then
-    // unmarks it without going anywhere.
+    // Unmarking is the toggle's undo and never a step and never a request:
+    // here the advance after marking 1:1 lands on the already-read 1:2, whose
+    // pill tap then unmarks it without going anywhere.
     @Test
-    fun markRead_autoNextOn_unmarkingNeverAdvances() = runTest {
+    fun markRead_autoNextOn_unmarkingNeverAdvancesOrFlags() = runTest {
         prefs.value = UserPreferences(autoNextOnMark = true)
         readIds += 2
         val session = session()
         runCurrent()
         assertEquals("1:1", session.uiState.value.ayahLabel)
 
-        session.markCurrentRead() // marks 1:1 and advances onto the read 1:2
+        session.markCurrentRead() // marks 1:1 and raises the request
+        runCurrent()
+        assertTrue(session.uiState.value.pendingAutoAdvance)
+
+        session.next() // the card's follow-through lands on the read 1:2
         runCurrent()
         assertEquals("1:2", session.uiState.value.ayahLabel)
         assertTrue(session.uiState.value.isMarkedRead)
+        assertFalse(session.uiState.value.pendingAutoAdvance)
 
         session.markCurrentRead() // unmarks 1:2 — the card holds its ground
         runCurrent()
         assertEquals("1:2", session.uiState.value.ayahLabel)
         assertFalse(session.uiState.value.isMarkedRead)
+        assertFalse(session.uiState.value.pendingAutoAdvance)
         assertEquals(setOf(1), readIds)
     }
 
     // The completing mark is the issue's "all caught up" edge: the
     // Alhamdulillah popup is that moment, so the card stays on the last ayah
-    // rather than advancing underneath the popup.
+    // and no advance is requested — nothing slides underneath the popup.
     @Test
     fun markRead_autoNextOn_completingMark_showsThePopupWithoutAdvancing() = runTest {
         prefs.value = UserPreferences(autoNextOnMark = true)
@@ -350,12 +367,13 @@ class ReadingSessionTest {
 
         assertTrue(session.uiState.value.isCompleted)
         assertEquals("1:5", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.pendingAutoAdvance)
     }
 
-    // The advance rides the same successful-write event the machine's other
-    // bookkeeping does: a failed write must neither move the card nor count.
+    // The request rides the same successful-write event the machine's other
+    // bookkeeping does: a failed write must neither flag an advance nor count.
     @Test
-    fun markRead_autoNextOn_failedWrite_noAdvanceNoCount() = runTest {
+    fun markRead_autoNextOn_failedWrite_noFlagNoCount() = runTest {
         prefs.value = UserPreferences(autoNextOnMark = true)
         val session = session(
             scope = CoroutineScope(
@@ -371,9 +389,56 @@ class ReadingSessionTest {
         runCurrent()
 
         assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.pendingAutoAdvance)
         assertEquals(0, session.uiState.value.markReadCount)
         assertTrue(readIds.isEmpty())
         assertEquals(1, capturedFailures.size)
+    }
+
+    // The card checks the flag once its hold elapses: a manual step landing in
+    // between must have cleared it, or a late follow-through would double-step.
+    @Test
+    fun markRead_autoNextOn_manualStepDuringTheHold_clearsThePendingFlag() = runTest {
+        prefs.value = UserPreferences(autoNextOnMark = true)
+        val session = session()
+        runCurrent()
+
+        session.markCurrentRead()
+        runCurrent()
+        assertTrue(session.uiState.value.pendingAutoAdvance)
+
+        session.previous() // the reader grabbed the card before the hold ended
+        runCurrent()
+        assertFalse(session.uiState.value.pendingAutoAdvance)
+        assertEquals("1:5", session.uiState.value.ayahLabel) // previous wraps to the last ayah
+    }
+
+    // Every committed position change consumes the request, not just a step:
+    // a picker jump and a fresh session (Start Again, an external reset) each
+    // clear it too, so the card never fires into a position that already moved.
+    @Test
+    fun markRead_autoNextOn_jumpOrFreshSession_clearsThePendingFlag() = runTest {
+        prefs.value = UserPreferences(autoNextOnMark = true)
+        val session = session()
+        runCurrent()
+
+        session.markCurrentRead()
+        runCurrent()
+        assertTrue(session.uiState.value.pendingAutoAdvance)
+
+        session.jumpToVerse(3)
+        runCurrent()
+        assertFalse(session.uiState.value.pendingAutoAdvance)
+        assertEquals("1:3", session.uiState.value.ayahLabel)
+
+        session.markCurrentRead() // a fresh mark on the jumped-to ayah re-arms
+        runCurrent()
+        assertTrue(session.uiState.value.pendingAutoAdvance)
+
+        session.startOver()
+        runCurrent()
+        assertFalse(session.uiState.value.pendingAutoAdvance)
+        assertEquals("1:1", session.uiState.value.ayahLabel)
     }
 
     // The tour's TryIt MARK_READ step detects marks through this counter (see
@@ -969,10 +1034,10 @@ class ReadingSessionTest {
         assertTrue(bookmarks.isSaved(1))
     }
 
-    // Auto-next on the collection walk advances within the bookmarks, exactly
-    // as the mushaf walk advances within the Quran (#33) — the stepper's own
-    // "next", wrapping inside the collection. Completion is mushaf-wide only,
-    // so the walk never stops for a popup.
+    // Auto-next on the collection walk asks the card to advance within the
+    // bookmarks, exactly as the mushaf walk advances within the Quran (#33) —
+    // the stepper's own "next", wrapping inside the collection. Completion is
+    // mushaf-wide only, so the walk never stops for a popup.
     @Test
     fun bookmarksSession_autoNextOn_markAdvancesWithinTheCollection() = runTest {
         prefs.value = UserPreferences(autoNextOnMark = true)
@@ -984,8 +1049,14 @@ class ReadingSessionTest {
 
         session.markCurrentRead()
         runCurrent()
+        assertTrue(session.uiState.value.pendingAutoAdvance)
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+
+        session.next() // the card's follow-through once its slide completes
+        runCurrent()
 
         assertEquals("1:3", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.pendingAutoAdvance)
         assertFalse(session.uiState.value.isCompleted)
     }
 

@@ -96,12 +96,24 @@ import dev.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 import dev.shrekbytes.waqfah.ui.components.skeletonPulseAlpha
 import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 // Fixed absolute distance (not a fraction of screen width) so commit travel is
 // small and consistent across device sizes.
 private val COMMIT_THRESHOLD_DISTANCE = 56.dp
+
+// The commit slide — what a drag ends with and what the auto-next advance
+// plays — shares one spec, so both read as the same motion vocabulary.
+private val COMMIT_TWEEN = tween<Float>(220, easing = FastOutSlowInEasing)
+
+// How long the auto-next advance holds on the marked ayah before sliding: long
+// enough for the pill's check to actually be read, short enough not to feel
+// like lag (#33).
+private const val AUTO_NEXT_HOLD_MS = 500L
 
 // Calm, bounce-free return to center on under-threshold release / cancellation.
 private val CANCEL_SPRING = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
@@ -182,6 +194,25 @@ fun ReadingCard(
     val latestOnNext = rememberUpdatedState(onNext)
     val latestOnPrevious = rememberUpdatedState(onPrevious)
     val latestState = rememberUpdatedState(state)
+
+    // What a drag commit ends with, and what the auto-next advance plays —
+    // one definition so all three are the same motion: the current ayah
+    // slides out toward targetOffsetPx, the peeked neighbour slides in, and
+    // the awaited swap re-keys the subtree before the offset snaps home. The
+    // snap must survive cancellation: the auto-advance effect keys on the
+    // very flag its own fired step clears, so it is cancelled right between
+    // the swap and the snap every time it fires — and a stranded offset
+    // would leave the new ayah off-screen. The pointerInput block reads this
+    // through the install-once pattern's stable captures (the Animatable and
+    // the rememberUpdatedState delegates), so recomposition never strands it.
+    val slideAndSwap: suspend (Float, suspend () -> Unit) -> Unit = { targetOffsetPx, swap ->
+        try {
+            dragOffset.animateTo(targetOffsetPx, COMMIT_TWEEN)
+            swap()
+        } finally {
+            withContext(NonCancellable) { dragOffset.snapTo(0f) }
+        }
+    }
 
     // Bumped on every mark-read so MarkReadPill can play its bounce each time.
     var markReadTrigger by remember { mutableIntStateOf(0) }
@@ -337,16 +368,10 @@ fun ReadingCard(
                                     val finalDrag = dragOffset.value
                                     scope.launch {
                                         when {
-                                            finalDrag <= -commitThresholdPx && latestState.value.nextPreview != null -> {
-                                                dragOffset.animateTo(-pageWidthPx, tween(220, easing = FastOutSlowInEasing))
-                                                latestOnNext.value()
-                                                dragOffset.snapTo(0f)
-                                            }
-                                            finalDrag >= commitThresholdPx && latestState.value.previousPreview != null -> {
-                                                dragOffset.animateTo(pageWidthPx, tween(220, easing = FastOutSlowInEasing))
-                                                latestOnPrevious.value()
-                                                dragOffset.snapTo(0f)
-                                            }
+                                            finalDrag <= -commitThresholdPx && latestState.value.nextPreview != null ->
+                                                slideAndSwap(-size.width.toFloat()) { latestOnNext.value() }
+                                            finalDrag >= commitThresholdPx && latestState.value.previousPreview != null ->
+                                                slideAndSwap(pageWidthPx) { latestOnPrevious.value() }
                                             else -> dragOffset.animateTo(0f, CANCEL_SPRING)
                                         }
                                     }
@@ -368,6 +393,26 @@ fun ReadingCard(
                         },
                 ) {
                     val pageWidthPx = constraints.maxWidth.toFloat()
+
+                    // Auto-next's choreography (#33): the session raised the
+                    // request at mark time; the card gives it its timing. The
+                    // pill's mark confirmation plays against the still-shown
+                    // ayah for the hold, then the same slide a swipe commit
+                    // plays moves to the next ayah — the advance is seen, not
+                    // teleported. Keyed on the flag itself, so a request that
+                    // gets consumed mid-hold (a committed step, an unmark)
+                    // cancels the wait instead of firing late; the post-hold
+                    // check is the last-resort guard against firing into a
+                    // step that landed in the same frame. Grabbing the card
+                    // mid-slide preempts the animateTo and drops the advance
+                    // — the reader took over, and nothing renders from the
+                    // stale request, so it harmlessly waits for the next step
+                    // to clear it.
+                    LaunchedEffect(state.pendingAutoAdvance) {
+                        if (!state.pendingAutoAdvance) return@LaunchedEffect
+                        delay(AUTO_NEXT_HOLD_MS)
+                        if (latestState.value.pendingAutoAdvance) slideAndSwap(-pageWidthPx) { latestOnNext.value() }
+                    }
 
                     // Peek pages sit just off-screen and slide in alongside the
                     // current ayah as dragOffset moves. A null preview just means

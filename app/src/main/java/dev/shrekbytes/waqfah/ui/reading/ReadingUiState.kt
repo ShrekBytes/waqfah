@@ -68,6 +68,12 @@ data class ReadingUiState(
     val savedCount: Int = 0,
     // Every ayah marked read — drives the completion popup.
     val isCompleted: Boolean = false,
+    // Auto-next's handshake (#33): the session raised an advance request for
+    // the ayah on screen — the card owns the timing, playing the mark
+    // confirmation and then firing next() itself. Any committed step clears
+    // it, so a manual move supersedes the request; only auto-next-on raises
+    // it, so the choreography is invisible while the setting is off.
+    val pendingAutoAdvance: Boolean = false,
     // Active mode, echoed here so the completion popup can label its
     // switch-to-the-other-mode action.
     val readingMode: ReadingMode = ReadingMode.SEQUENTIAL,
