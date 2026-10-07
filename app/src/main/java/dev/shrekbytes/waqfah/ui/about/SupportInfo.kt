@@ -6,7 +6,8 @@ import dev.shrekbytes.waqfah.R
 // updating numbers or names never touches UI code.
 object SupportInfo {
     const val REPO_URL = "https://github.com/ShrekBytes/waqfah"
-    const val CONTACT_EMAIL = "shrekbytes@duck.com"
+    const val SUPPORT_URL = "https://shrekbytes.github.io/support/"
+    const val CONTACT_EMAIL = "waqfah@shrekbytes.dev"
 
     data class DonationAccount(
         val method: String,
@@ -24,9 +25,11 @@ object SupportInfo {
     data class Contributor(val name: String, val role: String, val url: String? = null)
 
     val contributors = listOf(
-        Contributor("ShrekBytes", "Design & development", "https://github.com/shrekbytes"),
+        Contributor("ShrekBytes (Walid)", "Design & development", "https://github.com/shrekbytes"),
         Contributor("Md. Mahbob Alam", "Testing & feedback", "https://github.com/emptymahbob"),
         Contributor("Tahmid Alam Tamim", "Testing & feedback", "https://github.com/Mr-Explorer142"),
-        Contributor("Md. Walid Ahmed", "Testing & feedback"),
+        Contributor("Nazmul Haque Jowel", "Early support", "https://github.com/KafkaScribe"),
+        Contributor("Mahbubur Rahman Soraf", "Testing & feedback", "https://github.com/lazy-sharaf"),
+        Contributor("Robiul Islam", "Testing & feedback", "https://github.com/robiul-islam-ridoy"),
     )
 }

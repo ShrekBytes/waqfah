@@ -1,5 +1,6 @@
 package dev.shrekbytes.waqfah.ui.about
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -33,14 +35,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import dev.shrekbytes.waqfah.R
+import dev.shrekbytes.waqfah.ui.components.SettingsNavRow
 import dev.shrekbytes.waqfah.ui.components.SettingsScaffold
+import dev.shrekbytes.waqfah.ui.components.launchExternal
 import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import kotlinx.coroutines.delay
 
 @Composable
 fun DonateScreen(onBack: () -> Unit) {
     val colors = WaqfahTheme.colors
+    val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     var copiedIndex by remember { mutableStateOf<Int?>(null) }
 
@@ -118,6 +124,14 @@ fun DonateScreen(onBack: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
         }
+
+        Spacer(Modifier.height(6.dp))
+        SettingsNavRow(
+            stringResource(R.string.donate_other_way),
+            SupportInfo.SUPPORT_URL.removePrefix("https://").removeSuffix("/"),
+            external = true,
+            onClick = { context.launchExternal(Intent(Intent.ACTION_VIEW, SupportInfo.SUPPORT_URL.toUri())) },
+        )
 
         Text(
             stringResource(R.string.donate_dua),

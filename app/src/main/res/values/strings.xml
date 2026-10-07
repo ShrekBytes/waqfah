@@ -199,6 +199,7 @@
     <string name="donate_intro1">Waqfah was built so that opening an app can begin with a moment of Quran.</string>
     <string name="donate_intro2">It stays free — no ads, nothing locked. If it benefited you, consider helping keep it that way.</string>
     <string name="donate_dua">May your generosity be returned in ways you don\'t expect.</string>
+    <string name="donate_other_way">Other ways to donate</string>
 
     <!-- Gratitude -->
     <string name="gratitude_intro">Waqfah is made by people, for people. JazakumAllahu khairan to everyone who gave their time to test, critique, and carry it along.</string>
