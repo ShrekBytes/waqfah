@@ -1,6 +1,7 @@
 package dev.shrekbytes.waqfah.ui.about
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
@@ -20,6 +22,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,23 +59,52 @@ fun FaqScreen(onStartTour: () -> Unit, onBack: () -> Unit) {
             lineHeight = 21.sp,
         )
         Spacer(Modifier.height(12.dp))
-        // The tour's relauncher: a pill above the list, not a row in it — the
-        // list is questions, and this is an action. The tour's closing copy
-        // already points readers here.
+        // The tour's relauncher: a card above the list, not a row in it — the
+        // list is questions, and this is an action, so it says who it is for
+        // and what it does. Same soft-accent card as the tour's own
+        // instruction cards; the whole card is the tap target. The tour's
+        // closing copy already points readers here.
         Surface(
             onClick = onStartTour,
-            shape = RoundedCornerShape(50),
+            shape = RoundedCornerShape(16.dp),
             color = colors.accentSoft,
-            contentColor = colors.accent,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(
-                stringResource(R.string.tour_start_button),
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                fontSize = 12.5.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Row(
+                Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Decorative: the title and description carry the meaning.
+                Image(
+                    painter = painterResource(R.drawable.ic_logo_mark),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(colors.accent),
+                    modifier = Modifier.size(34.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.faq_tour_title),
+                        color = colors.ink,
+                        fontSize = 14.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        stringResource(R.string.faq_tour_desc),
+                        color = colors.ink.copy(alpha = 0.72f),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                    )
+                }
+                ChevronIcon(
+                    direction = ChevronDirection.RIGHT,
+                    tint = colors.accent,
+                    modifier = Modifier.padding(start = 10.dp).size(14.dp),
+                )
+            }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
         items.forEachIndexed { index, item ->
             ExpandableRow(item)
             if (index < items.lastIndex) HorizontalDivider(color = colors.line)

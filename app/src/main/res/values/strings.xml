@@ -231,6 +231,8 @@
     <!-- FAQ -->
     <string name="faq_title">FAQ &amp; troubleshooting</string>
     <string name="faq_intro">Fixes for the things that most often go wrong, and answers to fair questions.</string>
+    <string name="faq_tour_title">New here? Take the tour</string>
+    <string name="faq_tour_desc">A short walkthrough of how Waqfah works, with practice on a real ayah.</string>
     <string name="faq_still_stuck">Still stuck? Reach us at %1$s</string>
     <string name="faq_q1">The reading screen doesn\'t appear when I open an app</string>
     <string name="faq_a1">Check four things:\n\n1. Usage access and Display over other apps are granted (Settings &gt; App permissions).\n2. Waqfah is active (the toggle on Settings).\n3. The app you opened is in your monitored list (Settings &gt; Manage monitored apps).\n4. That app isn\'t in its cooldown window yet.</string>
@@ -261,7 +263,6 @@
     <string name="cd_goto_header">Surahs &amp; ayahs</string>
 
     <!-- Feature tour -->
-    <string name="tour_start_button">Start tour</string>
     <string name="tour_skip">Skip</string>
     <string name="tour_next">Next</string>
     <string name="tour_finish">Finish</string>

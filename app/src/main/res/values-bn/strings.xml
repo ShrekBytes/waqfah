@@ -231,6 +231,8 @@
     <!-- FAQ -->
     <string name="faq_title">প্রশ্নোত্তর ও সমাধান</string>
     <string name="faq_intro">সচরাচর যেসব সমস্যার সম্মুখীন হতে পারেন সেগুলোর সমাধান এবং প্রয়োজনীয় কিছু প্রশ্নের উত্তর।</string>
+    <string name="faq_tour_title">নতুন? ট্যুরটি দেখে নিন</string>
+    <string name="faq_tour_desc">Waqfah কীভাবে কাজ করে তার একটি ছোট পরিচিতি, সাথে একটি আসল আয়াতে অনুশীলন।</string>
     <string name="faq_still_stuck">এখনও সমাধান পাননি? আমাদের সাথে যোগাযোগ করুন: %1$s</string>
     <string name="faq_q1">অ্যাপ খোলার পর তিলাওয়াত স্ক্রিনটি আসছে না</string>
     <string name="faq_a1">নিচের ৪টি বিষয় নিশ্চিত করুন:\n\n১. Usage Access এবং Display over other apps-এর অনুমতি চালু আছে কি না (সেটিংস &gt; অ্যাপের অনুমতিসমূহ)।\n২. Waqfah চালু আছে কি না (সেটিংসের টগল সুইচ দেখুন)।\n৩. যে অ্যাপটি খুলেছেন তা নির্বাচিত অ্যাপের তালিকায় অন্তর্ভুক্ত আছে কি না (সেটিংস &gt; নির্বাচিত অ্যাপসমূহ পরিচালনা)।\n৪. অ্যাপটির কুলডাউন (Cooldown) বিরতির সময় পার হয়েছে কি না (বিরতি চলাকালীন পুনরায় তিলাওয়াত স্ক্রিন আসে না)।</string>
@@ -261,7 +263,6 @@
     <string name="cd_goto_header">সূরা ও আয়াত</string>
 
     <!-- Feature tour -->
-    <string name="tour_start_button">ট্যুর শুরু করুন</string>
     <string name="tour_skip">এড়িয়ে যান</string>
     <string name="tour_next">পরবর্তী</string>
     <string name="tour_finish">শেষ করুন</string>
