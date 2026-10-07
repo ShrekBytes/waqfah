@@ -74,7 +74,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -194,6 +196,11 @@ fun ReadingCard(
     val latestOnNext = rememberUpdatedState(onNext)
     val latestOnPrevious = rememberUpdatedState(onPrevious)
     val latestState = rememberUpdatedState(state)
+    // The long-press gestures dispatch through these (see the tap detector
+    // below); null means the host has no such control and the gesture no-ops.
+    val latestOnShare = rememberUpdatedState(onShare)
+    val latestOnToggleBookmark = rememberUpdatedState(onToggleBookmark)
+    val haptics = LocalHapticFeedback.current
 
     // What a drag commit ends with, and what the auto-next advance plays —
     // one definition so all three are the same motion: the current ayah
@@ -389,7 +396,38 @@ fun ReadingCard(
                             }
                         }
                         .pointerInput(Unit) {
-                            detectTapGestures(onDoubleTap = { latestHandleMarkRead.value() })
+                            // Long-press gestures alongside the double-tap: hold
+                            // the pager's left half to share the ayah, the right
+                            // half to toggle its bookmark — the same surface the
+                            // double-tap and swipe own. The press's own half
+                            // decides, halved on this box's own width; pointer
+                            // coordinates don't flip with the surah name's
+                            // direction, so the halves stay physical. Both
+                            // actions stay one-handed and reach nothing the
+                            // reader has to aim at. The tick
+                            // comes before the action because the hold needs
+                            // its confirmation: a long-press fires while the
+                            // finger is still down, and the bookmark gesture in
+                            // particular may have no visible result at all when
+                            // its control is hidden (Advanced settings). A null
+                            // callback (the tour's practice card) no-ops without
+                            // ticking — the gesture doesn't exist on that host.
+                            detectTapGestures(
+                                onDoubleTap = { latestHandleMarkRead.value() },
+                                onLongPress = { offset ->
+                                    val halfWidth = size.width / 2f
+                                    when {
+                                        offset.x < halfWidth && latestOnShare.value != null -> {
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            latestOnShare.value?.invoke()
+                                        }
+                                        offset.x >= halfWidth && latestOnToggleBookmark.value != null -> {
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            latestOnToggleBookmark.value?.invoke()
+                                        }
+                                    }
+                                },
+                            )
                         },
                 ) {
                     val pageWidthPx = constraints.maxWidth.toFloat()
