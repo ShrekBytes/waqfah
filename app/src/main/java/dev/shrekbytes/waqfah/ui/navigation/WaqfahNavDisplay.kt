@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import dev.shrekbytes.waqfah.ui.components.WaqfahTab
 import dev.shrekbytes.waqfah.ui.about.AboutScreen
 import dev.shrekbytes.waqfah.ui.about.DonateScreen
