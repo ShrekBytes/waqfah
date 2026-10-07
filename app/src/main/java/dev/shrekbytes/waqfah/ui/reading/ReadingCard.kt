@@ -113,7 +113,7 @@ private val COMMIT_TWEEN = tween<Float>(220, easing = FastOutSlowInEasing)
 // How long the auto-next advance holds on the marked ayah before sliding: long
 // enough for the pill's check to actually be read, short enough not to feel
 // like lag (#33).
-private const val AUTO_NEXT_HOLD_MS = 500L
+private const val AUTO_NEXT_HOLD_MS = 400L
 
 // Calm, bounce-free return to center on under-threshold release / cancellation.
 private val CANCEL_SPRING = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
