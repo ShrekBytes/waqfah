@@ -1,0 +1,6 @@
+Sharing. Send the ayah you are reading as an image.
+
+* Share the ayah you are reading as an image, from any reading screen
+* Advanced: advance after marking an ayah read, and hide the card's controls
+* Fixes: shared long ayahs are no longer cut off, and the bookmarks card no
+  longer shows an un-saved ayah
