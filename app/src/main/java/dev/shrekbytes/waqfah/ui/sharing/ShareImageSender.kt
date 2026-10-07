@@ -122,7 +122,11 @@ private fun stagedShareFile(context: Context): File {
 // once into a bitmap. Software layer type so the manual draw is deterministic;
 // the view sits far off-screen and lives for a frame or two, invisible either
 // way.
-private suspend fun renderShareImage(
+//
+// internal rather than private so ShareImageHeightInstrumentedTest can drive
+// the real path: the height this returns is the whole of the bug, and nothing
+// shorter than the real thing would have caught the clamp.
+internal suspend fun renderShareImage(
     activity: Activity?,
     state: ReadingUiState,
     colors: WaqfahColors,
@@ -134,7 +138,6 @@ private suspend fun renderShareImage(
     val content = activity.findViewById<ViewGroup>(android.R.id.content)
     val view = ComposeView(activity).apply {
         setLayerType(View.LAYER_TYPE_SOFTWARE, null)
-        translationX = -widthPx * 2f
         // The page's own palette and render density — not the window's: the
         // image is a function of the reader's theme and font scale, composed
         // at the image's fixed scale. MaterialTheme's typography is provided
@@ -150,8 +153,16 @@ private suspend fun renderShareImage(
             }
         }
     }
+    // The host exists for the measure pass and nothing else, and it is what
+    // keeps a long ayah's height out of the window's reach (see
+    // UnboundedHeightHost). It carries the off-screen offset because it is the
+    // view actually attached to the content view.
+    val host = UnboundedHeightHost(activity).apply {
+        translationX = -widthPx * 2f
+        addView(view, FrameLayout.LayoutParams(widthPx, ViewGroup.LayoutParams.WRAP_CONTENT))
+    }
     content.addView(
-        view,
+        host,
         FrameLayout.LayoutParams(widthPx, ViewGroup.LayoutParams.WRAP_CONTENT),
     )
     try {
@@ -166,6 +177,46 @@ private suspend fun renderShareImage(
         view.draw(Canvas(bitmap))
         return bitmap
     } finally {
-        content.removeView(view)
+        content.removeView(host)
+    }
+}
+
+// The measure pass the whole share depends on: it hands its single child an
+// unbounded height and reports whatever the child asks for, ignoring the height
+// the parent offers it.
+//
+// This has to live at the View layer, and it is worth knowing why, because the
+// obvious Compose-level answer does not work. The content view measures this
+// host with WRAP_CONTENT, which ViewGroup.getChildMeasureSpec turns into
+// AT_MOST(the window) — "Child wants to determine its own size. It can't be
+// bigger than us." No Compose modifier can report a height past that:
+// wrapContentHeight(unbounded = true) relaxes the constraints it hands *down*,
+// but its own result is still coerced into the incoming range (its measure ends
+// in a coerceIn(minHeight, maxHeight)), so a long ayah stayed clamped to the
+// screen and its translation was never drawn into the bitmap.
+//
+// UNSPECIFIED is the one mode AndroidComposeView maps to an unbounded maximum,
+// so measuring the child that way is what lets the page report its true height.
+// The child's measured height is then this host's, the bitmap is created at it,
+// and the whole ayah fits — ADR-0007's "There is no height cap … cropping an
+// ayah is never an option".
+private class UnboundedHeightHost(context: Context) : FrameLayout(context) {
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val child = getChildAt(0)
+        if (child == null) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+            return
+        }
+        // Width is still fixed and exact — the image's 1080px. Only the height
+        // is let off the leash.
+        child.measure(
+            View.MeasureSpec.makeMeasureSpec(
+                View.MeasureSpec.getSize(widthMeasureSpec),
+                View.MeasureSpec.EXACTLY,
+            ),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+        )
+        setMeasuredDimension(child.measuredWidth, child.measuredHeight)
     }
 }
