@@ -488,7 +488,11 @@ fun ReadingCard(
                         // is the bookmark long-press's feedback; its geometry
                         // is reserved in both states, so toggling never shifts
                         // the text. State is not content: none of it is ever
-                        // mirrored into the share image (ADR-0007).
+                        // mirrored into the share image (ADR-0007). The snap
+                        // is positional — it holds only because these
+                        // animators live inside the keyed subtree; a control
+                        // outside it, like MarkReadPill, needs its own
+                        // explicit snap().
                         val markAlpha by animateFloatAsState(
                             if (state.isSaved) 1f else 0f,
                             tween(160),

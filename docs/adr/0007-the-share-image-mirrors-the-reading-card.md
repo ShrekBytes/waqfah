@@ -107,5 +107,6 @@ ADR. The prose here decides; the mockup shows.
 - The frame's margin is uniform on all four sides, and nothing is ever allowed
   to widen one of them. Anything needing room finds it inside the frame or on a
   rule.
-- This is the first place in the app that fades ink with alpha. The exception is
-  scoped to the wordmark and is not licence to reach for alpha elsewhere.
+- This is the first place in the app that fades ink with alpha. The exception
+  covers the wordmark and the saved-mark's pen echo — both ornament, neither
+  of them functional ink — and is not licence to reach for alpha elsewhere.
