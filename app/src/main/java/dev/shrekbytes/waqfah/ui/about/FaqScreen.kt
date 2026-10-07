@@ -66,8 +66,8 @@ fun FaqScreen(onStartTour: () -> Unit, onBack: () -> Unit) {
         ) {
             Text(
                 stringResource(R.string.tour_start_button),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
-                fontSize = 13.sp,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                fontSize = 12.5.sp,
                 fontWeight = FontWeight.SemiBold,
             )
         }

@@ -167,8 +167,11 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                     onStartTour = {
                         // FAQ is only pushed from Main's Settings tab, so popping
                         // lands back on Main, which turns to Home for the open tour.
-                        tourViewModel.session.onOpenedManually()
-                        backStack.removeLastOrNull()
+                        // The guard stops a second tap mid-pop removing Main too.
+                        if (backStack.lastOrNull() == Faq) {
+                            tourViewModel.session.onOpenedManually()
+                            backStack.removeLastOrNull()
+                        }
                     },
                     onBack = { backStack.removeLastOrNull() },
                 )

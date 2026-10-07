@@ -77,9 +77,8 @@ fun MainScreen(
     // The tour machine is the FeatureTourViewModel's session: it owns the
     // gate's flags (manual open, this-session dismissal) alongside the steps,
     // so the whole tour survives the navigation pushes that dispose this
-    // screen mid-tour. Hoisted by WaqfahNavDisplay, because the tour's
-    // relauncher lives on the pushed FAQ screen and must reach this exact
-    // session — the one the overlay below reads.
+    // screen mid-tour. Hoisted by WaqfahNavDisplay so FAQ's relauncher
+    // reaches this same session.
     tourViewModel: FeatureTourViewModel = hiltViewModel(),
 ) {
     val tourSession = tourViewModel.session
