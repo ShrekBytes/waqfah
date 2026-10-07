@@ -35,7 +35,6 @@ data class SettingsUiState(
     val totalCount: Int = 0,
     val progressPercent: Int = 0,
     val monitoredAppCount: Int = 0,
-    val autoNextOnMark: Boolean = false,
 )
 
 @HiltViewModel
@@ -65,7 +64,6 @@ class SettingsViewModel @Inject constructor(
             totalCount = total,
             progressPercent = if (total > 0) (readCount * 100 / total) else 0,
             monitoredAppCount = monitored.size,
-            autoNextOnMark = prefs.autoNextOnMark,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
@@ -91,7 +89,6 @@ class SettingsViewModel @Inject constructor(
 
     fun setTheme(theme: AppTheme) = viewModelScope.launch { settingsRepository.setTheme(theme) }
     fun setAccentColor(color: AccentColor) = viewModelScope.launch { settingsRepository.setAccentColor(color) }
-    fun setAutoNextOnMark(enabled: Boolean) = viewModelScope.launch { settingsRepository.setAutoNextOnMark(enabled) }
 
     // Persists the UI mirror, then hands the choice to AppCompatDelegate, which
     // applies it to every activity, persists it itself (autoStoreLocales), and
