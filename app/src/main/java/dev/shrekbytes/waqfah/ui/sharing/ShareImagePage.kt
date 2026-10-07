@@ -46,8 +46,8 @@ private const val WORDMARK = "WAQFAH"
 // 1dp frame inset uniformly on all four sides, an accent star on the divider
 // above the translation, and the wordmark centred on the bottom rule with the
 // rule interrupted behind it. The spacing around the content is the page's own,
-// as the frame's inset is: the card compresses its rhythm to pay for the
-// saved-mark's frame, and the image has no such constraint. The surah's ayah
+// as the frame's inset is: the card states its own and it is the tighter of the
+// two, and the image has no such constraint. The surah's ayah
 // count and every interactive control are left out by not being here.
 //
 // The page's metrics come from ShareImageGeometry so the arithmetic is pinned

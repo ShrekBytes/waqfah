@@ -140,6 +140,31 @@ private val CANCEL_SPRING = spring<Float>(dampingRatio = Spring.DampingRatioNoBo
 // off the centre line, which is the one thing this row must not do.
 private val ACTION_TOGGLE_SIZE = 44.dp
 
+// The header pill's own budget (see the header block in ReadingCard). The pill
+// is as wide as the surah block plus one side padding on each side, and its two
+// side cues ride inside that padding — the collection mark on the left, the
+// chevron on the right. The padding is the gap from a cue to the block, so it
+// sets how much room the text has on both sides at once; each cue's own inset is
+// what sets how close that cue sits to the pill's edge. Moving one cue without
+// the other means moving its inset, not the padding.
+//
+// The mark's gap is the narrower of the two, and its inset is the deeper to get
+// there, because its glyph is narrow: the ribbon's path fills only x 5..13 of its
+// 18-unit box, so a 22dp box draws a ~9.8dp ribbon with ~6dp of dead space on
+// each side. Measured to the ink, the mark sits ~20dp from the block against the
+// chip's 22dp; measured box to box those are 14dp and 22dp. Reading the box
+// numbers alone would leave the mark looking further off than the chip, which is
+// the imbalance the shallower inset cancels.
+//
+// The padding stays symmetric, which is what keeps the surah block on the card's
+// centre axis — the same axis as the ayah divider and the Mark Read pill.
+private val HEADER_SIDE_PADDING = 62.dp
+private val HEADER_CHEVRON_INSET = 16.dp
+private val HEADER_MARK_INSET = 26.dp
+private val HEADER_MARK_SIZE = 22.dp
+private val HEADER_CHEVRON_CHIP_SIZE = 24.dp
+private val HEADER_CHEVRON_GLYPH_SIZE = 16.dp
+
 // One handler for every gesture-launched coroutine in the card: the swipe and
 // arrow handlers await the session's suspend verbs, whose Room probes can fail
 // on a troubled disk — log and keep the last good card, never crash.
@@ -336,50 +361,62 @@ fun ReadingCard(
                             },
                     ) {
                         Column(
-                            Modifier.padding(horizontal = 64.dp, vertical = 3.dp),
+                            Modifier.padding(horizontal = HEADER_SIDE_PADDING, vertical = 3.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
-                                if (onGoToAyah != null) {
-                                    Spacer(Modifier.width(4.dp))
-                                    ChevronIcon(
-                                        direction = ChevronDirection.RIGHT,
-                                        tint = colors.inkMuted,
-                                        modifier = Modifier
-                                            .size(13.dp)
-                                            .rotate(90f),
-                                    )
-                                }
-                            }
-                            Spacer(Modifier.height(3.dp))
+                            Text(state.surahName, color = colors.ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
+                            Spacer(Modifier.height(2.5.dp))
                             Text(secondaryLabel, color = colors.inkMuted, fontSize = 12.sp)
                         }
-                        // Pinned into the pill's own side padding rather than
-                        // laid out beside the text: the text column has to stay
-                        // on the pill's centre line — the same axis as the ayah
-                        // divider and the Mark Read pill — and a tile sharing its
-                        // row would push it off. The 64dp of padding is already
-                        // reserved, so the tile costs the pill no width.
+                        // The block holds the card's centre axis because its
+                        // padding is symmetric, and both cues ride inside that
+                        // padding rather than in the block's own row — a cue
+                        // sharing the row would push the block off the axis.
                         //
-                        // Physically left rather than start: the header flips
-                        // LocalLayoutDirection for an Arabic surah name, and the
-                        // tile is the one cue that stays put whichever way the
-                        // name reads.
+                        // Both are pinned physically (left and right) rather than
+                        // to start and end: the header flips LocalLayoutDirection
+                        // for an Arabic surah name, and these are the two things
+                        // that stay put whichever way the name reads.
+                        //
+                        // Only the chevron wears the accentSoft chip: it is the
+                        // one that is tapped, so it carries the affordance, while
+                        // the collection mark stays a bare glyph. The chip's 24dp
+                        // of colour makes the chevron read bigger than a bare
+                        // glyph of the same box, so the mark is drawn larger to
+                        // compensate and the two read as one size — the ribbon's
+                        // path only fills 8x12 of its 18-unit box, so a 22dp box
+                        // is what lands it level with the 24dp chip.
+                        //
+                        // The mark takes the surah name's own ink rather than the
+                        // accent: it is a statement about the ayah, not an
+                        // affordance, so it belongs with the text. The accent is
+                        // left to the one thing in the pill that is tapped.
                         if (showCollectionMark) {
+                            BookmarkRibbonIcon(
+                                filled = true,
+                                tint = colors.ink,
+                                modifier = Modifier
+                                    .align(AbsoluteAlignment.CenterLeft)
+                                    .offset(x = HEADER_MARK_INSET)
+                                    .size(HEADER_MARK_SIZE),
+                            )
+                        }
+                        if (onGoToAyah != null) {
                             Box(
                                 Modifier
-                                    .align(AbsoluteAlignment.CenterLeft)
-                                    .offset(x = 16.dp)
-                                    .size(24.dp)
+                                    .align(AbsoluteAlignment.CenterRight)
+                                    .offset(x = -HEADER_CHEVRON_INSET)
+                                    .size(HEADER_CHEVRON_CHIP_SIZE)
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(colors.accentSoft),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                BookmarkRibbonIcon(
-                                    filled = true,
+                                ChevronIcon(
+                                    direction = ChevronDirection.RIGHT,
                                     tint = colors.accent,
-                                    modifier = Modifier.size(12.dp),
+                                    modifier = Modifier
+                                        .size(HEADER_CHEVRON_GLYPH_SIZE)
+                                        .rotate(90f),
                                 )
                             }
                         }
@@ -740,16 +777,15 @@ fun ReadingCard(
 // (offsetPx) and what its translation is (the slot — the current page hands over
 // its interactive compare switcher, a peek plain text).
 //
-// The saved-mark (see CONTEXT.md): while the ayah is bookmarked, the content
-// block borrows the share image's page language — a hairline frame, the accent
-// star breaking its top rule, a pen stroke under the Arabic — so the ayah reads
-// as kept. The mark is the bookmark state's indicator even where the bookmark
-// toggle is hidden (Advanced settings), and its change is the bookmark
-// long-press's feedback; its geometry is reserved in both states, so toggling
-// never shifts the text. State is not content: none of it is ever mirrored into
-// the share image (ADR-0007). The snap is positional — it holds only because the
-// caller keys this subtree per ayah; a control outside that key, like
-// MarkReadPill, needs its own explicit snap().
+// The saved-mark (see CONTEXT.md): while the ayah is bookmarked, the accent star
+// sits just above the ayah reference and a pen stroke underlines the Arabic, so
+// the ayah reads as kept. The mark is the bookmark state's indicator even where
+// the bookmark toggle is hidden (Advanced settings), and its change is the
+// bookmark long-press's feedback; its geometry is reserved in both states, so
+// toggling never shifts the text. State is not content: none of it is ever
+// mirrored into the share image (ADR-0007). The snap is positional — it holds
+// only because the caller keys this subtree per ayah; a control outside that
+// key, like MarkReadPill, needs its own explicit snap().
 @Composable
 private fun AyahPage(
     label: String,
@@ -772,11 +808,6 @@ private fun AyahPage(
         tween(160),
         label = "saved_mark_alpha",
     )
-    val frameColor by animateColorAsState(
-        if (isSaved) colors.line else Color.Transparent,
-        tween(160),
-        label = "saved_mark_frame",
-    )
 
     // heightIn(min = viewport height) lets Arrangement.Center center short
     // content while long content still lays out top-to-bottom and scrolls.
@@ -792,51 +823,43 @@ private fun AyahPage(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(Modifier.fillMaxWidth()) {
-            Column(
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp, bottom = 16.dp, start = 12.dp, end = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // The star crowns the ayah reference, sitting just above it so the
+            // two read as one mark. Its space is always reserved — only its
+            // alpha changes — so toggling the bookmark never shifts the text.
+            StarOrnament(
+                colors.accent,
+                15.dp,
+                Modifier.graphicsLayer(alpha = markAlpha),
+            )
+            Spacer(Modifier.height(6.dp))
+            NumDivider(label)
+            Spacer(Modifier.height(24.dp))
+            AyahArabicText(arabicText, arabicFont, arabicFontSize)
+            PenUnderline(
+                colors.accent,
                 Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, frameColor, RoundedCornerShape(14.dp))
-                    .padding(top = 20.dp, bottom = 16.dp, start = 12.dp, end = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Spacer(Modifier.height(14.dp))
-                NumDivider(label)
-                Spacer(Modifier.height(24.dp))
-                AyahArabicText(arabicText, arabicFont, arabicFontSize)
-                PenUnderline(
-                    colors.accent,
-                    Modifier
-                        .fillMaxWidth(0.72f)
-                        .padding(top = 5.dp)
-                        .height(8.dp)
-                        .graphicsLayer(alpha = markAlpha),
-                )
-                translitText?.let {
-                    Spacer(Modifier.height(12.dp))
-                    AyahTranslitText(it, translitFontSize)
-                }
-                if (translation != null) {
-                    Spacer(Modifier.height(20.dp))
-                    HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
-                    Spacer(Modifier.height(24.dp))
-                    translation()
-                }
-                Spacer(Modifier.height(14.dp))
-            }
-            // The star breaks the frame's top rule, its background interrupting
-            // the border behind it — the same move as the share image's wordmark
-            // on the bottom rule.
-            Box(
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-8).dp)
-                    .background(colors.background)
-                    .padding(horizontal = 9.dp)
+                    .fillMaxWidth(0.72f)
+                    .padding(top = 5.dp)
+                    .height(8.dp)
                     .graphicsLayer(alpha = markAlpha),
-            ) {
-                StarOrnament(colors.accent, 15.dp)
+            )
+            translitText?.let {
+                Spacer(Modifier.height(12.dp))
+                AyahTranslitText(it, translitFontSize)
             }
+            if (translation != null) {
+                Spacer(Modifier.height(20.dp))
+                HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
+                Spacer(Modifier.height(24.dp))
+                translation()
+            }
+            Spacer(Modifier.height(14.dp))
         }
     }
 }
@@ -1089,8 +1112,8 @@ private fun BookmarkToggle(saved: Boolean, verseKey: Any?, onClick: () -> Unit) 
 // and the card's saved-mark render the exact same star — one path, no drift
 // between the page and the card.
 @Composable
-internal fun StarOrnament(accent: Color, starSize: Dp) {
-    Canvas(Modifier.size(starSize)) {
+internal fun StarOrnament(accent: Color, starSize: Dp, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(starSize)) {
         val s = size.width / 24f
         val star = Path().apply {
             moveTo(12f * s, 1.6f * s)

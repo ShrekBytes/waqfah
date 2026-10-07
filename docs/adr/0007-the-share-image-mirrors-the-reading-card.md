@@ -45,21 +45,20 @@ same content, drawn once, for a purpose outside the app.
 The mirror governs the content and the palette. It does not govern the page the
 content sits on. The image is a designed page rather than a crop of the card: a
 1dp `line` frame inset uniformly on all four sides, an accent four-point star on
-the divider above the aids, and the wordmark. Two of the three — the frame and
-the star — later gained a counterpart on the reading card: the saved-mark
-borrows the page's language for a bookmarked ayah, drawn there only while the
-shown ayah is in the collection. None of them changes a word of what is
-mirrored, the mirror still runs one way — the image never carries the card's
-state — and the wordmark remains the one thing that exists on the image alone.
+the divider above the aids, and the wordmark. The star later gained a counterpart
+on the reading card: the saved-mark draws it just above a bookmarked ayah's
+reference, there only while the shown ayah is in the collection, alongside the
+card's own pen stroke under the Arabic. The frame was borrowed onto the card too
+and has since been dropped — with no page to hold together, a box around a single
+ayah read as chrome rather than as a kept page. None of them changes a word of
+what is mirrored, the mirror still runs one way — the image never carries the
+card's state — and the wordmark remains the one thing that exists on the image
+alone.
 
 The spacing around the content belongs to that page rather than to what is
 mirrored, and so does the content's inset: the image states its own, the card
-states its own, and what the two share is the 12dp of bare page between the
-frame and the content — not the measurements themselves. The card's rhythm is
-the tighter of the two, because the saved-mark's frame costs it roughly 40dp of
-height and the tightening buys back part of it, while the image's height follows
-its content and so has nothing to pay. What the two keep in common is the order
-of what is drawn, the size of the text, and the palette.
+states its own, and the card's is the tighter of the two. What the two keep in
+common is the order of what is drawn, the size of the text, and the palette.
 
 Two of them earn their place by doing a job rather than by decorating. The frame
 gives the image an edge of its own, so it does not depend on a chat bubble to

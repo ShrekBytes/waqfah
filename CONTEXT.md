@@ -161,9 +161,9 @@ thing that changes the collection.
 _Avoid_: favourite action, star
 
 **Saved mark**:
-The reading card's decoration of a bookmarked ayah — the share image's page
-language (a hairline frame, the accent star breaking its top rule, the pen
-stroke under the Arabic) drawn while the shown ayah is in the collection. It
+The reading card's decoration of a bookmarked ayah — the accent star just above
+the ayah reference and the pen stroke under the Arabic, borrowed from the share
+image's page language — drawn while the shown ayah is in the collection. It
 is the bookmark state's indicator even where the bookmark toggle is hidden,
 and its change is the bookmark long-press's feedback. State is not content:
 it is never mirrored into the share image.

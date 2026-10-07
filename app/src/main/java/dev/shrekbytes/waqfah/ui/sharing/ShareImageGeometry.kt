@@ -10,9 +10,9 @@ import androidx.compose.ui.unit.sp
 // own furniture — frame, content padding, ornament, wordmark, scale — lives
 // here so ShareImageGeometryTest can pin it as invariants instead of it being
 // eyeballed against the mockup. The content column's vertical rhythm is the
-// image's own too (it is stated in ShareImagePage.kt): the card compresses its
-// own to pay for the saved-mark's frame, and the image has no such constraint
-// to pay. What the image does mirror is the content — the shared text
+// image's own too (it is stated in ShareImagePage.kt): the card states its own
+// and it is the tighter of the two, and the image has no such constraint to
+// pay. What the image does mirror is the content — the shared text
 // components carry the card's own sizes, and the palette and the reader's aids
 // are the reader's. All values are stated in the card's own units (dp/sp) — the
 // page composes at renderDensity, where the card's nominal width turns into the
@@ -44,10 +44,9 @@ object ShareImageGeometry {
     val contentPaddingBottom: Dp = 47.dp
 
     // The content column's side padding — the image's own page furniture, like
-    // the padding above and below. What the card and the image share is the
-    // 12dp of bare page between the frame and the content (28dp less the 16dp
-    // frameInsetStart here; the card's own 12dp inside its frame at 14dp), not
-    // this absolute inset. The card states its own padding in AyahPage.
+    // the padding above and below. The card states its own padding in AyahPage
+    // and shares nothing of this inset; what the two keep in common is the
+    // content and the palette, not the measurements.
     val contentPaddingHorizontal: Dp = 28.dp
 
     // The wordmark's line box (ADR-0007): a single line, centred on the bottom
