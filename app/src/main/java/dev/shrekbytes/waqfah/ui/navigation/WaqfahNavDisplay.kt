@@ -71,6 +71,10 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
         if (backStack.lastOrNull() != destination) backStack.add(destination)
     }
 
+    // The tour's translation deep link, from whichever screen hosts the tour.
+    fun openTranslationSection() =
+        push(ReadingDisplaySettings(scrollToSection = ReadingDisplaySettings.SECTION_TRANSLATION))
+
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
@@ -114,9 +118,7 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                 MainScreen(
                     initialTab = key.initialTab,
                     onOpenReadingDisplay = { push(ReadingDisplaySettings()) },
-                    onOpenTranslationSection = {
-                        push(ReadingDisplaySettings(scrollToSection = ReadingDisplaySettings.SECTION_TRANSLATION))
-                    },
+                    onOpenTranslationSection = ::openTranslationSection,
                     onOpenApps = { push(AppsSettings) },
                     onOpenPermissions = { push(PermissionsSettings) },
                     onOpenAbout = { push(About) },
@@ -187,9 +189,7 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                             viewModel = sharedReadingViewModel,
                             // Returning from Reading & display lands back on FAQ,
                             // where the still-open tour resumes at the same step.
-                            onBrowseTranslations = {
-                                push(ReadingDisplaySettings(scrollToSection = ReadingDisplaySettings.SECTION_TRANSLATION))
-                            },
+                            onBrowseTranslations = ::openTranslationSection,
                         )
                     }
                 }
