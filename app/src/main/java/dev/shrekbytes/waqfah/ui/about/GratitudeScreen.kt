@@ -58,7 +58,7 @@ fun GratitudeScreen(onBack: () -> Unit) {
                             it
                         }
                     }
-                    .padding(vertical = 13.dp),
+                    .padding(horizontal = 6.dp, vertical = 13.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
@@ -115,7 +115,7 @@ private fun SourceCredit(title: String, subtitle: String, url: String) {
         Modifier
             .fillMaxWidth()
             .clickable { context.launchExternal(Intent(Intent.ACTION_VIEW, url.toUri())) }
-            .padding(vertical = 8.dp),
+            .padding(horizontal = 6.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
