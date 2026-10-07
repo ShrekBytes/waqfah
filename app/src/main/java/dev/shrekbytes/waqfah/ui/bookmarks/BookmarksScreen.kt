@@ -1,6 +1,8 @@
 package dev.shrekbytes.waqfah.ui.bookmarks
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.ui.reading.BookmarksViewModel
 import dev.shrekbytes.waqfah.ui.reading.WaqfahReadingContent
@@ -23,6 +25,7 @@ import dev.shrekbytes.waqfah.ui.sharing.rememberShareAyahLauncher
 // is this host's alone, so it is stated here rather than inferred by the card.
 @Composable
 fun BookmarksScreen(viewModel: BookmarksViewModel, onOpenList: () -> Unit) {
+    val controls by viewModel.readingControls.collectAsStateWithLifecycle()
     WaqfahReadingContent(
         session = viewModel.session,
         onGoToAyah = onOpenList,
@@ -30,6 +33,7 @@ fun BookmarksScreen(viewModel: BookmarksViewModel, onOpenList: () -> Unit) {
         showCollectionMark = true,
         onToggleBookmark = viewModel.session::toggleBookmark,
         onShare = rememberShareAyahLauncher(viewModel.session),
+        controls = controls,
         bottomBar = {},
     )
 }

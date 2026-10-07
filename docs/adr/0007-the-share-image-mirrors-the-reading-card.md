@@ -100,7 +100,10 @@ ADR. The prose here decides; the mockup shows.
   as an extra tap for a smaller view of the same thing.
 - Every reading host gains the share control, the interstitial included.
   Sharing from the pause screen lands in the share sheet, which is an indirect
-  entry — choosing a monitored app there cannot earn a second trigger.
+  entry — choosing a monitored app there cannot earn a second trigger. The
+  reader can hide the control (the Advanced clean-look settings), which hides
+  the drawing, not the ability: the card's left-half long-press shares the
+  same image from the same session.
 - The image's height follows its content, so a longer ayah produces a taller
   frame. The frame, the star and the signature are positioned relative to the
   edges, so none of them moves when the content grows.

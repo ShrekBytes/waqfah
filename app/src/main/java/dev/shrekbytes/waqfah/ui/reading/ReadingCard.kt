@@ -93,6 +93,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.data.model.ReadingMode
+import dev.shrekbytes.waqfah.data.model.UserPreferences
 import dev.shrekbytes.waqfah.ui.components.BookmarkEmptyState
 import dev.shrekbytes.waqfah.ui.components.BookmarkRibbonIcon
 import dev.shrekbytes.waqfah.ui.components.ChevronDirection
@@ -145,6 +146,31 @@ private val gestureExceptionHandler = CoroutineExceptionHandler { _, throwable -
     Log.e("ReadingCard", "Unhandled error in reading gesture", throwable)
 }
 
+// Which action-row controls a host draws. The three reading surfaces derive it
+// from the reader's Advanced hide-settings; the tour's practice card passes the
+// default, because it teaches the reading controls by having the reader
+// practise them. Hiding is cosmetic — the gestures and the swipe keep every
+// action reachable, and mark read is never hideable: the weighted slots centre
+// the pill around it whatever is hidden.
+//
+// Distinct from the null-callback pattern: a null onShare/onToggleBookmark
+// means the host has no such control at all (the tour's practice card) and its
+// long-press gesture no-ops; a control that is merely hidden keeps its
+// callback and its gesture.
+data class ReadingControlsVisibility(
+    val showShare: Boolean = true,
+    val showBookmarkToggle: Boolean = true,
+    val showPrevNextArrows: Boolean = true,
+) {
+    companion object {
+        fun of(prefs: UserPreferences) = ReadingControlsVisibility(
+            showShare = !prefs.hideShareControl,
+            showBookmarkToggle = !prefs.hideBookmarkToggle,
+            showPrevNextArrows = !prefs.hidePrevNextArrows,
+        )
+    }
+}
+
 @Composable
 fun ReadingCard(
     state: ReadingUiState,
@@ -183,6 +209,11 @@ fun ReadingCard(
     // screen — passes one, and the tour's practice card passes none, consistent
     // with its already passing no bookmark toggle and no go-to.
     onShare: (() -> Unit)? = null,
+    // Which action-row controls this host draws — the reader's Advanced
+    // hide-settings as a presentation choice, stated by the host the same way
+    // showCollectionMark is. See ReadingControlsVisibility for what hiding
+    // does and does not mean.
+    controls: ReadingControlsVisibility = ReadingControlsVisibility(),
     bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -644,11 +675,13 @@ fun ReadingCard(
                     Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // The share control, outermost on the left (see CONTEXT.md).
-                            if (onShare != null) {
+                            if (onShare != null && controls.showShare) {
                                 ShareToggle(onClick = onShare)
                                 Spacer(Modifier.width(10.dp))
                             }
-                            RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = stringResource(R.string.cd_prev_ayah))
+                            if (controls.showPrevNextArrows) {
+                                RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = stringResource(R.string.cd_prev_ayah))
+                            }
                         }
                     }
                     Spacer(Modifier.width(10.dp))
@@ -661,9 +694,11 @@ fun ReadingCard(
                     Spacer(Modifier.width(10.dp))
                     Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            RemArrow(direction = ChevronDirection.RIGHT, onClick = onNext, contentDescription = stringResource(R.string.cd_next_ayah))
+                            if (controls.showPrevNextArrows) {
+                                RemArrow(direction = ChevronDirection.RIGHT, onClick = onNext, contentDescription = stringResource(R.string.cd_next_ayah))
+                            }
                             // The save control, outermost on the right (see CONTEXT.md).
-                            if (onToggleBookmark != null) {
+                            if (onToggleBookmark != null && controls.showBookmarkToggle) {
                                 Spacer(Modifier.width(10.dp))
                                 BookmarkToggle(
                                     saved = state.isSaved,

@@ -210,7 +210,9 @@ _Avoid_: share card, screenshot, export
 
 **Share control**:
 The entry point that produces a share image, and the only thing that does.
-Present on every reading host.
+Present on every reading host. The Advanced clean-look settings can hide its
+drawing on the reading card; the card's left-half long-press keeps sharing
+reachable when they do.
 _Avoid_: share button, share icon
 
 ### Feature tour

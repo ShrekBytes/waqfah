@@ -11,7 +11,11 @@ import dev.shrekbytes.waqfah.data.repository.VerseSelection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 // The reading session behind every Home-side surface — the Home tab, the tour's
@@ -62,6 +66,15 @@ class ReadingViewModel @Inject constructor(
         bookmarks = bookmarks,
         scope = sessionScope,
     )
+
+    // Which action-row controls the hosts draw — the reader's Advanced
+    // hide-settings as presentation state. The session deliberately never
+    // sees these: they change what the card draws, never what it renders
+    // (ReadingRelevanceTest pins that).
+    val readingControls: StateFlow<ReadingControlsVisibility> = settingsRepository.loadedPreferences
+        .filterNotNull()
+        .map(ReadingControlsVisibility::of)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReadingControlsVisibility())
 
     private companion object {
         private const val TAG = "ReadingViewModel"

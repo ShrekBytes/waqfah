@@ -59,6 +59,9 @@ class SettingsRepository @Inject constructor(
     suspend fun setCooldownMinutes(minutes: Int) = edit { it[SettingsKeys.COOLDOWN_MINUTES] = minutes.coerceIn(PreferenceLimits.COOLDOWN_MIN_MINUTES, PreferenceLimits.COOLDOWN_MAX_MINUTES) }
     suspend fun setAppActive(active: Boolean) = edit { it[SettingsKeys.APP_ACTIVE] = active }
     suspend fun setAutoNextOnMark(enabled: Boolean) = edit { it[SettingsKeys.AUTO_NEXT_ON_MARK] = enabled }
+    suspend fun setHidePrevNextArrows(hide: Boolean) = edit { it[SettingsKeys.HIDE_PREV_NEXT_ARROWS] = hide }
+    suspend fun setHideShareControl(hide: Boolean) = edit { it[SettingsKeys.HIDE_SHARE_CONTROL] = hide }
+    suspend fun setHideBookmarkToggle(hide: Boolean) = edit { it[SettingsKeys.HIDE_BOOKMARK_TOGGLE] = hide }
     suspend fun setOnboardingComplete(complete: Boolean) = edit { it[SettingsKeys.ONBOARDING_COMPLETE] = complete }
     suspend fun setFeatureTourComplete(complete: Boolean) = edit { it[SettingsKeys.FEATURE_TOUR_COMPLETE] = complete }
 
@@ -95,6 +98,9 @@ internal fun Preferences.toUserPreferences() = UserPreferences(
     cooldownMinutes = this[SettingsKeys.COOLDOWN_MINUTES] ?: 30,
     appActive = this[SettingsKeys.APP_ACTIVE] ?: true,
     autoNextOnMark = this[SettingsKeys.AUTO_NEXT_ON_MARK] ?: false,
+    hidePrevNextArrows = this[SettingsKeys.HIDE_PREV_NEXT_ARROWS] ?: false,
+    hideShareControl = this[SettingsKeys.HIDE_SHARE_CONTROL] ?: false,
+    hideBookmarkToggle = this[SettingsKeys.HIDE_BOOKMARK_TOGGLE] ?: false,
     hasCompletedOnboarding = this[SettingsKeys.ONBOARDING_COMPLETE] ?: false,
     hasCompletedFeatureTour = this[SettingsKeys.FEATURE_TOUR_COMPLETE] ?: false,
 )

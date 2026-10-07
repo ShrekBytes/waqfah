@@ -78,6 +78,9 @@ class SettingsMappingTest {
             it[SettingsKeys.ONBOARDING_COMPLETE] = true
             it[SettingsKeys.FEATURE_TOUR_COMPLETE] = true
             it[SettingsKeys.AUTO_NEXT_ON_MARK] = true
+            it[SettingsKeys.HIDE_PREV_NEXT_ARROWS] = true
+            it[SettingsKeys.HIDE_SHARE_CONTROL] = true
+            it[SettingsKeys.HIDE_BOOKMARK_TOGGLE] = true
         }
         val prefs = store.data.first().toUserPreferences()
         assertEquals(AppTheme.DARK, prefs.theme)
@@ -88,5 +91,8 @@ class SettingsMappingTest {
         assertEquals(true, prefs.hasCompletedOnboarding)
         assertEquals(true, prefs.hasCompletedFeatureTour)
         assertEquals(true, prefs.autoNextOnMark)
+        assertEquals(true, prefs.hidePrevNextArrows)
+        assertEquals(true, prefs.hideShareControl)
+        assertEquals(true, prefs.hideBookmarkToggle)
     }
 }
