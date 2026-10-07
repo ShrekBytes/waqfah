@@ -279,6 +279,128 @@ class ReadingSessionTest {
         assertEquals(listOf(failure), capturedFailures) // still surfaced to the host
     }
 
+    // #33: with auto-next on, a successful mark-read steps the card to the
+    // next ayah — the walk's own "next", the one the chevron uses, read or
+    // unread. Off by default: the card never moves by itself.
+    @Test
+    fun markRead_autoNextOn_advancesToTheNextAyah() = runTest {
+        prefs.value = UserPreferences(autoNextOnMark = true)
+        val session = session()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+
+        session.markCurrentRead()
+        runCurrent()
+
+        assertEquals(setOf(1), readIds)
+        assertEquals("1:2", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.isMarkedRead) // 1:2's own state, not 1:1's
+    }
+
+    @Test
+    fun markRead_autoNextOff_theDefault_staysPut() = runTest {
+        val session = session()
+        runCurrent()
+
+        session.markCurrentRead()
+        runCurrent()
+
+        assertEquals(setOf(1), readIds)
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertTrue(session.uiState.value.isMarkedRead)
+    }
+
+    // Unmarking is the toggle's undo and never a step: the only action that
+    // moves the card is a mark landing (unread → read). Here the advance
+    // after marking 1:1 lands on the already-read 1:2, whose pill tap then
+    // unmarks it without going anywhere.
+    @Test
+    fun markRead_autoNextOn_unmarkingNeverAdvances() = runTest {
+        prefs.value = UserPreferences(autoNextOnMark = true)
+        readIds += 2
+        val session = session()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+
+        session.markCurrentRead() // marks 1:1 and advances onto the read 1:2
+        runCurrent()
+        assertEquals("1:2", session.uiState.value.ayahLabel)
+        assertTrue(session.uiState.value.isMarkedRead)
+
+        session.markCurrentRead() // unmarks 1:2 — the card holds its ground
+        runCurrent()
+        assertEquals("1:2", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.isMarkedRead)
+        assertEquals(setOf(1), readIds)
+    }
+
+    // The completing mark is the issue's "all caught up" edge: the
+    // Alhamdulillah popup is that moment, so the card stays on the last ayah
+    // rather than advancing underneath the popup.
+    @Test
+    fun markRead_autoNextOn_completingMark_showsThePopupWithoutAdvancing() = runTest {
+        prefs.value = UserPreferences(autoNextOnMark = true)
+        readIds += setOf(1, 2, 3, 4)
+        val session = session()
+        runCurrent()
+        assertEquals("1:5", session.uiState.value.ayahLabel)
+
+        session.markCurrentRead()
+        runCurrent()
+
+        assertTrue(session.uiState.value.isCompleted)
+        assertEquals("1:5", session.uiState.value.ayahLabel)
+    }
+
+    // The advance rides the same successful-write event the machine's other
+    // bookkeeping does: a failed write must neither move the card nor count.
+    @Test
+    fun markRead_autoNextOn_failedWrite_noAdvanceNoCount() = runTest {
+        prefs.value = UserPreferences(autoNextOnMark = true)
+        val session = session(
+            scope = CoroutineScope(
+                backgroundScope.coroutineContext + SupervisorJob() +
+                    CoroutineExceptionHandler { _, t -> capturedFailures += t },
+            ),
+        )
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+
+        writeFailure = IllegalStateException("disk full")
+        session.markCurrentRead()
+        runCurrent()
+
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+        assertEquals(0, session.uiState.value.markReadCount)
+        assertTrue(readIds.isEmpty())
+        assertEquals(1, capturedFailures.size)
+    }
+
+    // The tour's TryIt MARK_READ step detects marks through this counter (see
+    // TourSessionTest): it counts successful mark actions — not unmarks — and
+    // survives every later render, so it stays observable even when auto-next
+    // immediately moves the card off the marked ayah.
+    @Test
+    fun markReadCounter_countsMarksNotUnmarks_andSurvivesStepping() = runTest {
+        val session = session()
+        runCurrent()
+        assertEquals(0, session.uiState.value.markReadCount)
+
+        session.markCurrentRead() // marks 1:1
+        runCurrent()
+        assertEquals(1, session.uiState.value.markReadCount)
+
+        session.next()
+        runCurrent()
+        assertEquals(1, session.uiState.value.markReadCount) // stepping preserves it
+
+        session.previous()
+        runCurrent()
+        session.markCurrentRead() // unmarks 1:1
+        runCurrent()
+        assertEquals(1, session.uiState.value.markReadCount) // unmarks never count
+    }
+
     @Test
     fun preferenceEmissions_irrelevantSkipRender_relevantReRender() = runTest {
         val session = session()
@@ -845,6 +967,26 @@ class ReadingSessionTest {
         assertEquals(setOf(1), readIds)
         assertTrue(session.uiState.value.isSaved)
         assertTrue(bookmarks.isSaved(1))
+    }
+
+    // Auto-next on the collection walk advances within the bookmarks, exactly
+    // as the mushaf walk advances within the Quran (#33) — the stepper's own
+    // "next", wrapping inside the collection. Completion is mushaf-wide only,
+    // so the walk never stops for a popup.
+    @Test
+    fun bookmarksSession_autoNextOn_markAdvancesWithinTheCollection() = runTest {
+        prefs.value = UserPreferences(autoNextOnMark = true)
+        bookmarks.toggle(1)
+        bookmarks.toggle(3)
+        val session = bookmarksSession()
+        runCurrent()
+        assertEquals("1:1", session.uiState.value.ayahLabel)
+
+        session.markCurrentRead()
+        runCurrent()
+
+        assertEquals("1:3", session.uiState.value.ayahLabel)
+        assertFalse(session.uiState.value.isCompleted)
     }
 
     // Two hosts, two sessions, two positions: this is what makes the tabs

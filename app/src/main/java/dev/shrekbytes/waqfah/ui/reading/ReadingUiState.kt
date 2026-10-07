@@ -49,6 +49,14 @@ data class ReadingUiState(
     // Whether another downloaded translation exists to compare against.
     val translationHasAlternates: Boolean = false,
     val isMarkedRead: Boolean = false,
+    // Monotonic count of successful mark-read actions this session made —
+    // the tour's TryIt MARK_READ step detects marks through it (#33): with
+    // auto-next on, the card moves off the marked ayah at once, so the
+    // transient isMarkedRead flip can be conflated away before the tour's
+    // facts feed sees it, while the counter rides every later emission.
+    // Unmarks never count. Reset only by the empty state, which no tour
+    // host reaches.
+    val markReadCount: Int = 0,
     // Whether the current ayah is in the bookmark collection. Unlike
     // isMarkedRead this is never flipped ahead of the write: the collection is
     // a lookup surface, so the toggle reflects what the store holds (ADR-0005).

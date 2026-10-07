@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -105,18 +106,19 @@ private val COMMIT_THRESHOLD_DISTANCE = 56.dp
 // Calm, bounce-free return to center on under-threshold release / cancellation.
 private val CANCEL_SPRING = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
 
-// The bookmark toggle's footprint in the action row. Fixed, and the only thing
-// that ever changes about the toggle is what it looks like — never how much room
-// it takes, so the row's geometry, and with it Mark Read's position, is
-// identical in both states.
+// The bookmark toggle's and the share control's shared footprint in the action
+// row. Fixed, and the only thing that ever changes about either is what it
+// looks like — never how much room it takes, so the row's geometry, and with it
+// Mark Read's position, is identical in every state.
 //
-// The row fits the toggle whole while it is at least 356dp wide with the pill at
-// its 124dp minimum: 10 + 124 + 10 is fixed, and the right slot must also hold
-// an arrow, a gap and the toggle (48 + 10 + 48) after mirroring the left slot's
-// arrow. Below that — a 320dp card, or a 360dp one whose font scale has grown
-// the pill past 128dp — the right slot runs out and the toggle is the part that
-// overhangs. That is deliberate: the alternative is letting the toggle push Mark
-// Read off the centre line, which is the one thing this row must not do.
+// The row fits both outermost controls whole while it is at least 356dp wide
+// with the pill at its 124dp minimum: 10 + 124 + 10 is fixed, and each weighted
+// slot must also hold an arrow, a gap and a control (48 + 10 + 48) — the share
+// control and the bookmark toggle mirror each other at the two ends. Below
+// that — a 320dp card, or a 360dp one whose font scale has grown the pill past
+// 128dp — the slots run out and the outermost controls are the part that
+// overhangs. That is deliberate: the alternative is letting them push Mark Read
+// off the centre line, which is the one thing this row must not do.
 private val ACTION_TOGGLE_SIZE = 44.dp
 
 // One handler for every gesture-launched coroutine in the card: the swipe and
@@ -159,6 +161,11 @@ fun ReadingCard(
     // practise them, and the collection needs no such practice. Every reading
     // surface — Home, the Bookmarks tab and the pause screen — passes one.
     onToggleBookmark: (() -> Unit)? = null,
+    // The share control (see CONTEXT.md). null means this host shows no share
+    // control; every reading surface — Home, the Bookmarks tab and the pause
+    // screen — passes one, and the tour's practice card passes none, consistent
+    // with its already passing no bookmark toggle and no go-to.
+    onShare: (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -489,13 +496,24 @@ fun ReadingCard(
                 // The toggle rides inside the right slot, after the right arrow,
                 // which is what makes it outermost without displacing anything:
                 // a wider right slot's *content* does not move the slot's edge,
-                // so neither the pill nor either arrow can feel it.
+                // so neither the pill nor either arrow can feel it. The share
+                // control mirrors it inside the left slot, before the left
+                // arrow, outermost on the left — the two together bracket the
+                // row, and both are host choices: a host passing neither (the
+                // tour's practice card) keeps the row's pre-toggle shape.
                 Row(
                     Modifier.fillMaxWidth().padding(vertical = 22.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                        RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = stringResource(R.string.cd_prev_ayah))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // The share control, outermost on the left (see CONTEXT.md).
+                            if (onShare != null) {
+                                ShareToggle(onClick = onShare)
+                                Spacer(Modifier.width(10.dp))
+                            }
+                            RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = stringResource(R.string.cd_prev_ayah))
+                        }
                     }
                     Spacer(Modifier.width(10.dp))
                     MarkReadPill(
@@ -671,8 +689,10 @@ private fun SkeletonBar(width: Dp, height: Dp, color: Color) {
     Box(Modifier.width(width).height(height).clip(RoundedCornerShape(6.dp)).background(color))
 }
 
+// internal so the share image (ui/sharing) can reuse the card's exact
+// ayah-reference divider rather than a copy that could drift from it.
 @Composable
-private fun NumDivider(label: String) {
+internal fun NumDivider(label: String) {
     val colors = WaqfahTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         HorizontalDivider(modifier = Modifier.width(20.dp), color = colors.line)
@@ -704,6 +724,22 @@ private fun TranslationSwitchArrow(direction: ChevronDirection, onClick: () -> U
             direction = direction,
             tint = WaqfahTheme.colors.accent,
             modifier = Modifier.size(13.dp).semantics { this.contentDescription = contentDescription },
+        )
+    }
+}
+
+// The share control (see CONTEXT.md): opens the system share sheet carrying
+// the ayah as a share image. Rendered in the same voice as the row's other
+// controls — a bare glyph in inkMuted, named on the icon the way RemArrow and
+// the toggle name theirs.
+@Composable
+private fun ShareToggle(onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.size(ACTION_TOGGLE_SIZE)) {
+        Icon(
+            Icons.Default.Share,
+            contentDescription = stringResource(R.string.cd_share),
+            tint = WaqfahTheme.colors.inkMuted,
+            modifier = Modifier.size(18.dp),
         )
     }
 }

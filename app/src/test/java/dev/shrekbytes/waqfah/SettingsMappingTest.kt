@@ -77,6 +77,7 @@ class SettingsMappingTest {
             it[SettingsKeys.APP_ACTIVE] = false
             it[SettingsKeys.ONBOARDING_COMPLETE] = true
             it[SettingsKeys.FEATURE_TOUR_COMPLETE] = true
+            it[SettingsKeys.AUTO_NEXT_ON_MARK] = true
         }
         val prefs = store.data.first().toUserPreferences()
         assertEquals(AppTheme.DARK, prefs.theme)
@@ -86,5 +87,6 @@ class SettingsMappingTest {
         assertEquals(false, prefs.appActive)
         assertEquals(true, prefs.hasCompletedOnboarding)
         assertEquals(true, prefs.hasCompletedFeatureTour)
+        assertEquals(true, prefs.autoNextOnMark)
     }
 }

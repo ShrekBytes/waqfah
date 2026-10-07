@@ -23,7 +23,12 @@ data class TourReadingFacts(
     val ayahLabel: String,
     val translationSourceName: String?,
     val translationText: String?,
-    val isMarkedRead: Boolean,
+    // Monotonic count of successful mark-read actions the reading session
+    // made. MARK_READ's done-signal keys on this rather than the card's
+    // marked state: with auto-next on (#33) the card moves off the marked
+    // ayah at once, and the conflated facts feed can drop the transient
+    // isMarkedRead flip — the counter rides every later emission.
+    val markReadCount: Int,
     val hasTranslationAlternates: Boolean,
 )
 
@@ -87,6 +92,7 @@ class TourSession(
     // so a stale one from a previous visit is never consulted.
     private var anchorAyah: String? = null
     private var anchorTranslation: String? = null
+    private var anchorMarkReadCount = 0
     private var anchorCurrent = false
 
     private var lastFacts: TourReadingFacts? = null
@@ -194,6 +200,7 @@ class TourSession(
         anchorCurrent = true
         anchorAyah = facts.ayahLabel
         anchorTranslation = facts.translationSourceName ?: facts.translationText
+        anchorMarkReadCount = facts.markReadCount
     }
 
     private fun dismiss() {
@@ -206,7 +213,13 @@ class TourSession(
 
     private fun taskDone(): Boolean = when (tasks[stepIndex]) {
         TourTaskKind.GO_TO_AYAH -> jumpedFromPicker
-        TourTaskKind.MARK_READ -> lastFacts?.let { !it.isLoading && it.isMarkedRead } ?: false
+        // Marks are detected as actions, not as the card's marked state: with
+        // auto-next on (#33) the state is transient and the conflated facts
+        // feed can drop it, and a state check would also auto-complete the
+        // step with no user action whenever the anchor ayah was already read.
+        TourTaskKind.MARK_READ -> lastFacts?.let {
+            anchorCurrent && !it.isLoading && it.markReadCount > anchorMarkReadCount
+        } ?: false
         TourTaskKind.CHANGE_AYAH -> lastFacts?.let { anchorCurrent && it.ayahLabel != anchorAyah } ?: false
         TourTaskKind.SWITCH_TRANSLATION -> lastFacts?.let { anchorCurrent && shownTranslation(it) != anchorTranslation } ?: false
         null -> false

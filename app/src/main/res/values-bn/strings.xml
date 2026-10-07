@@ -132,6 +132,9 @@
     <string name="section_permissions">অনুমতিসমূহ</string>
     <string name="app_permissions_row">অ্যাপের অনুমতিসমূহ</string>
     <string name="review_anytime">যেকোনো সময় পরিবর্তনযোগ্য</string>
+    <string name="section_advanced">উন্নত</string>
+    <string name="auto_next_title">পড়া হয়েছে করলে স্বয়ংক্রিয়ভাবে পরের আয়াত</string>
+    <string name="auto_next_sub">একটি আয়াত পড়া হয়েছে হিসেবে চিহ্নিত করার পর স্বয়ংক্রিয়ভাবে পরের আয়াতে যান</string>
     <string name="more_section">অন্যান্য</string>
     <string name="donate_row">অনুদান</string>
     <string name="donate_row_desc">অ্যাপের উন্নয়নে সহায়তা করুন</string>
@@ -165,6 +168,7 @@
     <string name="cd_bookmark">বুকমার্ক</string>
     <string name="cd_bookmark_saved">সংরক্ষিত</string>
     <string name="cd_bookmark_not_saved">সংরক্ষিত নয়</string>
+    <string name="cd_share">এই আয়াত শেয়ার করুন</string>
     <string name="open_app_button">%1$s খুলুন →</string>
     <string name="completion_title">আলহামদুলিল্লাহ!</string>
     <string name="completion_body">আপনি সম্পূর্ণ পবিত্র কুরআন তিলাওয়াত সম্পন্ন করেছেন। আল্লাহ তা\'আলা আপনার পক্ষ থেকে এটি কবুল করুন, আপনার প্রতিদান বহুগুণ বাড়িয়ে দিন এবং একে আপনার জন্য নূর বানিয়ে দিন।</string>

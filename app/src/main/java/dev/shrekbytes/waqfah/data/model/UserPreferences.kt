@@ -37,6 +37,11 @@ data class UserPreferences(
     val accentColor: AccentColor = AccentColor.SAGE,
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val readingMode: ReadingMode = ReadingMode.SEQUENTIAL,
+    // #33: when on, a successful mark-read also steps the card to the next
+    // ayah — the walk's own "next", read or unread. Advanced settings; off by
+    // default so the card never moves without the user's own step. Affects
+    // the mark-read action only, never what the card renders.
+    val autoNextOnMark: Boolean = false,
     val surahNameLanguage: NameDisplayLanguage = NameDisplayLanguage.ENGLISH,
     val arabicScript: ArabicScript = ArabicScript.INDOPAK,
     val arabicFont: ArabicFont = ArabicFont.DIGITAL_KHATT_INDOPAK,

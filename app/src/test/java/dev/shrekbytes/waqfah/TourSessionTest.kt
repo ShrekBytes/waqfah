@@ -43,26 +43,57 @@ class TourSessionTest {
         ayahLabel: String = "2:255",
         translationSourceName: String? = "Sahih",
         translationText: String? = "text",
-        isMarkedRead: Boolean = false,
+        markReadCount: Int = 0,
         hasTranslationAlternates: Boolean = true,
     ) = TourReadingFacts(
         isLoading,
         ayahLabel,
         translationSourceName,
         translationText,
-        isMarkedRead,
+        markReadCount,
         hasTranslationAlternates,
     )
 
+    // #33: with auto-next on, the mark-read tap also moves the card, so the
+    // transient isMarkedRead=true can be conflated away before the facts feed
+    // sees it — and a state-based check auto-completed the step with no user
+    // action whenever the anchor ayah was already read. The step therefore
+    // keys on the monotonic mark counter: done ⇔ a mark landed past the
+    // anchor, however fast the card moved on. (Replaces the old state-based
+    // test `markRead_completesOnlyWhenAResolvedCardShowsRead`: its final
+    // assertion — the marked state completing the step — is precisely the
+    // contract this change retires.)
     @Test
-    fun markRead_completesOnlyWhenAResolvedCardShowsRead() = runTest {
+    fun markRead_completesWhenAMarkLandsPastTheAnchor() = runTest {
         val s = session(listOf(TourTaskKind.MARK_READ))
-        s.onReadingState(facts(isLoading = true, isMarkedRead = true))
+        s.onReadingState(facts(isLoading = true, markReadCount = 7))
+        assertFalse(s.uiState.value.taskDone) // loading: never the anchor, never done
+        s.onReadingState(facts(markReadCount = 7)) // resolved: anchor = 7
         assertFalse(s.uiState.value.taskDone)
-        s.onReadingState(facts(isMarkedRead = false))
-        assertFalse(s.uiState.value.taskDone)
-        s.onReadingState(facts(isMarkedRead = true))
+        s.onReadingState(facts(markReadCount = 8)) // a mark happened
         assertTrue(s.uiState.value.taskDone)
+    }
+
+    // A swipe or a jump that merely changes the ayah never completes the
+    // step: only a mark does. Auto-next's advance carries a mark with it,
+    // which is exactly what the counter captures.
+    @Test
+    fun markRead_changingTheAyahWithoutMarking_doesNotComplete() = runTest {
+        val s = session(listOf(TourTaskKind.MARK_READ))
+        s.onReadingState(facts(ayahLabel = "2:255", markReadCount = 3))
+        s.onReadingState(facts(ayahLabel = "2:256", markReadCount = 3))
+        assertFalse(s.uiState.value.taskDone)
+    }
+
+    @Test
+    fun markRead_reenteringTheStep_reTakesTheAnchor() = runTest {
+        val s = session(listOf(TourTaskKind.MARK_READ, null))
+        s.onReadingState(facts(markReadCount = 0))
+        s.onReadingState(facts(markReadCount = 1))
+        assertTrue(s.uiState.value.taskDone)
+        s.next()
+        s.back() // re-enter MARK_READ: the anchor re-takes at the current count
+        assertFalse(s.uiState.value.taskDone)
     }
 
     @Test

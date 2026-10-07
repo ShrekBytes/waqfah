@@ -53,6 +53,9 @@ class ReadingRelevanceTest {
         assertEquals(sig(), sig { it.copy(appActive = false) })
         assertEquals(sig(), sig { it.copy(appLanguage = AppLanguage.BENGALI) })
         assertEquals(sig(), sig { it.copy(hasCompletedOnboarding = true) })
+        // autoNextOnMark gates the mark-read action only — what the card
+        // renders never changes with it, so toggling it must not re-render.
+        assertEquals(sig(), sig { it.copy(autoNextOnMark = true) })
     }
 
     private fun sig(mutate: (UserPreferences) -> UserPreferences = { it }) =

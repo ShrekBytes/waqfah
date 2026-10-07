@@ -270,7 +270,25 @@ class ReadingSession(
                 _uiState.update { it.copy(isMarkedRead = !newIsRead) }
                 throw e
             }
-            refreshCompletionState()
+            // The mark counts as an action the moment its write lands — the
+            // tour's TryIt MARK_READ step detects marks through this counter,
+            // which survives state conflation where the transient
+            // isMarkedRead flip does not (#33). Unmarks never count.
+            if (newIsRead) _uiState.update { it.copy(markReadCount = it.markReadCount + 1) }
+            // Marking the last unread ayah completes the Quran mid-session
+            // too. One computation serves both the popup and the advance
+            // gate below, so they can never disagree.
+            val allRead = isEverythingRead()
+            _uiState.update { it.copy(isCompleted = allRead && !completionDismissed) }
+            // Auto-next (#33): a successful mark-read steps the card to the
+            // next ayah — the walk's own "next", read or unread — when the
+            // user opted in. An unmark, a failed write, and the completing
+            // mark (the popup is that moment) all hold their ground.
+            // step() directly: next() would deadlock on this non-reentrant
+            // mutex, which is already held.
+            if (newIsRead && latestPrefs.autoNextOnMark && !allRead) {
+                step { verseSelection.next(it) }
+            }
         }
     }
 
@@ -393,12 +411,6 @@ class ReadingSession(
 
     private suspend fun totalVerses(): Int =
         cachedTotalVerseCount ?: totalVerseCount().also { cachedTotalVerseCount = it }
-
-    // Marking the last unread ayah completes the Quran mid-session too.
-    private suspend fun refreshCompletionState() {
-        val allRead = isEverythingRead()
-        _uiState.update { it.copy(isCompleted = allRead && !completionDismissed) }
-    }
 
     // Steps the preview to the next/previous downloaded translation for the
     // active display language, wrapping around. Never touches the persisted

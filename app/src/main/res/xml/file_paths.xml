@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- The share image's staging directory (see ui/sharing/ShareImageSender):
+     written here, handed to the system share sheet by content URI, deleted
+     when the sheet returns. cache-path is internal cacheDir — nothing the
+     reader can browse, no permission involved. -->
+<paths>
+    <cache-path
+        name="shared_images"
+        path="shared/" />
+</paths>
