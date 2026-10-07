@@ -29,6 +29,7 @@ import dev.shrekbytes.waqfah.ui.onboarding.OnboardReadingPrefsScreen
 import dev.shrekbytes.waqfah.ui.onboarding.OnboardWelcomeScreen
 import dev.shrekbytes.waqfah.ui.settings.apps.AppsScreen
 import dev.shrekbytes.waqfah.ui.settings.display.ReadingDisplayScreen
+import dev.shrekbytes.waqfah.ui.settings.advanced.AdvancedScreen
 import dev.shrekbytes.waqfah.ui.settings.permissions.PermissionsRationaleScreen
 import dev.shrekbytes.waqfah.ui.settings.permissions.PermissionsScreen
 import dev.shrekbytes.waqfah.ui.settings.translations.TranslationsScreen
@@ -121,6 +122,7 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                     onOpenTranslationSection = ::openTranslationSection,
                     onOpenApps = { push(AppsSettings) },
                     onOpenPermissions = { push(PermissionsSettings) },
+                    onOpenAdvanced = { push(AdvancedSettings) },
                     onOpenAbout = { push(About) },
                     onOpenFaq = { push(Faq) },
                     onOpenDonate = { push(Donate) },
@@ -160,6 +162,9 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
                     onOpenRationale = { push(PermissionsRationale) },
                     onBack = { backStack.removeLastOrNull() },
                 )
+            }
+            entry<AdvancedSettings> {
+                AdvancedScreen(onBack = { backStack.removeLastOrNull() })
             }
             entry<PermissionsRationale> { PermissionsRationaleScreen(onBack = { backStack.removeLastOrNull() }) }
             entry<AppsSettings> { AppsScreen(onBack = { backStack.removeLastOrNull() }) }

@@ -277,17 +277,18 @@ class ReadingSession(
             if (newIsRead) _uiState.update { it.copy(markReadCount = it.markReadCount + 1) }
             // Marking the last unread ayah completes the Quran mid-session
             // too. One computation serves both the popup and the advance
-            // gate below, so they can never disagree.
+            // request below, so they can never disagree.
             val allRead = isEverythingRead()
             _uiState.update { it.copy(isCompleted = allRead && !completionDismissed) }
-            // Auto-next (#33): a successful mark-read steps the card to the
-            // next ayah — the walk's own "next", read or unread — when the
-            // user opted in. An unmark, a failed write, and the completing
-            // mark (the popup is that moment) all hold their ground.
-            // step() directly: next() would deadlock on this non-reentrant
-            // mutex, which is already held.
-            if (newIsRead && latestPrefs.autoNextOnMark && !allRead) {
-                step { verseSelection.next(it) }
+            // Auto-next (#33): the session owns the decision — setting on,
+            // mark direction, not completing — and raises it as a request
+            // rather than stepping: the card plays the mark confirmation
+            // against the still-shown ayah, then fires next() itself so the
+            // advance is seen instead of a teleport. An unmark, a failed
+            // write, and the completing mark (the popup is that moment) never
+            // raise it; any committed step clears it.
+            _uiState.update {
+                it.copy(pendingAutoAdvance = newIsRead && latestPrefs.autoNextOnMark && !allRead)
             }
         }
     }
@@ -381,6 +382,9 @@ class ReadingSession(
         completionDismissed = false
         currentVerse = loadStartingVerse(latestPrefs)
         render(latestPrefs)
+        // A fresh session is a committed position change: it supersedes the
+        // request the same way step() does.
+        _uiState.update { it.copy(pendingAutoAdvance = false) }
     }
 
     // Jumps to an explicit verse without touching read history or sequential/
@@ -395,6 +399,7 @@ class ReadingSession(
             currentVerse = target
             translationOverrideId = null
             render(latestPrefs)
+            _uiState.update { it.copy(pendingAutoAdvance = false) } // a jump supersedes the request
         }
     }
 
@@ -439,13 +444,16 @@ class ReadingSession(
         }
     }
 
-    // Caller must hold mutationMutex.
+    // Caller must hold mutationMutex. Clears a pending auto-advance (#33):
+    // a committed step — a manual swipe, or the card firing the request —
+    // consumes it, so a late follow-through can never double-step.
     private suspend fun step(load: suspend (Int) -> VerseEntity?) {
         val fromId = currentVerse?.id ?: return
         currentVerse = load(fromId)
         // A fresh ayah always starts on the real default translation.
         translationOverrideId = null
         render(latestPrefs)
+        _uiState.update { it.copy(pendingAutoAdvance = false) }
     }
 
     // Picks the *starting* verse of a fresh session only; prev/next always step
