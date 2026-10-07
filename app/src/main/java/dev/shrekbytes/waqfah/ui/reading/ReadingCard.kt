@@ -16,7 +16,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -794,38 +793,89 @@ fun ReadingCard(
 
 // A non-interactive rendering of a neighbouring ayah, positioned just off to
 // one side and animated in lockstep with the drag gesture.
+//
+// It draws the current page's content column — the same frame, the same pen
+// slot, the same spacers — because it is the ayah the reader is dragging
+// towards: whatever the landed page reserves, this has to reserve too, or the
+// ayah moves at the moment it lands. The frame, the star and the pen are the
+// saved-mark (see CONTEXT.md), so the peek draws them for a neighbour that is
+// in the collection, and reserves their geometry whether or not it is.
+//
+// Keyed per ayah for the current page's reason, which bites harder here: this
+// subtree is not rebuilt by a step, so without the key the mark's animators
+// would tween from the *previous* neighbour's state instead of snapping, and
+// a scroll position would leak into whichever ayah is peeked next.
 @Composable
 private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Float) {
     val colors = WaqfahTheme.colors
-    // Keyed so scroll position never leaks into whichever ayah gets peeked next.
-    val scrollState = remember(preview.ayahLabel) { ScrollState(0) }
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = minHeight)
-            // Lambda keeps this a layout-phase read — no recomposition per frame.
-            .offset { IntOffset(offsetPx().roundToInt(), 0) }
-            .verticalScroll(scrollState)
-            .padding(horizontal = 28.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.height(14.dp))
-        NumDivider(preview.ayahLabel)
-        Spacer(Modifier.height(24.dp))
-        AyahArabicText(preview.arabicText, preview.arabicFont, preview.arabicFontSize)
-        preview.translitText?.let {
-            Spacer(Modifier.height(20.dp))
-            AyahTranslitText(it, preview.translitFontSize)
+    key(preview.ayahLabel) {
+        val markAlpha by animateFloatAsState(
+            if (preview.isSaved) 1f else 0f,
+            tween(160),
+            label = "saved_mark_alpha",
+        )
+        val frameColor by animateColorAsState(
+            if (preview.isSaved) colors.line else Color.Transparent,
+            tween(160),
+            label = "saved_mark_frame",
+        )
+
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = minHeight)
+                // Lambda keeps this a layout-phase read — no recomposition per frame.
+                .offset { IntOffset(offsetPx().roundToInt(), 0) }
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 14.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, frameColor, RoundedCornerShape(14.dp))
+                        .padding(top = 20.dp, bottom = 16.dp, start = 12.dp, end = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Spacer(Modifier.height(14.dp))
+                    NumDivider(preview.ayahLabel)
+                    Spacer(Modifier.height(24.dp))
+                    AyahArabicText(preview.arabicText, preview.arabicFont, preview.arabicFontSize)
+                    PenUnderline(
+                        colors.accent,
+                        Modifier
+                            .fillMaxWidth(0.72f)
+                            .padding(top = 5.dp)
+                            .height(8.dp)
+                            .graphicsLayer(alpha = markAlpha),
+                    )
+                    preview.translitText?.let {
+                        Spacer(Modifier.height(12.dp))
+                        AyahTranslitText(it, preview.translitFontSize)
+                    }
+                    preview.translationText?.let { translationText ->
+                        Spacer(Modifier.height(20.dp))
+                        HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
+                        Spacer(Modifier.height(24.dp))
+                        AyahTranslationText(translationText, preview.translationFontSize)
+                    }
+                    Spacer(Modifier.height(14.dp))
+                }
+                Box(
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = (-8).dp)
+                        .background(colors.background)
+                        .padding(horizontal = 9.dp)
+                        .graphicsLayer(alpha = markAlpha),
+                ) {
+                    StarOrnament(colors.accent, 15.dp)
+                }
+            }
         }
-        preview.translationText?.let { translationText ->
-            Spacer(Modifier.height(24.dp))
-            HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
-            Spacer(Modifier.height(24.dp))
-            AyahTranslationText(translationText, preview.translationFontSize)
-        }
-        Spacer(Modifier.height(14.dp))
     }
 }
 

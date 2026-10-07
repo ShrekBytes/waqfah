@@ -544,8 +544,11 @@ class ReadingSession(
 
     // Like render(), minus what only applies to the ayah actually being read
     // (override mode, read status, header) and always with the real default
-    // translation — a peeked neighbour isn't in compare mode. Shares render's
-    // downloadedIds snapshot so previews can't disagree with the main ayah.
+    // translation — a peeked neighbour isn't in compare mode. The saved state
+    // is deliberately not on that list: the peek draws the saved-mark too, so
+    // it is read back per neighbour the same way render() reads it for the ayah
+    // on screen. Shares render's downloadedIds snapshot so previews can't
+    // disagree with the main ayah.
     private suspend fun buildPreview(
         verse: VerseEntity,
         prefs: UserPreferences,
@@ -564,6 +567,7 @@ class ReadingSession(
             translitFontSize = prefs.translitFontSize,
             translationText = translation,
             translationFontSize = prefs.translationFontSize,
+            isSaved = bookmarks.isSaved(verse.id),
         )
     }
 }
