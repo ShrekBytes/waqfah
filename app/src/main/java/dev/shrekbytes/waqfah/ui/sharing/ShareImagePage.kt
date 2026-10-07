@@ -40,13 +40,15 @@ import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 // would be localized; a constant is the point.
 private const val WORDMARK = "WAQFAH"
 
-// The share image page (ADR-0007, see CONTEXT.md's "Share image"): the ayah
-// exactly as the reading card renders it — same shared text components, same
-// sizes, same palette — on a designed page the card does not have: a 1dp frame
-// inset uniformly on all four sides, an accent star on the divider above the
-// translation, and the wordmark centred on the bottom rule with the rule
-// interrupted behind it. The surah's ayah count and every interactive control
-// are left out by not being here.
+// The share image page (ADR-0007, see CONTEXT.md's "Share image"): the ayah's
+// content as the reading card renders it — the same shared text components, the
+// same sizes, the same palette — on a designed page the card does not have: a
+// 1dp frame inset uniformly on all four sides, an accent star on the divider
+// above the translation, and the wordmark centred on the bottom rule with the
+// rule interrupted behind it. The spacing around the content is the page's own,
+// as the frame's inset is: the card compresses its rhythm to pay for the
+// saved-mark's frame, and the image has no such constraint. The surah's ayah
+// count and every interactive control are left out by not being here.
 //
 // The page's metrics come from ShareImageGeometry so the arithmetic is pinned
 // by ShareImageGeometryTest; the text sizes come straight from the reading

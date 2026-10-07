@@ -52,6 +52,15 @@ shown ayah is in the collection. None of them changes a word of what is
 mirrored, the mirror still runs one way — the image never carries the card's
 state — and the wordmark remains the one thing that exists on the image alone.
 
+The spacing around the content belongs to that page rather than to what is
+mirrored, and so does the content's inset: the image states its own, the card
+states its own, and what the two share is the 12dp of bare page between the
+frame and the content — not the measurements themselves. The card's rhythm is
+the tighter of the two, because the saved-mark's frame costs it roughly 40dp of
+height and the tightening buys back part of it, while the image's height follows
+its content and so has nothing to pay. What the two keep in common is the order
+of what is drawn, the size of the text, and the palette.
+
 Two of them earn their place by doing a job rather than by decorating. The frame
 gives the image an edge of its own, so it does not depend on a chat bubble to
 hold it together, and it makes the thing read as a page rather than as a
