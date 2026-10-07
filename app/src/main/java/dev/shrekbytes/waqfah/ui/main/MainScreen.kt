@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,6 +32,7 @@ import dev.shrekbytes.waqfah.ui.settings.SettingsScreen
 import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 import dev.shrekbytes.waqfah.ui.tour.FeatureTourOverlay
 import dev.shrekbytes.waqfah.ui.tour.FeatureTourViewModel
+import dev.shrekbytes.waqfah.ui.tour.TourHost
 import dev.shrekbytes.waqfah.ui.tour.tourVisible
 
 // Tabs that render the shared reading card — the pair that gets the parallax
@@ -77,8 +77,8 @@ fun MainScreen(
     // The tour machine is the FeatureTourViewModel's session: it owns the
     // gate's flags (manual open, this-session dismissal) alongside the steps,
     // so the whole tour survives the navigation pushes that dispose this
-    // screen mid-tour. Hoisted by WaqfahNavDisplay so FAQ's relauncher
-    // reaches this same session.
+    // screen mid-tour. Hoisted by WaqfahNavDisplay so FAQ's tour shares this
+    // same session.
     tourViewModel: FeatureTourViewModel = hiltViewModel(),
 ) {
     val tourSession = tourViewModel.session
@@ -88,14 +88,6 @@ fun MainScreen(
     // when a settings sub-screen is pushed over it — and also restores the tab
     // across activity recreation (e.g. a per-app locale switch).
     var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
-
-    // A manual open comes from FAQ, reached via the Settings tab, but the
-    // tour only shows over Home — so an open tour turns this screen to Home.
-    // While the tour is up its overlay covers the tab bar, so this never
-    // fights a tab the reader picked.
-    LaunchedEffect(tourUi.openedManually) {
-        if (tourUi.openedManually) selectedTab = WaqfahTab.HOME
-    }
 
     val colors = WaqfahTheme.colors
 
@@ -162,13 +154,13 @@ fun MainScreen(
                 )
             }
 
-            // The feature tour lives ONLY over the Home tab of MainActivity —
-            // the gate's onHome input. It can never appear over
-            // TriggerActivity's over-other-apps interstitial, which hosts
-            // ReadingScreen directly and never composes MainScreen. The rest
-            // of the rule (manual open, finished-once, this-session dismissal)
-            // is TourSession's, composed here by tourVisible.
-            if (tourVisible(onHome = selectedTab == WaqfahTab.HOME, tourUi)) {
+            // The auto-shown tour lives ONLY over the Home tab of
+            // MainActivity; a manual open shows on FAQ instead (see
+            // WaqfahNavDisplay). It can never appear over TriggerActivity's
+            // over-other-apps interstitial, which hosts ReadingScreen directly
+            // and never composes MainScreen. The rest of the rule (finished-once,
+            // this-session dismissal) is TourSession's, composed by tourVisible.
+            if (selectedTab == WaqfahTab.HOME && tourVisible(TourHost.HOME, tourUi)) {
                 FeatureTourOverlay(
                     tourSession = tourSession,
                     viewModel = readingViewModel,

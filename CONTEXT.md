@@ -207,9 +207,10 @@ _Avoid_: share button, share icon
 ### Feature tour
 
 **Feature tour**:
-The guided walkthrough shown over the Home tab, introducing Waqfah and having
-the user practice on the live reading card. It re-offers on every launch until
-finished once; skipping persists nothing.
+The guided walkthrough introducing Waqfah and having the user practice on the
+live reading card. It auto-shows over the Home tab on every launch until
+finished once; skipping persists nothing. Started from FAQ & troubleshooting,
+it shows over FAQ and the reader stays there.
 _Avoid_: onboarding tour, tutorial
 
 **TourSession**:

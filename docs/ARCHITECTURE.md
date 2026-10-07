@@ -117,7 +117,9 @@ TriggerDecision as a constructor probe.
   FeatureTourViewModel hosts **TourSession** (`ui/tour/TourSession.kt`), the
   tour machine that owns steps, TryIt completion (anchors, jump-only go-to),
   back ordering and dismissal; the overlay is its rendering adapter (it pushes
-  reading facts in), and MainScreen composes its pure `tourVisible` gate —
+  reading facts in), and its pure `tourVisible` gate is composed by both
+  hosts — MainScreen for the Home auto-show, WaqfahNavDisplay's FAQ entry for
+  a manual start, sharing one session hoisted there —
   skip persists nothing (ADR-0003), finishing alone reaches persistence.
 
 ## Concurrency notes

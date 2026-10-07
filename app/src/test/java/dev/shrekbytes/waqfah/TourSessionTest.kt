@@ -2,6 +2,7 @@ package dev.shrekbytes.waqfah
 
 import dev.shrekbytes.waqfah.ui.tour.TOUR_STEP_TASKS
 import dev.shrekbytes.waqfah.ui.tour.TourBackResult
+import dev.shrekbytes.waqfah.ui.tour.TourHost
 import dev.shrekbytes.waqfah.ui.tour.TourReadingFacts
 import dev.shrekbytes.waqfah.ui.tour.TourSession
 import dev.shrekbytes.waqfah.ui.tour.TourTaskKind
@@ -162,7 +163,7 @@ class TourSessionTest {
         assertEquals(TourBackResult.PREVIOUS_STEP, s.back())
         assertEquals(0, s.uiState.value.stepIndex)
         assertEquals(TourBackResult.SKIPPED, s.back())
-        assertFalse(tourVisible(onHome = true, s.uiState.value))
+        assertFalse(tourVisible(TourHost.HOME, s.uiState.value))
     }
 
     // ADR-0003: skipping persists nothing — the tour re-offers next launch.
@@ -172,9 +173,9 @@ class TourSessionTest {
         completed.value = false
         val s = session(listOf(null), onFinished = { finished++ })
         s.onOpenedManually()
-        assertTrue(tourVisible(onHome = true, s.uiState.value))
+        assertTrue(tourVisible(TourHost.FAQ, s.uiState.value))
         s.skip()
-        assertFalse(tourVisible(onHome = true, s.uiState.value))
+        assertFalse(tourVisible(TourHost.FAQ, s.uiState.value))
         assertEquals(0, finished)
     }
 
@@ -194,7 +195,7 @@ class TourSessionTest {
         s.next() // finish
 
         assertEquals(1, finished)
-        assertFalse(tourVisible(onHome = true, s.uiState.value))
+        assertFalse(tourVisible(TourHost.FAQ, s.uiState.value))
     }
 
     // Finishing one showing doesn't consume a later manual showing's Finish,
@@ -218,27 +219,37 @@ class TourSessionTest {
         var finished = 0
         val s = session(listOf(null), onFinished = { finished++ })
         // Unresolved preferences: the gate waits instead of flashing the tour.
-        assertFalse(tourVisible(onHome = true, s.uiState.value))
+        assertFalse(tourVisible(TourHost.HOME, s.uiState.value))
         completed.value = false
         runCurrent()
-        assertTrue(tourVisible(onHome = true, s.uiState.value))
+        assertTrue(tourVisible(TourHost.HOME, s.uiState.value))
         s.next() // the only step is the last one: finishing
         assertEquals(1, finished)
-        assertFalse(tourVisible(onHome = true, s.uiState.value))
+        assertFalse(tourVisible(TourHost.HOME, s.uiState.value))
     }
 
     @Test
-    fun gate_manualOpenShowsOnHomeOnly_evenAfterCompletion() = runTest {
+    fun gate_manualOpenShowsOnFaqOnly_evenAfterCompletion() = runTest {
         completed.value = true
         val s = session(listOf(null))
         // finished once: auto-show off...
-        assertFalse(tourVisible(onHome = true, s.uiState.value))
-        // ...but a manual open still shows, on the Home tab only
+        assertFalse(tourVisible(TourHost.HOME, s.uiState.value))
+        assertFalse(tourVisible(TourHost.FAQ, s.uiState.value))
+        // ...but a manual open still shows — where it was opened, never Home
         s.onOpenedManually()
-        assertTrue(tourVisible(onHome = true, s.uiState.value))
-        assertFalse(tourVisible(onHome = false, s.uiState.value))
-        assertFalse(tourVisible(onHome = false, TourUiState(autoShowAllowed = true)))
-        assertTrue(tourVisible(onHome = true, TourUiState(autoShowAllowed = true)))
+        assertTrue(tourVisible(TourHost.FAQ, s.uiState.value))
+        assertFalse(tourVisible(TourHost.HOME, s.uiState.value))
+    }
+
+    @Test
+    fun gate_autoShowsOnHomeOnly_andNeverAlongsideAManualOpen() = runTest {
+        assertTrue(tourVisible(TourHost.HOME, TourUiState(autoShowAllowed = true)))
+        assertFalse(tourVisible(TourHost.FAQ, TourUiState(autoShowAllowed = true)))
+        // An unfinished tour opened from FAQ shows there alone: one overlay
+        // at a time, even while auto-show is still allowed.
+        val both = TourUiState(autoShowAllowed = true, openedManually = true)
+        assertTrue(tourVisible(TourHost.FAQ, both))
+        assertFalse(tourVisible(TourHost.HOME, both))
     }
 
     @Test

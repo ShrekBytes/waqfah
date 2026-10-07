@@ -71,8 +71,10 @@ private const val TOUR_LINK_TAG = "tour_translation_link"
 // Full-screen overlay hosting the guided tour — the tour machine's rendering
 // adapter. Steps, TryIt completion, back ordering and dismissal live in
 // TourSession (see CONTEXT.md); this composable pushes it the reading card's
-// facts and renders its uiState. Rendered ONLY over the Home tab of
-// MainActivity (see MainScreen) — never over TriggerActivity's interstitial.
+// facts and renders its uiState. Rendered ONLY in MainActivity — auto-shown
+// over the Home tab (MainScreen), or over FAQ when started there
+// (WaqfahNavDisplay); see tourVisible — never over TriggerActivity's
+// interstitial.
 // The TryIt steps embed the REAL home reading card (same ReadingViewModel as
 // the Home tab), so what the user practices here is the actual thing; the
 // Go-to step opens the REAL surah/ayah picker (GoToSurahScreen) INSIDE the

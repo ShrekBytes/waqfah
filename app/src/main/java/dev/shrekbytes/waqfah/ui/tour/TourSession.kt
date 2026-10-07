@@ -42,8 +42,8 @@ data class TourUiState(
 // The tour's machine (see CONTEXT.md): it owns the current step, decides when
 // a TryIt task is done from the reading facts the overlay pushes in, and owns
 // dismissal — finishing persists completion, skipping persists nothing
-// (ADR-0003). The overlay is its rendering adapter and MainScreen's
-// tourVisible gate its visibility adapter.
+// (ADR-0003). The overlay is its rendering adapter and the tourVisible gate
+// — composed by MainScreen and the FAQ entry — its visibility adapter.
 //
 // The rules that used to live as composable conventions are invariants here:
 //  - the task anchor is captured when a TryIt step becomes current, and
@@ -232,9 +232,18 @@ class TourSession(
     }
 }
 
-// The tour's visibility gate, one tested home: the tour shows over the Home
-// tab when opened manually, or auto-shows while it has never been finished
-// and hasn't been dismissed this session. Unresolved preferences keep
-// autoShowAllowed shut, so the gate waits instead of flashing.
-fun tourVisible(onHome: Boolean, ui: TourUiState): Boolean =
-    onHome && (ui.openedManually || ui.autoShowAllowed)
+// The screens that compose the tour overlay. Never TriggerActivity's
+// over-other-apps interstitial, which composes neither.
+enum class TourHost { HOME, FAQ }
+
+// The tour's visibility gate, one tested home. The tour auto-shows over the
+// Home tab while it has never been finished and hasn't been dismissed this
+// session; a manual open shows it where it was opened — FAQ — and never
+// moves the reader to Home. Never both at once: a manual open owns the tour
+// until it is dismissed. Unresolved preferences keep autoShowAllowed shut, so
+// the gate waits instead of flashing. MainScreen additionally requires the
+// Home tab to be selected.
+fun tourVisible(host: TourHost, ui: TourUiState): Boolean = when (host) {
+    TourHost.HOME -> ui.autoShowAllowed && !ui.openedManually
+    TourHost.FAQ -> ui.openedManually
+}

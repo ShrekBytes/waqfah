@@ -3,7 +3,12 @@ package dev.shrekbytes.waqfah.ui.navigation
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -27,7 +32,10 @@ import dev.shrekbytes.waqfah.ui.settings.display.ReadingDisplayScreen
 import dev.shrekbytes.waqfah.ui.settings.permissions.PermissionsRationaleScreen
 import dev.shrekbytes.waqfah.ui.settings.permissions.PermissionsScreen
 import dev.shrekbytes.waqfah.ui.settings.translations.TranslationsScreen
+import dev.shrekbytes.waqfah.ui.tour.FeatureTourOverlay
 import dev.shrekbytes.waqfah.ui.tour.FeatureTourViewModel
+import dev.shrekbytes.waqfah.ui.tour.TourHost
+import dev.shrekbytes.waqfah.ui.tour.tourVisible
 
 @Composable
 fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
@@ -48,11 +56,11 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
     // signature warning is about.
     val bookmarksViewModel: BookmarksViewModel = hiltViewModel()
 
-    // And for the tour's session: MainScreen's overlay reads it, and FAQ —
-    // a pushed destination outside MainScreen — relaunches it. Both must be
-    // handed this one instance; two separate hiltViewModel() lookups would
-    // only agree by accident of scoping, and a relaunch on a session the
-    // overlay doesn't read shows nothing at all.
+    // And for the tour's session: MainScreen shows the auto tour over Home,
+    // and FAQ — a pushed destination outside MainScreen — shows a manually
+    // started one. Both must be handed this one instance, so the gate's flags
+    // (finished, dismissed this session) and the steps are shared; two
+    // separate hiltViewModel() lookups would only agree by accident of scoping.
     val tourViewModel: FeatureTourViewModel = hiltViewModel()
 
     // Guards against rapid double-taps pushing the same destination twice —
@@ -163,18 +171,28 @@ fun WaqfahNavDisplay(startDestination: WaqfahDestination) {
             }
             entry<PrivacyPolicy> { PrivacyPolicyScreen(onBack = { backStack.removeLastOrNull() }) }
             entry<Faq> {
-                FaqScreen(
-                    onStartTour = {
-                        // FAQ is only pushed from Main's Settings tab, so popping
-                        // lands back on Main, which turns to Home for the open tour.
-                        // The guard stops a second tap mid-pop removing Main too.
-                        if (backStack.lastOrNull() == Faq) {
-                            tourViewModel.session.onOpenedManually()
-                            backStack.removeLastOrNull()
-                        }
-                    },
-                    onBack = { backStack.removeLastOrNull() },
-                )
+                // A tour started here shows here: the reader stays on FAQ, and
+                // finishing or skipping leaves them where they were. The overlay
+                // embeds its own Home reading card, so it needs nothing from
+                // MainScreen beyond the shared session and reading view-model.
+                val tourUi by tourViewModel.session.uiState.collectAsStateWithLifecycle()
+                Box(Modifier.fillMaxSize()) {
+                    FaqScreen(
+                        onStartTour = tourViewModel.session::onOpenedManually,
+                        onBack = { backStack.removeLastOrNull() },
+                    )
+                    if (tourVisible(TourHost.FAQ, tourUi)) {
+                        FeatureTourOverlay(
+                            tourSession = tourViewModel.session,
+                            viewModel = sharedReadingViewModel,
+                            // Returning from Reading & display lands back on FAQ,
+                            // where the still-open tour resumes at the same step.
+                            onBrowseTranslations = {
+                                push(ReadingDisplaySettings(scrollToSection = ReadingDisplaySettings.SECTION_TRANSLATION))
+                            },
+                        )
+                    }
+                }
             }
             entry<Gratitude> { GratitudeScreen(onBack = { backStack.removeLastOrNull() }) }
             entry<Donate> { DonateScreen(onBack = { backStack.removeLastOrNull() }) }
