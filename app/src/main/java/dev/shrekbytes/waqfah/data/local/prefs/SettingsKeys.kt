@@ -27,6 +27,15 @@ object SettingsKeys {
     // moves without the user opting in (Advanced settings).
     val AUTO_NEXT_ON_MARK = booleanPreferencesKey("auto_next_on_mark")
 
+    // The clean-look toggles: hide the reading card's prev/next arrows, share
+    // control and bookmark toggle (Advanced settings). Default to false — the
+    // card ships with every control visible; hiding is opt-in and purely
+    // cosmetic, the long-press gestures and the swipe keep every action
+    // reachable. Mark read has no hide key: it is the row's anchor.
+    val HIDE_PREV_NEXT_ARROWS = booleanPreferencesKey("hide_prev_next_arrows")
+    val HIDE_SHARE_CONTROL = booleanPreferencesKey("hide_share_control")
+    val HIDE_BOOKMARK_TOGGLE = booleanPreferencesKey("hide_bookmark_toggle")
+
     // Feature tour: defaults to false (auto-shows on Home after first install).
     // Only finishing the tour flips it to true; skipping writes nothing, so a
     // skipped tour re-offers on every future launch until it's completed.

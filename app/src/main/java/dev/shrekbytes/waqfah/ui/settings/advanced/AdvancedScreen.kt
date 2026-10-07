@@ -27,5 +27,26 @@ fun AdvancedScreen(
             checked = state.autoNextOnMark,
             onToggle = { viewModel.setAutoNextOnMark(!state.autoNextOnMark) },
         )
+        // The clean-look rows: each subtitle doubles as the gesture hint, since
+        // the gestures are what keep a hidden control reachable. Mark read has
+        // no row here by design — the row's anchor is never hidden.
+        SettingsToggleRow(
+            title = stringResource(R.string.hide_arrows_title),
+            subtitle = stringResource(R.string.hide_arrows_sub),
+            checked = state.hidePrevNextArrows,
+            onToggle = { viewModel.setHidePrevNextArrows(!state.hidePrevNextArrows) },
+        )
+        SettingsToggleRow(
+            title = stringResource(R.string.hide_share_title),
+            subtitle = stringResource(R.string.hide_share_sub),
+            checked = state.hideShareControl,
+            onToggle = { viewModel.setHideShareControl(!state.hideShareControl) },
+        )
+        SettingsToggleRow(
+            title = stringResource(R.string.hide_bookmark_title),
+            subtitle = stringResource(R.string.hide_bookmark_sub),
+            checked = state.hideBookmarkToggle,
+            onToggle = { viewModel.setHideBookmarkToggle(!state.hideBookmarkToggle) },
+        )
     }
 }

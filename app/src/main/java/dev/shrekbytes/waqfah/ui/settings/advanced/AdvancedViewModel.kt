@@ -14,6 +14,9 @@ import javax.inject.Inject
 
 data class AdvancedUiState(
     val autoNextOnMark: Boolean = false,
+    val hidePrevNextArrows: Boolean = false,
+    val hideShareControl: Boolean = false,
+    val hideBookmarkToggle: Boolean = false,
 )
 
 // The refinements page's own ViewModel — the sibling sub-pages each carry one,
@@ -26,10 +29,29 @@ class AdvancedViewModel @Inject constructor(
 
     val uiState: StateFlow<AdvancedUiState> = settingsRepository.loadedPreferences
         .filterNotNull()
-        .map { AdvancedUiState(autoNextOnMark = it.autoNextOnMark) }
+        .map {
+            AdvancedUiState(
+                autoNextOnMark = it.autoNextOnMark,
+                hidePrevNextArrows = it.hidePrevNextArrows,
+                hideShareControl = it.hideShareControl,
+                hideBookmarkToggle = it.hideBookmarkToggle,
+            )
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AdvancedUiState())
 
     fun setAutoNextOnMark(enabled: Boolean) = viewModelScope.launch {
         settingsRepository.setAutoNextOnMark(enabled)
+    }
+
+    fun setHidePrevNextArrows(hide: Boolean) = viewModelScope.launch {
+        settingsRepository.setHidePrevNextArrows(hide)
+    }
+
+    fun setHideShareControl(hide: Boolean) = viewModelScope.launch {
+        settingsRepository.setHideShareControl(hide)
+    }
+
+    fun setHideBookmarkToggle(hide: Boolean) = viewModelScope.launch {
+        settingsRepository.setHideBookmarkToggle(hide)
     }
 }

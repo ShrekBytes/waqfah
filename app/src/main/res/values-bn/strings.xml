@@ -137,6 +137,12 @@
     <string name="advanced_row_desc">স্বয়ংক্রিয় পরের আয়াত ও অন্যান্য অপশন</string>
     <string name="auto_next_title">পড়া হয়েছে করলে স্বয়ংক্রিয়ভাবে পরের আয়াত</string>
     <string name="auto_next_sub">একটি আয়াত পড়া হয়েছে হিসেবে চিহ্নিত করার পর স্বয়ংক্রিয়ভাবে পরের আয়াতে যান</string>
+    <string name="hide_arrows_title">পূর্ববর্তী/পরবর্তী আয়াতের তীর লুকান</string>
+    <string name="hide_arrows_sub">সোয়াইপ করলেই আয়াত পরিবর্তন হবে</string>
+    <string name="hide_share_title">শেয়ার নিয়ন্ত্রণ লুকান</string>
+    <string name="hide_share_sub">আয়াত শেয়ার করতে কার্ডের বাম অর্ধেক চেপে ধরে রাখুন</string>
+    <string name="hide_bookmark_title">বুকমার্ক টগল লুকান</string>
+    <string name="hide_bookmark_sub">বুকমার্ক যোগ বা সরাতে ডান অর্ধেক চেপে ধরে রাখুন</string>
     <string name="more_section">অন্যান্য</string>
     <string name="donate_row">অনুদান</string>
     <string name="donate_row_desc">অ্যাপের উন্নয়নে সহায়তা করুন</string>

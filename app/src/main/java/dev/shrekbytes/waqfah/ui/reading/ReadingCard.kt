@@ -16,7 +16,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -72,6 +73,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
@@ -87,7 +92,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.shrekbytes.waqfah.R
+import dev.shrekbytes.waqfah.data.model.ArabicFont
 import dev.shrekbytes.waqfah.data.model.ReadingMode
+import dev.shrekbytes.waqfah.data.model.UserPreferences
 import dev.shrekbytes.waqfah.ui.components.BookmarkEmptyState
 import dev.shrekbytes.waqfah.ui.components.BookmarkRibbonIcon
 import dev.shrekbytes.waqfah.ui.components.ChevronDirection
@@ -140,6 +147,31 @@ private val gestureExceptionHandler = CoroutineExceptionHandler { _, throwable -
     Log.e("ReadingCard", "Unhandled error in reading gesture", throwable)
 }
 
+// Which action-row controls a host draws. The three reading surfaces derive it
+// from the reader's Advanced hide-settings; the tour's practice card passes the
+// default, because it teaches the reading controls by having the reader
+// practise them. Hiding is cosmetic — the gestures and the swipe keep every
+// action reachable, and mark read is never hideable: the weighted slots centre
+// the pill around it whatever is hidden.
+//
+// Distinct from the null-callback pattern: a null onShare/onToggleBookmark
+// means the host has no such control at all (the tour's practice card) and its
+// long-press gesture no-ops; a control that is merely hidden keeps its
+// callback and its gesture.
+data class ReadingControlsVisibility(
+    val showShare: Boolean = true,
+    val showBookmarkToggle: Boolean = true,
+    val showPrevNextArrows: Boolean = true,
+) {
+    companion object {
+        fun of(prefs: UserPreferences) = ReadingControlsVisibility(
+            showShare = !prefs.hideShareControl,
+            showBookmarkToggle = !prefs.hideBookmarkToggle,
+            showPrevNextArrows = !prefs.hidePrevNextArrows,
+        )
+    }
+}
+
 @Composable
 fun ReadingCard(
     state: ReadingUiState,
@@ -178,6 +210,11 @@ fun ReadingCard(
     // screen — passes one, and the tour's practice card passes none, consistent
     // with its already passing no bookmark toggle and no go-to.
     onShare: (() -> Unit)? = null,
+    // Which action-row controls this host draws — the reader's Advanced
+    // hide-settings as a presentation choice, stated by the host the same way
+    // showCollectionMark is. See ReadingControlsVisibility for what hiding
+    // does and does not mean.
+    controls: ReadingControlsVisibility = ReadingControlsVisibility(),
     bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -194,6 +231,10 @@ fun ReadingCard(
     val latestOnNext = rememberUpdatedState(onNext)
     val latestOnPrevious = rememberUpdatedState(onPrevious)
     val latestState = rememberUpdatedState(state)
+    // The long-press gestures dispatch through these (see the tap detector
+    // below); null means the host has no such control and the gesture no-ops.
+    val latestOnShare = rememberUpdatedState(onShare)
+    val latestOnToggleBookmark = rememberUpdatedState(onToggleBookmark)
 
     // What a drag commit ends with, and what the auto-next advance plays —
     // one definition so all three are the same motion: the current ayah
@@ -389,7 +430,32 @@ fun ReadingCard(
                             }
                         }
                         .pointerInput(Unit) {
-                            detectTapGestures(onDoubleTap = { latestHandleMarkRead.value() })
+                            // Long-press gestures alongside the double-tap: hold
+                            // the pager's left half to share the ayah, the right
+                            // half to toggle its bookmark — the same surface the
+                            // double-tap and swipe own. The press's own half
+                            // decides, halved on this box's own width; pointer
+                            // coordinates don't flip with the surah name's
+                            // direction, so the halves stay physical. Both
+                            // actions stay one-handed and reach nothing the
+                            // reader has to aim at. Their feedback is the card's
+                            // own vocabulary rather than a haptic: the share
+                            // sheet answers the left hold, and the right hold is
+                            // answered by the saved-mark changing on the ayah
+                            // itself — which is why the mark is drawn even where
+                            // the bookmark toggle is hidden (Advanced settings).
+                            // A null callback (the tour's practice card) no-ops —
+                            // the gesture doesn't exist on that host.
+                            detectTapGestures(
+                                onDoubleTap = { latestHandleMarkRead.value() },
+                                onLongPress = { offset ->
+                                    val halfWidth = size.width / 2f
+                                    when {
+                                        offset.x < halfWidth -> latestOnShare.value?.invoke()
+                                        offset.x >= halfWidth -> latestOnToggleBookmark.value?.invoke()
+                                    }
+                                },
+                            )
                         },
                 ) {
                     val pageWidthPx = constraints.maxWidth.toFloat()
@@ -444,90 +510,82 @@ fun ReadingCard(
                             }
                         }
 
-                        // heightIn(min = viewport height) lets Arrangement.Center center short
-                        // content while long content still lays out top-to-bottom and scrolls.
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = maxHeight)
-                                // Layout-phase read: dragging updates position/redraw only,
-                                // no recomposition per frame.
-                                .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
-                                .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 28.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Spacer(Modifier.height(14.dp))
-                            NumDivider(state.ayahLabel)
-                            Spacer(Modifier.height(24.dp))
-                            AyahArabicText(state.arabicText, state.arabicFont, state.arabicFontSize)
-                            state.translitText?.let {
-                                Spacer(Modifier.height(20.dp))
-                                AyahTranslitText(it, state.translitFontSize)
-                            }
-                            state.translationText?.let { translationText ->
-                                Spacer(Modifier.height(24.dp))
-                                HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
-                                Spacer(Modifier.height(24.dp))
-
-                                if (state.translationHasAlternates) {
-                                    AnimatedVisibility(
-                                        visible = translationSwitcherOpen,
-                                        enter = fadeIn() + expandVertically(),
-                                        exit = fadeOut() + shrinkVertically(),
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                (state.translationSourceName ?: "").uppercase(),
-                                                color = colors.accent,
-                                                fontSize = 10.5.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                letterSpacing = 0.6.sp,
-                                            )
-                                            Spacer(Modifier.height(10.dp))
+                        // The shown ayah's page, from the one definition this
+                        // and the peek pages share (AyahPage) — so the ayah the
+                        // reader drags towards is laid out by the same code as
+                        // the one it becomes. The key above is what makes the
+                        // mark's animators snap on a swap rather than tween.
+                        AyahPage(
+                            label = state.ayahLabel,
+                            arabicText = state.arabicText,
+                            arabicFont = state.arabicFont,
+                            arabicFontSize = state.arabicFontSize,
+                            translitText = state.translitText,
+                            translitFontSize = state.translitFontSize,
+                            isSaved = state.isSaved,
+                            minHeight = maxHeight,
+                            offsetPx = { dragOffset.value },
+                            // The one place this page differs from a peek: its
+                            // translation is interactive.
+                            translation = state.translationText?.let { translationText ->
+                                {
+                                    if (state.translationHasAlternates) {
+                                        AnimatedVisibility(
+                                            visible = translationSwitcherOpen,
+                                            enter = fadeIn() + expandVertically(),
+                                            exit = fadeOut() + shrinkVertically(),
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    (state.translationSourceName ?: "").uppercase(),
+                                                    color = colors.accent,
+                                                    fontSize = 10.5.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    letterSpacing = 0.6.sp,
+                                                )
+                                                Spacer(Modifier.height(10.dp))
+                                            }
                                         }
-                                    }
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        AyahTranslationText(
-                                            translationText,
-                                            state.translationFontSize,
-                                            // Tapping toggles compare mode for this ayah only;
-                                            // closing reverts to the default. Claims single taps
-                                            // landing on the text, so double-tapping here won't
-                                            // also trigger mark-read.
-                                            modifier = Modifier
-                                                .clickable(
-                                                    interactionSource = remember { MutableInteractionSource() },
-                                                    indication = null,
-                                                ) {
-                                                    translationSwitcherOpen = !translationSwitcherOpen
-                                                    if (!translationSwitcherOpen) onResetTranslation()
-                                                }
-                                                .padding(horizontal = 28.dp),
-                                        )
-                                        if (translationSwitcherOpen) {
-                                            TranslationSwitchArrow(
-                                                direction = ChevronDirection.LEFT,
-                                                onClick = { onCycleTranslation(false) },
-                                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 2.dp),
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            AyahTranslationText(
+                                                translationText,
+                                                state.translationFontSize,
+                                                // Tapping toggles compare mode for this ayah only;
+                                                // closing reverts to the default. Claims single taps
+                                                // landing on the text, so double-tapping here won't
+                                                // also trigger mark-read.
+                                                modifier = Modifier
+                                                    .clickable(
+                                                        interactionSource = remember { MutableInteractionSource() },
+                                                        indication = null,
+                                                    ) {
+                                                        translationSwitcherOpen = !translationSwitcherOpen
+                                                        if (!translationSwitcherOpen) onResetTranslation()
+                                                    }
+                                                    .padding(horizontal = 28.dp),
                                             )
-                                            TranslationSwitchArrow(
-                                                direction = ChevronDirection.RIGHT,
-                                                onClick = { onCycleTranslation(true) },
-                                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 2.dp),
-                                            )
+                                            if (translationSwitcherOpen) {
+                                                TranslationSwitchArrow(
+                                                    direction = ChevronDirection.LEFT,
+                                                    onClick = { onCycleTranslation(false) },
+                                                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 2.dp),
+                                                )
+                                                TranslationSwitchArrow(
+                                                    direction = ChevronDirection.RIGHT,
+                                                    onClick = { onCycleTranslation(true) },
+                                                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 2.dp),
+                                                )
+                                            }
                                         }
+                                    } else {
+                                        AyahTranslationText(translationText, state.translationFontSize)
                                     }
-                                } else {
-                                    AyahTranslationText(translationText, state.translationFontSize)
                                 }
-                            }
-                            Spacer(Modifier.height(14.dp))
-                        }
+                            },
+                        )
                     }
                 }
                 // Mark Read is centred by construction rather than by luck: the
@@ -553,11 +611,13 @@ fun ReadingCard(
                     Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // The share control, outermost on the left (see CONTEXT.md).
-                            if (onShare != null) {
+                            if (onShare != null && controls.showShare) {
                                 ShareToggle(onClick = onShare)
                                 Spacer(Modifier.width(10.dp))
                             }
-                            RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = stringResource(R.string.cd_prev_ayah))
+                            if (controls.showPrevNextArrows) {
+                                RemArrow(direction = ChevronDirection.LEFT, onClick = onPrevious, contentDescription = stringResource(R.string.cd_prev_ayah))
+                            }
                         }
                     }
                     Spacer(Modifier.width(10.dp))
@@ -570,9 +630,11 @@ fun ReadingCard(
                     Spacer(Modifier.width(10.dp))
                     Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            RemArrow(direction = ChevronDirection.RIGHT, onClick = onNext, contentDescription = stringResource(R.string.cd_next_ayah))
+                            if (controls.showPrevNextArrows) {
+                                RemArrow(direction = ChevronDirection.RIGHT, onClick = onNext, contentDescription = stringResource(R.string.cd_next_ayah))
+                            }
                             // The save control, outermost on the right (see CONTEXT.md).
-                            if (onToggleBookmark != null) {
+                            if (onToggleBookmark != null && controls.showBookmarkToggle) {
                                 Spacer(Modifier.width(10.dp))
                                 BookmarkToggle(
                                     saved = state.isSaved,
@@ -666,40 +728,145 @@ fun ReadingCard(
     }
 }
 
-// A non-interactive rendering of a neighbouring ayah, positioned just off to
-// one side and animated in lockstep with the drag gesture.
+// One ayah as a page: the frame, the label, the Arabic, the pen slot, the aids
+// and the saved-mark, inside the scroll and the centring that hold them. The
+// current page and the neighbouring-ayah peek pages both draw this, because they
+// draw the same ayah — the peek is the page the reader is dragging towards, so
+// anything reserved here and not there moves the ayah at the moment it lands.
+// That is exactly what the saved-mark once did by being added to the current
+// page alone, and why this geometry is stated once.
+//
+// The callers differ in two things, and both are parameters: where the page sits
+// (offsetPx) and what its translation is (the slot — the current page hands over
+// its interactive compare switcher, a peek plain text).
+//
+// The saved-mark (see CONTEXT.md): while the ayah is bookmarked, the content
+// block borrows the share image's page language — a hairline frame, the accent
+// star breaking its top rule, a pen stroke under the Arabic — so the ayah reads
+// as kept. The mark is the bookmark state's indicator even where the bookmark
+// toggle is hidden (Advanced settings), and its change is the bookmark
+// long-press's feedback; its geometry is reserved in both states, so toggling
+// never shifts the text. State is not content: none of it is ever mirrored into
+// the share image (ADR-0007). The snap is positional — it holds only because the
+// caller keys this subtree per ayah; a control outside that key, like
+// MarkReadPill, needs its own explicit snap().
 @Composable
-private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Float) {
+private fun AyahPage(
+    label: String,
+    arabicText: String,
+    arabicFont: ArabicFont,
+    arabicFontSize: Int,
+    translitText: String?,
+    translitFontSize: Int,
+    isSaved: Boolean,
+    minHeight: Dp,
+    offsetPx: () -> Float,
+    // The column's own scope, because that is where the body is placed: the
+    // current page's switcher needs it (AnimatedVisibility is a ColumnScope
+    // extension), and a peek's plain text simply ignores it.
+    translation: (@Composable ColumnScope.() -> Unit)?,
+) {
     val colors = WaqfahTheme.colors
-    // Keyed so scroll position never leaks into whichever ayah gets peeked next.
-    val scrollState = remember(preview.ayahLabel) { ScrollState(0) }
+    val markAlpha by animateFloatAsState(
+        if (isSaved) 1f else 0f,
+        tween(160),
+        label = "saved_mark_alpha",
+    )
+    val frameColor by animateColorAsState(
+        if (isSaved) colors.line else Color.Transparent,
+        tween(160),
+        label = "saved_mark_frame",
+    )
 
+    // heightIn(min = viewport height) lets Arrangement.Center center short
+    // content while long content still lays out top-to-bottom and scrolls.
     Column(
         Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
-            // Lambda keeps this a layout-phase read — no recomposition per frame.
+            // Layout-phase read: dragging updates position/redraw only,
+            // no recomposition per frame.
             .offset { IntOffset(offsetPx().roundToInt(), 0) }
-            .verticalScroll(scrollState)
-            .padding(horizontal = 28.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 14.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(14.dp))
-        NumDivider(preview.ayahLabel)
-        Spacer(Modifier.height(24.dp))
-        AyahArabicText(preview.arabicText, preview.arabicFont, preview.arabicFontSize)
-        preview.translitText?.let {
-            Spacer(Modifier.height(20.dp))
-            AyahTranslitText(it, preview.translitFontSize)
+        Box(Modifier.fillMaxWidth()) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, frameColor, RoundedCornerShape(14.dp))
+                    .padding(top = 20.dp, bottom = 16.dp, start = 12.dp, end = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Spacer(Modifier.height(14.dp))
+                NumDivider(label)
+                Spacer(Modifier.height(24.dp))
+                AyahArabicText(arabicText, arabicFont, arabicFontSize)
+                PenUnderline(
+                    colors.accent,
+                    Modifier
+                        .fillMaxWidth(0.72f)
+                        .padding(top = 5.dp)
+                        .height(8.dp)
+                        .graphicsLayer(alpha = markAlpha),
+                )
+                translitText?.let {
+                    Spacer(Modifier.height(12.dp))
+                    AyahTranslitText(it, translitFontSize)
+                }
+                if (translation != null) {
+                    Spacer(Modifier.height(20.dp))
+                    HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
+                    Spacer(Modifier.height(24.dp))
+                    translation()
+                }
+                Spacer(Modifier.height(14.dp))
+            }
+            // The star breaks the frame's top rule, its background interrupting
+            // the border behind it — the same move as the share image's wordmark
+            // on the bottom rule.
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-8).dp)
+                    .background(colors.background)
+                    .padding(horizontal = 9.dp)
+                    .graphicsLayer(alpha = markAlpha),
+            ) {
+                StarOrnament(colors.accent, 15.dp)
+            }
         }
-        preview.translationText?.let { translationText ->
-            Spacer(Modifier.height(24.dp))
-            HorizontalDivider(modifier = Modifier.width(32.dp), color = colors.line)
-            Spacer(Modifier.height(24.dp))
-            AyahTranslationText(translationText, preview.translationFontSize)
-        }
-        Spacer(Modifier.height(14.dp))
+    }
+}
+
+// A non-interactive ayah, positioned just off to one side and animated in
+// lockstep with the drag gesture: a peek at a neighbour, drawn by the same page
+// the neighbour becomes once it lands. Its translation is plain text — a peeked
+// ayah isn't in compare mode — which is the only thing it passes differently.
+//
+// Keyed per ayah for a reason the current page does not have: a step does not
+// rebuild this subtree, so without the key the mark's animators would tween from
+// the *previous* neighbour's state instead of snapping, and a scroll position
+// would leak into whichever ayah is peeked next.
+@Composable
+private fun AyahPeekPage(preview: AyahPreview, minHeight: Dp, offsetPx: () -> Float) {
+    key(preview.ayahLabel) {
+        AyahPage(
+            label = preview.ayahLabel,
+            arabicText = preview.arabicText,
+            arabicFont = preview.arabicFont,
+            arabicFontSize = preview.arabicFontSize,
+            translitText = preview.translitText,
+            translitFontSize = preview.translitFontSize,
+            isSaved = preview.isSaved,
+            minHeight = minHeight,
+            offsetPx = offsetPx,
+            translation = preview.translationText?.let { translationText ->
+                { AyahTranslationText(translationText, preview.translationFontSize) }
+            },
+        )
     }
 }
 
@@ -913,5 +1080,56 @@ private fun BookmarkToggle(saved: Boolean, verseKey: Any?, onClick: () -> Unit) 
                 modifier = Modifier.size(18.dp).alpha(outlineAlpha),
             )
         }
+    }
+}
+
+// The accent four-point star, drawn as a path (ADR-0007) so it cannot fall
+// back to tofu on a device without the character. The path is the mockup's
+// 24-unit symbol, scaled to the requested size. internal so the share image
+// and the card's saved-mark render the exact same star — one path, no drift
+// between the page and the card.
+@Composable
+internal fun StarOrnament(accent: Color, starSize: Dp) {
+    Canvas(Modifier.size(starSize)) {
+        val s = size.width / 24f
+        val star = Path().apply {
+            moveTo(12f * s, 1.6f * s)
+            lineTo(14.3f * s, 9.7f * s)
+            lineTo(22.4f * s, 12f * s)
+            lineTo(14.3f * s, 14.3f * s)
+            lineTo(12f * s, 22.4f * s)
+            lineTo(9.7f * s, 14.3f * s)
+            lineTo(1.6f * s, 12f * s)
+            lineTo(9.7f * s, 9.7f * s)
+            close()
+        }
+        drawPath(star, accent)
+    }
+}
+
+// The saved-mark's pen stroke under the Arabic: two slightly wavering accent
+// lines, as if the reader had drawn them by hand. The 190x7-unit path scales
+// to whatever width the caller gives it.
+@Composable
+private fun PenUnderline(accent: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val sx = size.width / 190f
+        val sy = size.height / 7f
+        fun x(v: Float) = v * sx
+        fun y(v: Float) = v * sy
+
+        val main = Path().apply {
+            moveTo(x(2f), y(4f))
+            cubicTo(x(30f), y(1.5f), x(55f), y(5.5f), x(88f), y(3.5f))
+            cubicTo(x(112f), y(2.2f), x(150f), y(2f), x(188f), y(4.2f))
+        }
+        drawPath(main, accent, style = Stroke(width = 2.2f * sy, cap = StrokeCap.Round))
+
+        val echo = Path().apply {
+            moveTo(x(14f), y(5.6f))
+            cubicTo(x(48f), y(4.4f), x(90f), y(6f), x(128f), y(4.6f))
+            cubicTo(x(150f), y(3.9f), x(172f), y(4.8f), x(182f), y(5.4f))
+        }
+        drawPath(echo, accent.copy(alpha = accent.alpha * 0.55f), style = Stroke(width = 1.4f * sy, cap = StrokeCap.Round))
     }
 }

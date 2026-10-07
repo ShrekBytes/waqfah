@@ -8,7 +8,9 @@ so do the tour's practice card and the surah picker, which share Home's session.
 This amends ADR-0005, which rejected a third `ReadingMode` value. That rejection
 was right about the tab and wrong about the mode. ADR-0005 was answering "how
 does a reader reach their collection", and the answer is the tab — always
-present, with the save control on every card. It still is. But it argued from
+present, with the save control on every card (the control's drawing is
+hideable since the Advanced clean-look settings; the save itself stays
+reachable through the card's right-half long-press). It still is. But it argued from
 `ReadingMode`'s *shape*: the enum answers one question, which verse a fresh
 session opens on, while `next()`/`previous()` walk the mushaf by global id and
 ignore the mode entirely. A bookmarks mode would therefore have to change what

@@ -17,6 +17,12 @@ data class AyahPreview(
     val translitFontSize: Int,
     val translationText: String?,
     val translationFontSize: Int,
+    // The neighbour's bookmark state, carried for the same reason the current
+    // ayah's is: the peek draws the saved-mark too, and its geometry is
+    // reserved in both states — a peek that reserved less would move the ayah
+    // at the moment it lands. Not a rendered *content* fact, so the share
+    // image still never sees it (ADR-0007).
+    val isSaved: Boolean = false,
 )
 
 data class ReadingUiState(

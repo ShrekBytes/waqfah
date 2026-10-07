@@ -12,7 +12,11 @@ import dev.shrekbytes.waqfah.data.repository.TranslationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -69,6 +73,14 @@ class InterstitialReadingViewModel @Inject constructor(
         val label = packageName?.let { installedAppCatalog.labelFor(it) ?: it }
         session.setTriggeredAppLabel(label)
     }
+
+    // Same presentation-state exposure as its siblings': the reader's Advanced
+    // hide-settings, which change what the card draws and never what the
+    // session renders.
+    val readingControls: StateFlow<ReadingControlsVisibility> = settingsRepository.loadedPreferences
+        .filterNotNull()
+        .map(ReadingControlsVisibility::of)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReadingControlsVisibility())
 
     private companion object {
         private const val TAG = "InterstitialReadingViewModel"

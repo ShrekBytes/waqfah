@@ -44,6 +44,10 @@ fun WaqfahReadingContent(
     // derived from goToAyahLabelRes or the session's sequence — it is a
     // presentation choice, not a fact about either.
     showCollectionMark: Boolean = false,
+    // Which action-row controls the host draws: the three reading surfaces
+    // pass the reader's Advanced hide-settings; the tour's practice card
+    // passes the default and keeps every control it has.
+    controls: ReadingControlsVisibility = ReadingControlsVisibility(),
     bottomBar: @Composable () -> Unit,
 ) {
     val state by session.uiState.collectAsStateWithLifecycle()
@@ -62,6 +66,7 @@ fun WaqfahReadingContent(
         showCollectionMark = showCollectionMark,
         onToggleBookmark = onToggleBookmark,
         onShare = onShare,
+        controls = controls,
         bottomBar = bottomBar,
     )
 }
@@ -80,6 +85,7 @@ fun ReadingScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.session.uiState.collectAsStateWithLifecycle()
+    val controls by viewModel.readingControls.collectAsStateWithLifecycle()
 
     LaunchedEffect(triggeredPackage) { viewModel.setTriggeredPackage(triggeredPackage) }
 
@@ -102,6 +108,7 @@ fun ReadingScreen(
         onGoToAyah = null,
         onToggleBookmark = viewModel.session::toggleBookmark,
         onShare = rememberShareAyahLauncher(viewModel.session),
+        controls = controls,
     ) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
             WaqfahPrimaryButton(

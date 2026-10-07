@@ -42,6 +42,16 @@ data class UserPreferences(
     // default so the card never moves without the user's own step. Affects
     // the mark-read action only, never what the card renders.
     val autoNextOnMark: Boolean = false,
+    // The clean-look toggles (Advanced settings): hide the reading card's
+    // prev/next arrows, share control and bookmark toggle. Default false —
+    // every control visible. Presentation only: hosts turn them into the
+    // card's visibility params, and the session never reads them, so they
+    // deliberately stay out of readingRenderSignature. The long-press
+    // gestures keep every hidden control reachable; mark read is not
+    // hideable.
+    val hidePrevNextArrows: Boolean = false,
+    val hideShareControl: Boolean = false,
+    val hideBookmarkToggle: Boolean = false,
     val surahNameLanguage: NameDisplayLanguage = NameDisplayLanguage.ENGLISH,
     val arabicScript: ArabicScript = ArabicScript.INDOPAK,
     val arabicFont: ArabicFont = ArabicFont.DIGITAL_KHATT_INDOPAK,

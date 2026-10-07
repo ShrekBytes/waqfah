@@ -45,9 +45,12 @@ same content, drawn once, for a purpose outside the app.
 The mirror governs the content and the palette. It does not govern the page the
 content sits on. The image is a designed page rather than a crop of the card: a
 1dp `line` frame inset uniformly on all four sides, an accent four-point star on
-the divider above the aids, and the wordmark. None of those three has a
-counterpart in the reading card, and none of them changes a word of what is
-mirrored.
+the divider above the aids, and the wordmark. Two of the three — the frame and
+the star — later gained a counterpart on the reading card: the saved-mark
+borrows the page's language for a bookmarked ayah, drawn there only while the
+shown ayah is in the collection. None of them changes a word of what is
+mirrored, the mirror still runs one way — the image never carries the card's
+state — and the wordmark remains the one thing that exists on the image alone.
 
 Two of them earn their place by doing a job rather than by decorating. The frame
 gives the image an edge of its own, so it does not depend on a chat bubble to
@@ -97,12 +100,16 @@ ADR. The prose here decides; the mockup shows.
   as an extra tap for a smaller view of the same thing.
 - Every reading host gains the share control, the interstitial included.
   Sharing from the pause screen lands in the share sheet, which is an indirect
-  entry — choosing a monitored app there cannot earn a second trigger.
+  entry — choosing a monitored app there cannot earn a second trigger. The
+  reader can hide the control (the Advanced clean-look settings), which hides
+  the drawing, not the ability: the card's left-half long-press shares the
+  same image from the same session.
 - The image's height follows its content, so a longer ayah produces a taller
   frame. The frame, the star and the signature are positioned relative to the
   edges, so none of them moves when the content grows.
 - The frame's margin is uniform on all four sides, and nothing is ever allowed
   to widen one of them. Anything needing room finds it inside the frame or on a
   rule.
-- This is the first place in the app that fades ink with alpha. The exception is
-  scoped to the wordmark and is not licence to reach for alpha elsewhere.
+- This is the first place in the app that fades ink with alpha. The exception
+  covers the wordmark and the saved-mark's pen echo — both ornament, neither
+  of them functional ink — and is not licence to reach for alpha elsewhere.

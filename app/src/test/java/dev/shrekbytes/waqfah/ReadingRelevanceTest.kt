@@ -56,6 +56,12 @@ class ReadingRelevanceTest {
         // autoNextOnMark gates the mark-read action only — what the card
         // renders never changes with it, so toggling it must not re-render.
         assertEquals(sig(), sig { it.copy(autoNextOnMark = true) })
+        // The hide-settings are presentation-only: hosts turn them into the
+        // card's visibility params outside the session, so toggling one must
+        // not re-render either.
+        assertEquals(sig(), sig { it.copy(hidePrevNextArrows = true) })
+        assertEquals(sig(), sig { it.copy(hideShareControl = true) })
+        assertEquals(sig(), sig { it.copy(hideBookmarkToggle = true) })
     }
 
     private fun sig(mutate: (UserPreferences) -> UserPreferences = { it }) =

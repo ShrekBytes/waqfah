@@ -11,7 +11,11 @@ import dev.shrekbytes.waqfah.data.repository.TranslationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 // The Bookmarks tab's own ReadingSession (ADR-0005): the same reading machine
@@ -56,6 +60,14 @@ class BookmarksViewModel @Inject constructor(
         bookmarks = bookmarks,
         scope = sessionScope,
     )
+
+    // Same presentation-state exposure as its siblings': the reader's Advanced
+    // hide-settings, which change what the card draws and never what the
+    // session renders.
+    val readingControls: StateFlow<ReadingControlsVisibility> = settingsRepository.loadedPreferences
+        .filterNotNull()
+        .map(ReadingControlsVisibility::of)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReadingControlsVisibility())
 
     private companion object {
         private const val TAG = "BookmarksViewModel"
