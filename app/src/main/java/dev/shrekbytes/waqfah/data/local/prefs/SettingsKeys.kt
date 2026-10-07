@@ -23,6 +23,10 @@ object SettingsKeys {
     val APP_ACTIVE = booleanPreferencesKey("app_active")
     val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
 
+    // #33: auto-next ayah on mark read. Defaults to false — the card never
+    // moves without the user opting in (Advanced settings).
+    val AUTO_NEXT_ON_MARK = booleanPreferencesKey("auto_next_on_mark")
+
     // Feature tour: defaults to false (auto-shows on Home after first install).
     // Only finishing the tour flips it to true; skipping writes nothing, so a
     // skipped tour re-offers on every future launch until it's completed.

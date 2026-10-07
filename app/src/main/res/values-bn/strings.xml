@@ -132,6 +132,9 @@
     <string name="section_permissions">অনুমতিসমূহ</string>
     <string name="app_permissions_row">অ্যাপের অনুমতিসমূহ</string>
     <string name="review_anytime">যেকোনো সময় পরিবর্তনযোগ্য</string>
+    <string name="section_advanced">উন্নত</string>
+    <string name="auto_next_title">পড়া হয়েছে করলে স্বয়ংক্রিয়ভাবে পরের আয়াত</string>
+    <string name="auto_next_sub">একটি আয়াত পড়া হয়েছে হিসেবে চিহ্নিত করার পর স্বয়ংক্রিয়ভাবে পরের আয়াতে যান</string>
     <string name="more_section">অন্যান্য</string>
     <string name="donate_row">অনুদান</string>
     <string name="donate_row_desc">অ্যাপের উন্নয়নে সহায়তা করুন</string>

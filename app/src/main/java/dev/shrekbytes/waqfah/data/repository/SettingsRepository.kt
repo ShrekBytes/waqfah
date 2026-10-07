@@ -58,6 +58,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setTranslationFontSize(size: Int) = edit { it[SettingsKeys.TRANSLATION_FONT_SIZE] = size }
     suspend fun setCooldownMinutes(minutes: Int) = edit { it[SettingsKeys.COOLDOWN_MINUTES] = minutes.coerceIn(PreferenceLimits.COOLDOWN_MIN_MINUTES, PreferenceLimits.COOLDOWN_MAX_MINUTES) }
     suspend fun setAppActive(active: Boolean) = edit { it[SettingsKeys.APP_ACTIVE] = active }
+    suspend fun setAutoNextOnMark(enabled: Boolean) = edit { it[SettingsKeys.AUTO_NEXT_ON_MARK] = enabled }
     suspend fun setOnboardingComplete(complete: Boolean) = edit { it[SettingsKeys.ONBOARDING_COMPLETE] = complete }
     suspend fun setFeatureTourComplete(complete: Boolean) = edit { it[SettingsKeys.FEATURE_TOUR_COMPLETE] = complete }
 
@@ -93,6 +94,7 @@ internal fun Preferences.toUserPreferences() = UserPreferences(
     activeTranslationBengali = this[SettingsKeys.ACTIVE_TRANSLATION_BN] ?: "muhiuddinkhan",
     cooldownMinutes = this[SettingsKeys.COOLDOWN_MINUTES] ?: 30,
     appActive = this[SettingsKeys.APP_ACTIVE] ?: true,
+    autoNextOnMark = this[SettingsKeys.AUTO_NEXT_ON_MARK] ?: false,
     hasCompletedOnboarding = this[SettingsKeys.ONBOARDING_COMPLETE] ?: false,
     hasCompletedFeatureTour = this[SettingsKeys.FEATURE_TOUR_COMPLETE] ?: false,
 )

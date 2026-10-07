@@ -101,7 +101,7 @@ fun FeatureTourOverlay(
                 ayahLabel = state.ayahLabel,
                 translationSourceName = state.translationSourceName,
                 translationText = state.translationText,
-                isMarkedRead = state.isMarkedRead,
+                markReadCount = state.markReadCount,
                 hasTranslationAlternates = state.translationHasAlternates,
             ),
         )
