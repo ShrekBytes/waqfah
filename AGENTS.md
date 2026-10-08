@@ -80,7 +80,8 @@ prefixed with one of them:
 ```
 
 - Headless-safe: the two commands above. CI (`.github/workflows/android-ci.yml`) additionally runs `:app:lintPlayDebug` and `:app:assemblePlayRelease` (proves the R8 release path compiles).
-- `androidTest` (incl. Room migration tests) needs a device/emulator; CI runs them on an API 36 emulator.
+- `androidTest` (incl. Room migration tests) needs a device; CI runs them on an API 36 emulator (see the device rule below).
+- **Need a device? Use the user's connected physical device — never an AVD.** If a task needs a device and none is attached, stop and ask the user to connect one rather than spinning up an emulator. Prefer the `fdroid` flavour for anything on-device (`:app:assembleFdroidDebug`, `:app:testFdroidDebugUnitTest`, `:app:installFdroidDebug`). The only exception is CI, which has no physical device and runs `androidTest` on its own emulator.
 - Extra setup: Android SDK platform 37. Release signing reads `keystore.properties` (gitignored) or `WAQFAH_*` env vars; without it the release task still succeeds but emits an unsigned APK — CI's R8 check relies on that. That keystore is the Google Play key; F-Droid signs its own build.
 - Toolchain: Gradle auto-provisions its daemon JDK (pinned in `gradle/gradle-daemon-jvm.properties`); dependency versions live in `gradle/libs.versions.toml`, fetched by the wrapper on first build.
 - `namespace` and `applicationId` are both `dev.shrekbytes.waqfah` (the flavours add `.fdroid` to the ID only), but they are independent knobs. The Kotlin packages, generated `R`, Hilt wiring, the Room schema directory under `app/schemas/` — which is named after the fully-qualified database class — and `TriggerActivity::class.java.name` (which the interstitial-return rule matches on) all key off the namespace. A store-ID change does not require touching it; a namespace change does require moving that schema directory in step.
