@@ -491,4 +491,35 @@ class TriggerDecisionTest {
         assertEquals(Verdict.Ignore(Reason.INDIRECT_ENTRY), verdict)
     }
 
+    // Only a chooser/resolver suppresses the next open. Every other framework
+    // activity the "android" package ships — dialogs, ANR and shutdown screens
+    // — is not a picker, and dismissing one must not buy a free pass on the
+    // app opened next.
+    @Test
+    fun nonChooserFrameworkActivity_doesNotSuppressTheNextOpen() {
+        val systemDialog = ResumedActivity("android", "com.android.server.wm.AlertActivity")
+        val e = engine()
+        e.resume(systemDialog)
+
+        assertEquals(Verdict.Trigger(A), e.resume(resumed(A)).single())
+    }
+
+    // The chooser moved out of the framework into the standalone IntentResolver
+    // app (Android 13 QPR1+), so it no longer runs under the "android" package.
+    // Detection keys off the class name and must survive the move.
+    @Test
+    fun chooserInTheStandaloneIntentResolverPackage_isStillDetected() {
+        val chooser =
+            ResumedActivity("com.android.intentresolver", "com.android.intentresolver.ChooserActivity")
+        val e = engine()
+        e.resume(resumed(A))
+        e.resume(resumed(L))
+        elapsedMs += 60_000
+        e.resume(chooser)
+
+        val verdict = e.resume(ResumedActivity(A, "com.target.a.ShareActivity")).single()
+
+        assertEquals(Verdict.Ignore(Reason.INDIRECT_ENTRY), verdict)
+    }
+
 }

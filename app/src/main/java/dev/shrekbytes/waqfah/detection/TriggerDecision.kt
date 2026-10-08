@@ -290,12 +290,18 @@ class TriggerDecision(
         return className in indirectEntryClasses(current.packageName)
     }
 
+    // Identified by class name, never by package. The chooser keeps the AOSP
+    // name wherever it lives — the legacy framework location
+    // (com.android.internal.app) and the standalone IntentResolver app that
+    // Android 13 QPR1 unbundled it into (com.android.intentresolver) both end
+    // in these suffixes, and an OEM fork that subclasses it inherits the name.
+    // Matching the package instead would miss the IntentResolver app entirely
+    // and, for the "android" package, would sweep in every other framework
+    // activity — AlertActivity, AppNotRespondingDialog, the shutdown and
+    // charging dialogs — suppressing the pause for the next app opened.
     private fun isSystemPicker(event: ResumedActivity?): Boolean {
         val className = event?.className ?: return false
-        // The framework chooser/resolver runs under the "android" package;
-        // OEM skins subclass them elsewhere, hence the suffix heuristic.
-        return event.packageName == "android" ||
-            className.endsWith("ResolverActivity") ||
+        return className.endsWith("ResolverActivity") ||
             className.endsWith("ChooserActivity")
     }
 
