@@ -60,7 +60,7 @@ components:
   switch-on:
     backgroundColor: "{colors.sage}"
     rounded: "{rounded.pill}"
-  card-reading:
+  card-preview:
     backgroundColor: "{colors.hairline}"
     textColor: "{colors.ink}"
     rounded: "{rounded.card}"
@@ -222,6 +222,9 @@ than `line`.
 - **Shadow Strategy:** none — see The Hairline Rule.
 - **Border:** 1dp `line`.
 - **Internal Padding:** 16dp.
+
+A bordered 16dp card is drawn in exactly one place: the settings preview
+card. The reading card is not boxed — see "Signature: the Reading Card".
 
 ### Inputs / Fields
 - **Style:** hairline pill search field — 1dp `line` border, paper-tone

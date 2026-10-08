@@ -68,10 +68,10 @@
       "css": ".ds-tabbar { display: flex; justify-content: space-evenly; background: #FCFBF7; border: 1px solid rgba(228,223,210,.6); border-radius: 999px; padding: 6px 0; margin: 0 20px; } .ds-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; color: #8A8275; font: 600 11px/1 system-ui, sans-serif; padding: 6px 16px; cursor: pointer; } .ds-tab-pill { display: flex; align-items: center; justify-content: center; width: 42px; height: 27px; border-radius: 999px; font-size: 15px; } .ds-tab-selected { color: #71835F; } .ds-tab-selected .ds-tab-pill { background: #E3E8DA; }"
     },
     {
-      "name": "Reading Card",
+      "name": "Preview Card",
       "kind": "card",
-      "refersTo": "card-reading",
-      "description": "The signature surface: hairline-bordered paper with centered ayah content.",
+      "refersTo": "card-preview",
+      "description": "The settings preview's card: hairline-bordered paper with centered ayah content.",
       "html": "<div class=\"ds-reading-card\"><div class=\"ds-reading-surah\">Al-Ikhlas</div><div class=\"ds-reading-meta\"><span class=\"ds-rule\"></span>112:1<span class=\"ds-rule\"></span></div><div class=\"ds-reading-arabic\" dir=\"rtl\">قُلۡ هُوَ اللّٰهُ اَحَدٌ</div><div class=\"ds-reading-translit\">Qul huwa Allāhu aḥad.</div><div class=\"ds-reading-translation\">Say: He is God, the One.</div></div>",
       "css": ".ds-reading-card { background: rgba(228,223,210,.12); border: 1px solid #E4DFD2; border-radius: 16px; padding: 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 270px; justify-content: center; } .ds-reading-surah { font: 600 13.5px/1.4 system-ui, sans-serif; color: #2A2823; } .ds-reading-meta { display: flex; align-items: center; gap: 10px; color: #8A8275; font: 600 12px/1 system-ui, sans-serif; letter-spacing: .25px; } .ds-rule { width: 18px; height: 1px; background: #E4DFD2; } .ds-reading-arabic { font-family: \"Amiri\", \"Scheherazade New\", serif; font-size: 28px; color: #2A2823; } .ds-reading-translit { font: 400 13px/1.5 system-ui, sans-serif; color: #8A8275; } .ds-reading-translation { font: 400 13.5px/1.5 system-ui, sans-serif; color: #2A2823; border-top: 1px solid #E4DFD2; padding-top: 10px; width: 100%; }"
     }
@@ -85,7 +85,7 @@
       "Flat surfaces: 1dp hairline borders and line-tinted fills, zero shadows",
       "No ripples; press feedback is scale-shrink and a slow-fading highlight",
       "One accent voice per theme, swappable from five hand-tuned accents",
-      "Three bundled Arabic typefaces as first-class content, not decoration"
+      "Two bundled Arabic typefaces as first-class content, not decoration"
     ],
     "rules": [
       { "name": "The One Voice Rule", "body": "The accent appears on at most one or two elements per screen. If a second element needs emphasis, promote it with ink weight, not a second color.", "section": "colors" },
