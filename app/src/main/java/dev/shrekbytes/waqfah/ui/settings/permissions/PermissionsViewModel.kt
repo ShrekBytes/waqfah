@@ -24,12 +24,21 @@ data class PermissionsUiState(
     // refresh() clears it once the permission is observed granted, since a
     // grant implies the don't-ask state was lifted.
     val notificationsPermanentlyDenied: Boolean = false,
+    // Whether this device has the vendor settings screen that owns its
+    // background-activity-start permission. Drives whether the device-specific
+    // group renders at all. There is no matching "granted" field because the
+    // permission's state cannot be read (ADR-0008).
+    val vendorBackgroundStartAvailable: Boolean = false,
 ) {
     fun isGranted(key: PermissionKey): Boolean = when (key) {
         PermissionKey.USAGE_ACCESS -> usageAccessGranted
         PermissionKey.OVERLAY -> overlayGranted
         PermissionKey.BATTERY -> batteryExempted
         PermissionKey.NOTIFICATIONS -> notificationsGranted
+        // Always false, deliberately: nothing can read this permission's state,
+        // so the row is drawn without a state affordance rather than with a
+        // wrong one (ADR-0008).
+        PermissionKey.VENDOR_BACKGROUND_START -> false
     }
 }
 
@@ -55,6 +64,7 @@ class PermissionsViewModel @Inject constructor(
             overlayGranted = permissionsRepository.canDrawOverlays(),
             batteryExempted = permissionsRepository.isIgnoringBatteryOptimizations(),
             notificationsGranted = notificationsGranted,
+            vendorBackgroundStartAvailable = permissionsRepository.hasVendorBackgroundStartScreen(),
             // A grant means the OS's don't-ask state was lifted — the user
             // enabled notifications from the very settings page this flag
             // routes to — so it must not keep routing taps away from the
@@ -76,12 +86,13 @@ class PermissionsViewModel @Inject constructor(
         }
     }
 
-    // One lookup per catalog entry — screens iterate PermissionCatalog.all and
+    // One lookup per catalog entry — screens iterate the catalog's groups and
     // resolve state/intents by stable key instead of hardcoding each row.
     fun settingsIntentFor(key: PermissionKey): Intent = when (key) {
         PermissionKey.USAGE_ACCESS -> permissionsRepository.usageAccessSettingsIntent()
         PermissionKey.OVERLAY -> permissionsRepository.overlaySettingsIntent()
         PermissionKey.BATTERY -> permissionsRepository.batterySettingsIntent()
+        PermissionKey.VENDOR_BACKGROUND_START -> permissionsRepository.vendorBackgroundStartSettingsIntent()
         // NOTIFICATIONS is a runtime permission (see the screens' launcher);
         // this settings deep-link is only its "Don't ask again" fallback.
         else -> permissionsRepository.notificationSettingsIntent()

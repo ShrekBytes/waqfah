@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.data.model.PermissionCatalog
 import dev.shrekbytes.waqfah.data.model.PermissionKey
+import dev.shrekbytes.waqfah.ui.components.PermissionHelpRow
 import dev.shrekbytes.waqfah.ui.components.PermissionToggleRow
 import dev.shrekbytes.waqfah.ui.components.SectionTitle
 import dev.shrekbytes.waqfah.ui.components.SettingsScaffold
@@ -54,8 +55,9 @@ fun PermissionsScreen(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenRationale),
         )
-        // Two labeled groups so users see at a glance what's indispensable
-        // versus recommended (SectionTitle carries the spacing itself).
+        // Labeled groups so users see at a glance what's indispensable, what
+        // this particular device additionally needs, and what's recommended
+        // (SectionTitle carries the spacing itself).
         SectionTitle(stringResource(R.string.perm_section_required))
         PermissionCatalog.all.forEach { info ->
             PermissionToggleRow(
@@ -64,6 +66,19 @@ fun PermissionsScreen(
                 granted = state.isGranted(info.key),
                 onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
             )
+        }
+        // Device-specific rows — present only where the screen that owns the
+        // setting exists, and never gating: the permission cannot be read, so
+        // the row carries no state and is a pointer instead (ADR-0008).
+        if (state.vendorBackgroundStartAvailable) {
+            SectionTitle(stringResource(R.string.perm_section_device))
+            PermissionCatalog.deviceSpecific.forEach { info ->
+                PermissionHelpRow(
+                    title = stringResource(info.nameRes),
+                    subtitle = stringResource(info.descriptionRes),
+                    onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
+                )
+            }
         }
         // Optional rows — recommended for reliability (battery) and visibility
         // (notifications), but neither gates anything.

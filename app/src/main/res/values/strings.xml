@@ -55,8 +55,11 @@
     <string name="perm_battery_desc">Keeps Waqfah running reliably (on the next screen, select Battery &gt; Unrestricted)</string>
     <string name="perm_notifications_name">Notifications</string>
     <string name="perm_notifications_desc">Shows Waqfah\'s silent background notification</string>
+    <string name="perm_vendor_bg_name">Open new windows while running in the background</string>
+    <string name="perm_vendor_bg_desc">Your device needs this before the reading screen can appear over an opened app</string>
     <string name="perm_section_required">Required</string>
     <string name="perm_section_optional">Recommended</string>
+    <string name="perm_section_device">Also needed on your device</string>
     <string name="permissions_title">Permissions</string>
     <string name="permissions_body">Waqfah needs these permissions to detect app launches and run reliably. Review or change them anytime.</string>
     <string name="rationale_title">Why Waqfah needs these</string>
