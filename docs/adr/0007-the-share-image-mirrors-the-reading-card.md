@@ -86,11 +86,6 @@ functional nor read. `inkMuted` was tried and rejected — it is the same tone a
 the translation and the pronunciation, so the signature competed with the text
 it is supposed to sit behind.
 
-The design is drawn out in full in `share-image-mockup.html` at the repository
-root: every palette, a long ayah, the content-off cases, the Bengali case, and
-the share control's slot on all three hosts. It is the visual reference for this
-ADR. The prose here decides; the mockup shows.
-
 ## Consequences
 
 - Pronunciation and translation are optional in the image exactly as they are on
