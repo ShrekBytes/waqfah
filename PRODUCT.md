@@ -87,12 +87,14 @@ no tracking, no lectures. Digital-wellbeing blockers prevent; Waqfah pauses.
   building/releasing, translation-database contribution format.
 - `CONTEXT.md` — the full ubiquitous-language glossary (source of product
   terminology).
-- `docs/ARCHITECTURE.md` and `docs/adr/0001…0004` — durable behavioral
+- `docs/ARCHITECTURE.md` and `docs/adr/0001…0007` — durable behavioral
   rulings (trigger stamp at trigger time; toggle governs detection only;
-  skipped tour persists nothing; interstitial identity is the class name).
+  skipped tour persists nothing; interstitial identity is the class name;
+  bookmarks are a second collection; a third reading mode for the
+  interstitial; the share image mirrors the reading card).
 - Bundled data: `app/src/main/assets/databases/quran_core.db`, bundled
   translation DBs (en/sahih, bn/muhiuddinkhan); UI strings in
-  `values/strings.xml` (~246 strings) with a `values-bn` variant; launcher
+  `values/strings.xml` (~270 strings) with a `values-bn` variant; launcher
   icons in `mipmap-anydpi`.
 - Absences future work must not fabricate: no testimonials, no press, no
   marketing site, no user research or metrics.
@@ -117,7 +119,7 @@ no tracking, no lectures. Digital-wellbeing blockers prevent; Waqfah pauses.
 
 - RTL support for Arabic content (`supportsRtl`, locale config); per-app
   locales persist below Android 13.
-- Adjustable Arabic text sizes, two scripts (Indopak/Uthmani), and several
+- Adjustable Arabic text sizes, two scripts (Indopak/Uthmani), and two
   bundled fonts serve differing reading traditions and eyesight needs.
 - App language: English, Bengali, or system.
 - Recommended permission denials never block or degrade onboarding.

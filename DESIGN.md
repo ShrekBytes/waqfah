@@ -93,7 +93,7 @@ default ripple and floating-label fields.
 - Flat surfaces: 1dp hairline borders and line-tinted fills, zero shadows
 - No ripples; press feedback is scale-shrink and a slow-fading highlight
 - One accent voice per theme, swappable from five hand-tuned accents
-- Three bundled Arabic typefaces as first-class content, not decoration
+- Two bundled Arabic typefaces as first-class content, not decoration
 
 ## Colors
 
@@ -125,7 +125,7 @@ terracotta rather than red, matching the paper family.
 - **Ink Muted** (`#8A8275`): secondary text.
 - **Ink Soft** (`#B7AF9C`): disabled and tertiary text.
 - **Hairline** (`#E4DFD2`): 1dp borders, dividers, toggle track, and — at
-  12% alpha — the reading card's paper tint.
+  12% alpha — the settings preview card's paper fill.
 
 ### Fixed-accent palettes
 Four themes ship fixed accents (no picker): **Cream** (`#EAE2CE` paper,
@@ -185,10 +185,10 @@ separation via dividers or spacing, not boxed cards.
 **The Hairline Rule.** This system is flat by conviction: there is not one
 shadow in the codebase, and `Modifier.shadow` never appears. Depth is
 conveyed three ways only — a 1dp hairline border in `line` (the crisp card
-treatment), a 12%-alpha tint of `line` as a fill (the reading-card paper),
-and, in dark themes only, a subtle lightening of floating surfaces (the tab
-bar lerps 7% toward white) to read as a lifted sheet. Never introduce
-shadows, gradients-as-depth, or blur.
+treatment), a 12%-alpha tint of `line` as a fill (the settings preview
+card's paper), and, in dark themes only, a subtle lightening of floating
+surfaces (the tab bar lerps 7% toward white) to read as a lifted sheet.
+Never introduce shadows, gradients-as-depth, or blur.
 
 ## Shapes
 
@@ -240,11 +240,14 @@ fill instead.
 
 ### Signature: the Reading Card
 The system's reason to exist, identical on Home and in the interstitial:
-16dp card, hairline border, line-tinted paper; centered surah header with
-18dp divider dashes flanking the ayah label; the Arabic face at
-user-chosen size; optional transliteration and translation stacked beneath
-short center rules. All content centered, all sizing user-controlled in
-`sp`, RTL handled per-segment rather than app-wide.
+no card chrome — the page runs edge to edge on the theme background, and
+the frame that once boxed it was dropped because a box around a single ayah
+read as chrome rather than as a kept page; a centered surah header, a
+floating pill wherever the host has somewhere to send the reader; the ayah
+label flanked by 20dp hairline rules, solid and never dashed; the Arabic
+face at user-chosen size; optional transliteration and translation stacked
+beneath short center rules. All content centered, all sizing
+user-controlled in `sp`, RTL handled per-segment rather than app-wide.
 
 ### Signature: the Mark-Read pill
 The single gamification-free reward: pending = solid accent ("Mark read"),
