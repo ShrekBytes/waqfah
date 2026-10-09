@@ -1,0 +1,4 @@
+New themes, and a few fixes.
+
+* Matte Black, Material Light and Material Dark replace the Cream,
+  Midnight and Indigo themes; an old choice falls back to System
