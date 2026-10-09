@@ -50,15 +50,16 @@ already have — one ayah at a time, without asking you to build a new routine.
 
 **Look and feel**
 
-- Seven themes, five accent colours.
+- Seven themes, five accent colours — every theme but Stone takes the picker.
 - English or Bengali interface, or follow the system language.
 
 <p align="center">
-  <img src="docs/img/theme1.png" width="19%" alt="The reading screen in the Light theme: warm off-white paper with a sage accent">
-  <img src="docs/img/theme2.png" width="19%" alt="The reading screen in the Cream theme: cream paper with a terracotta accent">
-  <img src="docs/img/theme3.png" width="19%" alt="The reading screen in the Stone theme: monochrome sage-gray with an ink accent">
-  <img src="docs/img/theme4.png" width="19%" alt="The reading screen in the Midnight theme: a black OLED background with a lamplight-gold accent">
-  <img src="docs/img/theme5.png" width="19%" alt="The reading screen in the Indigo theme: a night-sky navy background with a gold accent">
+  <img src="docs/img/reading-light.png" width="16%" alt="The reading screen in the Light theme: warm off-white paper with a sage accent, pronunciation and an English translation under the ayah">
+  <img src="docs/img/reading-arabic-only.png" width="16%" alt="The reading screen in the Material Dark theme with both aids off: Arabic script alone on an accent-tinted near-black page">
+  <img src="docs/img/reading-bengali.png" width="16%" alt="The Stone theme with the interface and both aids set to Bengali: Bengali pronunciation and translation under the ayah">
+  <img src="docs/img/pause-matte-black.png" width="16%" alt="The pause appearing over Chrome in the Matte Black theme, with Mark Read and Open Chrome buttons">
+  <img src="docs/img/appearance-material-light.png" width="16%" alt="Settings in the Material Light theme: seven theme choices and five accent swatches, with Material Light and Sage selected">
+  <img src="docs/img/bookmarks-dark.png" width="16%" alt="The Bookmarks tab in the Dark theme showing a saved ayah with the bookmark ribbon filled">
 </p>
 
 ## Getting started
