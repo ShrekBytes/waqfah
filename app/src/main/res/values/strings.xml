@@ -189,7 +189,11 @@
 
     <!-- Bookmarks -->
     <string name="bookmarks_empty_title">No bookmarks yet</string>
-    <string name="bookmarks_empty_body">Tap the bookmark ribbon on any ayah to keep it here. Saved ayahs stay in Quran order, ready whenever you return.</string>
+    <string name="bookmarks_empty_body">Keep the ayahs you want to return to.</string>
+    <string name="bookmarks_empty_step1">Tap the ribbon to add or remove a bookmark</string>
+    <string name="bookmarks_empty_step1_sub">Or hold the right half of an ayah to do the same.</string>
+    <string name="bookmarks_empty_step2">Saved ayahs gather here</string>
+    <string name="bookmarks_empty_step2_sub">Reads like Home, but only your saved ayahs.</string>
     <string name="bookmarks_list_title">Bookmarks</string>
     <string name="bookmarks_saved_count_fmt">%1$s saved</string>
     <string name="cd_bookmarks_header">Bookmarks</string>
