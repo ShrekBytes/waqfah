@@ -1,7 +1,6 @@
 package dev.shrekbytes.waqfah.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Icon
@@ -45,10 +43,18 @@ import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 // would have used, the list the space under its title.
 //
 // The mark is the reader's own future state — a filled ribbon, which is what a
-// saved bookmark looks like — sitting on an accentSoft disc. That disc is the
-// only accent inside this block, which is what The One Voice Rule asks of it;
-// the screen's other accent is the tab bar's selected pill, which the host
-// draws. Nothing else here carries color — the ink ladder does the rest.
+// saved bookmark looks like — drawn bare, with no disc behind it, for the same
+// reason the step glyphs below carry no ring: the feature tour settled it
+// ("bare icon, no circle halo"), and a halo is chrome of the kind the reading
+// card's dropped box was. The ribbon is the block's only accent, which is what
+// The One Voice Rule asks of it; the screen's other accent is the tab bar's
+// selected pill, which the host draws.
+//
+// Sized below the tour's 32dp page icons on purpose: the ribbon's path spans two
+// thirds of its 18-unit viewBox, so 36dp draws about 24dp of ink, and this mark
+// sits above a 19sp title rather than alone on a page. The spacer under it is
+// kept tight because the viewBox already pads the path by a sixth of its height,
+// which reads as extra gap the moment the mark is bare.
 @Composable
 fun BookmarkEmptyState(modifier: Modifier = Modifier) {
     val colors = WaqfahTheme.colors
@@ -57,13 +63,8 @@ fun BookmarkEmptyState(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            Modifier.size(78.dp).background(colors.accentSoft, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            BookmarkRibbonIcon(filled = true, tint = colors.accent, modifier = Modifier.size(36.dp))
-        }
-        Spacer(Modifier.height(20.dp))
+        BookmarkRibbonIcon(filled = true, tint = colors.accent, modifier = Modifier.size(36.dp))
+        Spacer(Modifier.height(12.dp))
         Text(
             stringResource(R.string.bookmarks_empty_title),
             color = colors.ink,
@@ -101,7 +102,7 @@ fun BookmarkEmptyState(modifier: Modifier = Modifier) {
             ) {
                 // The outlined ribbon — the exact control the step names, drawn
                 // the way the reader will first see it on the card.
-                BookmarkRibbonIcon(filled = false, tint = colors.inkMuted, modifier = Modifier.size(16.dp))
+                BookmarkRibbonIcon(filled = false, tint = colors.inkMuted, modifier = Modifier.size(18.dp))
             }
             EmptyStep(
                 label = stringResource(R.string.bookmarks_empty_step2),
@@ -111,18 +112,19 @@ fun BookmarkEmptyState(modifier: Modifier = Modifier) {
                     imageVector = Icons.AutoMirrored.Filled.List,
                     contentDescription = null,
                     tint = colors.inkMuted,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(18.dp),
                 )
             }
         }
     }
 }
 
-// One how-to line: a glyph in a hairline capsule, the action beside it, and the
-// consequence beneath. The chip is a 1dp line ring over a faint line tint — no
-// shadow, per The Hairline Rule. The 0.4 alpha sits inside the 0.3-0.6 band
-// `line` fills already use elsewhere, and it is one value for every palette:
-// DESIGN.md's 12% is the settings preview card's fill specifically, not a cap.
+// One how-to line: a bare glyph on the heading's own line, the action beside it
+// and the consequence beneath. No ring around the glyph — the feature tour
+// settled that already ("bare icon, no circle halo"), and a halo here is the
+// same chrome the reading card's dropped box was. The tour paints its icons with
+// the accent; these stay on the ink ladder instead, because the disc above
+// already spends the screen's accent and nothing should compete with it.
 @Composable
 private fun EmptyStep(
     label: String,
@@ -131,16 +133,15 @@ private fun EmptyStep(
 ) {
     val colors = WaqfahTheme.colors
     Row {
+        // A 19dp slot — the label's own lineHeight — centres the glyph on the
+        // heading's line, so every row's mark lands on the same axis as its text.
         Box(
-            Modifier
-                .size(34.dp)
-                .background(colors.line.copy(alpha = 0.4f), CircleShape)
-                .border(1.dp, colors.line, CircleShape),
+            Modifier.size(width = 18.dp, height = 19.dp),
             contentAlignment = Alignment.Center,
         ) {
             glyph()
         }
-        Spacer(Modifier.width(13.dp))
+        Spacer(Modifier.width(12.dp))
         Column {
             Text(
                 label,
