@@ -104,6 +104,14 @@ TriggerDecision as a constructor probe.
   `loadedPreferences` (`UserPreferences?`: null until DataStore's first
   emission, contract pinned by LoadedPreferencesTest); await-then-act readers
   use the cold `preferences` flow.
+- **`ui/theme`** — `AppTheme` (seven values) and `AccentColor` (five) with
+  their palette tables in `Color.kt`; `WaqfahTheme` resolves the chosen theme
+  and accent into the 9-role `WaqfahColors` published through
+  `LocalWaqfahColors`, and sets the system-bar icon contrast from whichever
+  background resolved. Material Light/Dark are accent-keyed maps — the accent
+  tints the whole surface — and every value in every palette is a frozen
+  literal, never derived at runtime (DESIGN.md's Hand-Tuned Rule). A retired
+  theme name falls back to `SYSTEM` rather than crashing.
 - Repositories expose Flows; ViewModels combine them into immutable UI state;
   Compose screens stay stateless where possible. Three deliberate exceptions:
   each reading host exposes its ReadingSession directly (the machine owns its

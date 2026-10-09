@@ -59,6 +59,12 @@ no tracking, no lectures. Digital-wellbeing blockers prevent; Waqfah pauses.
 - Arabic display: Indopak and Uthmani scripts, bundled fonts, adjustable
   sizes; optional transliteration; translations bundled in English and
   Bengali with more available as downloads.
+- Appearance: seven themes and five accent colours, with the accent picker on
+  every theme but Stone. Matte Black is a neutral matte surface; the two
+  Material themes seed the whole surface from the accent. Every palette value
+  is a hand-written literal, never derived at runtime (`DESIGN.md`).
+- Sharing: any ayah can be shared as an image, which mirrors the reading card
+  (ADR-0007).
 - Trigger restraint: at most one reading screen per app open; a per-app
   cooldown (or Off) controls repeats; share-sheet and "Open with" entries
   never trigger; never on calls; never on quick switch-backs.
