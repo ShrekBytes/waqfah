@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="docs/img/showcase.gif" width="24%" alt="Recording of the live pause: a monitored app opens, Waqfah's reading screen appears over it, and skipping continues straight into the app">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="24%" alt="The reading screen: an ayah in Arabic script with transliteration and an English translation, above a Mark Read button">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="24%" alt="The reading screen: an ayah in Arabic script with pronunciation and an English translation, above a Mark Read button">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="24%" alt="Change Surah and Ayah Screen - Jump to any ayah and read">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="24%" alt="The Apps screen: a searchable list of installed apps with toggles, and a Wait before showing again control">
 </p>
@@ -34,7 +34,7 @@ already have — one ayah at a time, without asking you to build a new routine.
 - Read in order — Waqfah always resumes at your lowest unread ayah — or dip
   in randomly. Progress is tracked across all 6,236 ayat.
 - Indopak or Uthmani script, two bundled Arabic fonts, adjustable text size.
-- Transliteration and translation are each set independently to English, Bengali
+- Pronunciation and translation are each set independently to English, Bengali
   or off, and surah names to English, Bengali or Arabic. English and Bengali
   translations are built in, with more available as downloads.
 - Save any ayah to Bookmarks. Saved ayahs are a reading mode of their own,
@@ -58,9 +58,9 @@ already have — one ayah at a time, without asking you to build a new routine.
 - English or Bengali interface, or follow the system language.
 
 <p align="center">
-  <img src="docs/img/reading-light.png" width="16%" alt="The reading screen in the Light theme: warm off-white paper with a sage accent, transliteration and an English translation under the ayah">
+  <img src="docs/img/reading-light.png" width="16%" alt="The reading screen in the Light theme: warm off-white paper with a sage accent, pronunciation and an English translation under the ayah">
   <img src="docs/img/reading-arabic-only.png" width="16%" alt="The reading screen in the Material Dark theme with both aids off: Arabic script alone on an accent-tinted near-black page">
-  <img src="docs/img/reading-bengali.png" width="16%" alt="The Stone theme with the interface, surah name and both aids all set to Bengali: Bengali transliteration and translation under the ayah, and the surah name and ayat count in Bengali">
+  <img src="docs/img/reading-bengali.png" width="16%" alt="The Stone theme with the interface, surah name and both aids all set to Bengali: Bengali pronunciation and translation under the ayah, and the surah name and ayat count in Bengali">
   <img src="docs/img/pause-matte-black.png" width="16%" alt="The pause appearing over Chrome in the Matte Black theme, with Mark Read and Open Chrome buttons">
   <img src="docs/img/appearance-material-light.png" width="16%" alt="Settings in the Material Light theme: seven theme choices and five accent swatches, with Material Light and Sage selected">
   <img src="docs/img/bookmarks-dark.png" width="16%" alt="The Bookmarks tab in the Dark theme showing a saved ayah with the bookmark ribbon filled">

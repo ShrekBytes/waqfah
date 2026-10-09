@@ -144,6 +144,16 @@ the in-surah continue (first-unread-in-surah, else the surah's first ayah),
 and next/previous stepping with wrap-around.
 _Avoid_: verse picker
 
+**Pronunciation**:
+The transliteration aid: the ayah rendered in Latin or Bengali script, shown
+under the Arabic and set independently to English, Bengali or off. It has two
+names on purpose — **pronunciation** is the user-facing word (the app's UI, the
+README, store copy), **transliteration** is the developer-facing one
+(`quran_core.db`'s `en_transliteration`/`bn_transliteration` columns,
+`docs/quran-core-db.md`). Match the audience: pronunciation for anything a
+reader sees, transliteration for schema and developer docs.
+_Avoid_: mixing the two on one surface
+
 **Bookmark**:
 One verse the user saved to their own collection. It is a verse and nothing
 else — no note, no label, no trigger context; the verse's text is never
