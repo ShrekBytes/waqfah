@@ -67,6 +67,18 @@ class SettingsMappingTest {
     }
 
     @Test
+    fun retiredThemeNames_fallBackToSystem() = runBlocking {
+        // Cream, Midnight and Indigo were dropped from AppTheme. Anyone still
+        // storing one of those names has to land on System, not crash.
+        listOf("CREAM", "MIDNIGHT", "INDIGO").forEach { retired ->
+            val store = newStore()
+            store.edit { it[SettingsKeys.THEME] = retired }
+            val prefs = store.data.first().toUserPreferences()
+            assertEquals("retired theme $retired", AppTheme.SYSTEM, prefs.theme)
+        }
+    }
+
+    @Test
     fun knownValues_mapThrough() = runBlocking {
         val store = newStore()
         store.edit {

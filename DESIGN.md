@@ -3,8 +3,9 @@ name: Waqfah
 description: A pause, never an obstacle — ink on warm paper before every app open
 colors:
   # Canonical instance: Light theme + Sage accent. Sibling palettes (Dark,
-  # Cream, Stone, Midnight, Indigo) and accent variants are documented in the
-  # Colors section; the source of truth is ui/theme/Color.kt + Theme.kt.
+  # Stone, Matte Black, Material Light, Material Dark) and accent variants are
+  # documented in the Colors section; the source of truth is ui/theme/Color.kt
+  # + Theme.kt.
   paper: "#F6F3EC"
   ink: "#2A2823"
   ink-muted: "#8A8275"
@@ -88,7 +89,9 @@ anti-references: neon accent glow, glass blur, gamified streaks, Material's
 default ripple and floating-label fields.
 
 **Key Characteristics:**
-- Warm paper backgrounds with a full ink-to-muted-to-soft text ladder
+- Paper-like backgrounds with a full ink-to-muted-to-soft text ladder — warm in
+  Light, Dark and Stone, neutral in Matte Black, accent-tinted in the Material
+  palettes
 - Full-capsule (pill) geometry for every interactive element
 - Flat surfaces: 1dp hairline borders and line-tinted fills, zero shadows
 - No ripples; press feedback is scale-shrink and a slow-fading highlight
@@ -97,10 +100,13 @@ default ripple and floating-label fields.
 
 ## Colors
 
-A warm, low-chroma family: every palette is paper-and-ink at heart, with a
-single muted accent doing almost no work — its rarity is the point. The app
-ships six full palettes and, for the three base ones, a five-choice accent
-picker; every value below is hand-tuned per palette and per mode (never
+A low-chroma family: every palette is paper-and-ink at heart, with a single
+muted accent doing almost no work — its rarity is the point. Most are warm, but
+Matte Black is deliberately neutral and the two Material palettes let the accent
+tint the surface itself. The app ships six palettes plus a System entry that
+follows the device — Light, Dark, Stone, Matte Black, Material Light and
+Material Dark — and the five-choice accent picker applies to all of them except
+Stone. Every value below is hand-written per palette and per mode (never
 runtime-derived), so treat `ui/theme/Color.kt` as the source of truth.
 
 ### Primary
@@ -127,12 +133,36 @@ terracotta rather than red, matching the paper family.
 - **Hairline** (`#E4DFD2`): 1dp borders, dividers, toggle track, and — at
   12% alpha — the settings preview card's paper fill.
 
-### Fixed-accent palettes
-Four themes ship fixed accents (no picker): **Cream** (`#EAE2CE` paper,
-terracotta accent `#B2543D`), **Stone** (monochrome sage-gray `#B0BAB0`,
-accent = ink — the only palette where accent and ink are the same voice),
-**Midnight** (OLED `#0C0B09`, lamplight-gold accent `#C9A96B`), **Indigo**
-(night-sky `#161A2E`, gold accent `#D4A15C`).
+### Material palettes
+**Material Light** and **Material Dark** are the only palettes where the accent
+seeds *every* role — surface, text and on-accent text alike — so nothing in them
+is neutral. The page is a low-chroma tint of the chosen accent's own hue, so
+Slate gives a cool blue-tinted paper and Clay a warm terracotta one. Light and
+Dark, by contrast, keep their warm cream or warm charcoal paper whatever the
+accent is, and paint plain near-white/near-black on their accent fills. Values
+are frozen literals from an offline CIELAB tonal run (tone = L*, the axis
+Material's HCT also calls tone). `accent` and `accentSoft` are shared with the
+accent table above, so the picker swatch cannot drift from what is painted;
+`accentInk` is re-derived per palette, because the shared copy is deliberately
+near-neutral. A near-white cannot hold much chroma, so the light on-accent text
+is only faintly tinted — that is the colour space, not a shortcut.
+
+"Material" here means Material's *colour* model only — its tonal shade ramps.
+The app's geometry, motion and chrome are untouched: no ripple, no elevation,
+no floating-label fields, per the anti-references above.
+
+### Matte Black
+A flat neutral surface (`#151515`) — matte grey-black rather than an OLED-glossy
+void, and the darkest of the palettes (L* 6.8, below Dark's 10.4). Deliberately
+untinted, so the accent is the only colour on screen. Takes the accent picker
+exactly like Light and Dark. Its hairline sits *above* the surface (`#282828`),
+picked to match Dark's hairline contrast almost exactly (1.24 vs 1.26); a line
+at or below the surface value renders as nothing at all.
+
+### Fixed-accent palette
+One theme ships a fixed accent (no picker): **Stone** (monochrome sage-gray
+`#B0BAB0`, accent = ink — the only palette where accent and ink are the same
+voice).
 
 ### Named Rules
 **The One Voice Rule.** The accent appears on at most one or two elements
@@ -144,7 +174,10 @@ opacity fades of ink and never new grays. Every palette ships all three.
 
 **The Hand-Tuned Rule.** Never derive a companion color at runtime (lerps,
 luminance thresholds). Every accent/palette/mode combination is a
-hand-written value, because derivation visibly drifts in dark themes.
+hand-written value, because derivation visibly drifts in dark themes. The
+Material palettes' tinted surfaces follow the same rule: their tonal ramp was
+computed offline and frozen into `Color.kt` as literals — the math is allowed,
+a runtime call to it is not.
 
 ## Typography
 

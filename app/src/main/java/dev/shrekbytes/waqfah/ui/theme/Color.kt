@@ -17,6 +17,9 @@ data class AccentVariant(val accent: Color, val soft: Color, val ink: Color)
 // rather than derived at runtime. `swatch` is only the color shown for the
 // picker button itself (always the light variant, matching the prototype's
 // static swatch buttons).
+//
+// These are the BASE themes' values. The material palettes below deliberately
+// do not reuse `ink` — see the note there.
 enum class AccentColor(val swatch: Color, val light: AccentVariant, val dark: AccentVariant) {
     SAGE(
         swatch = Color(0xFF71835F),
@@ -54,8 +57,8 @@ fun AccentColor.displayName(): String = when (this) {
     AccentColor.OCHRE -> stringResource(R.string.accent_ochre)
 }
 
-// Cream, Stone, Midnight and Indigo ship a fixed accent (no picker) — matches
-// the prototype.
+// Stone is the only theme that ships a fixed accent (no picker); everything
+// else swaps in one of the five AccentColor variants at resolve time.
 internal object BasePalettes {
     val Light = WaqfahColors(
         background = Color(0xFFF6F3EC), ink = Color(0xFF2A2823),
@@ -71,13 +74,6 @@ internal object BasePalettes {
         accentInk = Color(0xFF1E1C18), accentSoft = Color(0xFF323A28),
         danger = Color(0xFFC97A64),
     )
-    val Cream = WaqfahColors(
-        background = Color(0xFFEAE2CE), ink = Color(0xFF2B2620),
-        inkMuted = Color(0xFF6E6344), inkSoft = Color(0xFFBFB59A),
-        line = Color(0xFFDDD3B8), accent = Color(0xFFB2543D),
-        accentInk = Color(0xFFFBF5F1), accentSoft = Color(0xFFEDD9CE),
-        danger = Color(0xFFA15C4B),
-    )
     val Stone = WaqfahColors(
         background = Color(0xFFB0BAB0), ink = Color(0xFF363E35),
         inkMuted = Color(0xFF4E574E), inkSoft = Color(0xFF798279),
@@ -85,24 +81,123 @@ internal object BasePalettes {
         accentInk = Color(0xFFB0BAB0), accentSoft = Color(0xFFA4AEA4),
         danger = Color(0xFF363E35),
     )
-    // Near-black, warm-neutral — an OLED-friendly "true dark" option distinct
-    // from Dark's warm charcoal. Accent is a soft lamplight gold: warm enough
-    // to read as "ink and paper by low light" rather than a cold terminal glow.
-    val Midnight = WaqfahColors(
-        background = Color(0xFF0C0B09), ink = Color(0xFFECE6D6),
-        inkMuted = Color(0xFF8F8674), inkSoft = Color(0xFF433D32),
-        line = Color(0xFF241F18), accent = Color(0xFFC9A96B),
-        accentInk = Color(0xFF1A1610), accentSoft = Color(0xFF2E2717),
-        danger = Color(0xFFC9776B),
+    // A flat neutral surface rather than an OLED-glossy void: #151515 reads as
+    // matte grey-black instead of a switched-off panel, and stays the darkest
+    // of the palettes (L* 6.8, below Dark's 10.4). Deliberately untinted — the
+    // accent is the only colour on screen, and the picker swaps it the same way
+    // it does for Light and Dark (the accent trio below is just Sage's dark
+    // variant, replaced at resolve time).
+    //
+    // The hairline sits *above* the surface (#282828) and is picked to match
+    // Dark's hairline contrast almost exactly (1.24 vs 1.26), so 1dp borders and
+    // dividers read the same in both. A line at or below the surface value is
+    // invisible — that is what #262523 would have been here.
+    val MatteBlack = WaqfahColors(
+        background = Color(0xFF151515), ink = Color(0xFFE9E7E4),
+        inkMuted = Color(0xFF9B9894), inkSoft = Color(0xFF5B5854),
+        line = Color(0xFF282828), accent = Color(0xFF93A87D),
+        accentInk = Color(0xFF1E1C18), accentSoft = Color(0xFF323A28),
+        danger = Color(0xFFC97A64),
     )
-    // Deep indigo night sky instead of Midnight's neutral black — same warm
-    // ink-on-page contrast, cooler backdrop. A second, genuinely different
-    // dark mood rather than a re-tint of Midnight.
-    val Indigo = WaqfahColors(
-        background = Color(0xFF161A2E), ink = Color(0xFFE8E2D0),
-        inkMuted = Color(0xFF8890A8), inkSoft = Color(0xFF3D4358),
-        line = Color(0xFF262C42), accent = Color(0xFFD4A15C),
-        accentInk = Color(0xFF1C1710), accentSoft = Color(0xFF3A311F),
-        danger = Color(0xFFCB7B6C),
+
+    // Material Light/Dark are the only palettes where the accent seeds the
+    // *surface* as well as the accent roles, so each of the five accents needs
+    // its own full entry rather than the base-palette-plus-swapped-accent shape
+    // every other theme uses. That is the whole difference from Light/Dark,
+    // whose paper stays warm cream whatever the accent.
+    //
+    // Every value below is a frozen literal from an offline CIELAB tonal run
+    // (tone == L*, the same axis Material's HCT calls tone): surfaces sit at low
+    // chroma on the accent's own hue, which is what makes the paper re-tint per
+    // accent. Nothing is derived at runtime — see the Hand-Tuned Rule in
+    // DESIGN.md. `accent` and `accentSoft` are read from AccentColor rather than
+    // restated, so the picker swatch can never drift from what is painted.
+    //
+    // `accentInk` is the exception, and the reason these themes carry their own
+    // copy: it is the text drawn *on* the accent fill (pills, selected chips,
+    // the toggle knob, checkmarks), and AccentColor's version of it is
+    // near-neutral (chroma ~1-4) because the base themes want plain white-on-
+    // accent. These themes admit no neutral, so it is re-derived as the
+    // lightest/darkest shade of the accent's own hue that stays readable.
+    // Chroma is requested high and gamut-mapped down, so each is as tinted as
+    // the colour space allows — a near-white cannot hold much (Clay lands at
+    // 4.2), a near-black can (~14).
+    val MaterialLight: Map<AccentColor, WaqfahColors> = mapOf(
+        AccentColor.SAGE to materialLight(
+            AccentColor.SAGE,
+            background = 0xFFF5FBEE, ink = 0xFF252920, inkMuted = 0xFF6C7563,
+            inkSoft = 0xFFA5AE9B, line = 0xFFD4DDC9, accentInk = 0xFFEEFBE1,
+        ),
+        AccentColor.CLAY to materialLight(
+            AccentColor.CLAY,
+            background = 0xFFFFF8F5, ink = 0xFF312521, inkMuted = 0xFF846D65,
+            inkSoft = 0xFFBFA69D, line = 0xFFEFD4CC, accentInk = 0xFFFFF4F1,
+        ),
+        AccentColor.SLATE to materialLight(
+            AccentColor.SLATE,
+            background = 0xFFF5FAFF, ink = 0xFF202931, inkMuted = 0xFF637484,
+            inkSoft = 0xFF9CADBE, line = 0xFFCADCEE, accentInk = 0xFFF0F7FF,
+        ),
+        AccentColor.PLUM to materialLight(
+            AccentColor.PLUM,
+            background = 0xFFFFF7FD, ink = 0xFF2F252C, inkMuted = 0xFF7F6D7B,
+            inkSoft = 0xFFB9A6B4, line = 0xFFE9D4E4, accentInk = 0xFFFFF3FC,
+        ),
+        AccentColor.OCHRE to materialLight(
+            AccentColor.OCHRE,
+            background = 0xFFFFF8EF, ink = 0xFF2D271E, inkMuted = 0xFF7C7060,
+            inkSoft = 0xFFB6A998, line = 0xFFE6D8C5, accentInk = 0xFFFFF5E7,
+        ),
+    )
+    val MaterialDark: Map<AccentColor, WaqfahColors> = mapOf(
+        AccentColor.SAGE to materialDark(
+            AccentColor.SAGE,
+            background = 0xFF171B11, ink = 0xFFE1E7DA, inkMuted = 0xFF8B9481,
+            inkSoft = 0xFF525A49, line = 0xFF343C2C, accentInk = 0xFF252F1C,
+        ),
+        AccentColor.CLAY to materialDark(
+            AccentColor.CLAY,
+            background = 0xFF221712, ink = 0xFFF3E2DC, inkMuted = 0xFFA38C83,
+            inkSoft = 0xFF68524B, line = 0xFF48352D, accentInk = 0xFF3D261E,
+        ),
+        AccentColor.SLATE to materialDark(
+            AccentColor.SLATE,
+            background = 0xFF111B22, ink = 0xFFDBE7F2, inkMuted = 0xFF8193A3,
+            inkSoft = 0xFF485968, line = 0xFF2A3B49, accentInk = 0xFF162E3F,
+        ),
+        AccentColor.PLUM to materialDark(
+            AccentColor.PLUM,
+            background = 0xFF20171E, ink = 0xFFEFE1EB, inkMuted = 0xFF9F8B99,
+            inkSoft = 0xFF64525F, line = 0xFF453440, accentInk = 0xFF3A2635,
+        ),
+        AccentColor.OCHRE to materialDark(
+            AccentColor.OCHRE,
+            background = 0xFF1E190F, ink = 0xFFEDE4D8, inkMuted = 0xFF9B8F7E,
+            inkSoft = 0xFF605646, line = 0xFF413829, accentInk = 0xFF352B18,
+        ),
     )
 }
+
+// The material palettes share their danger voice with the base Light/Dark ones:
+// DESIGN.md is explicit that danger is terracotta rather than red, and a
+// destructive action tinted to the accent would read as an ordinary accent
+// action. It is therefore deliberately not part of the accent-derived surface.
+private fun materialLight(
+    accent: AccentColor,
+    background: Long, ink: Long, inkMuted: Long, inkSoft: Long, line: Long, accentInk: Long,
+) = WaqfahColors(
+    background = Color(background), ink = Color(ink), inkMuted = Color(inkMuted),
+    inkSoft = Color(inkSoft), line = Color(line), accent = accent.light.accent,
+    accentInk = Color(accentInk), accentSoft = accent.light.soft,
+    danger = Color(0xFFA15C4B),
+)
+
+private fun materialDark(
+    accent: AccentColor,
+    background: Long, ink: Long, inkMuted: Long, inkSoft: Long, line: Long, accentInk: Long,
+) = WaqfahColors(
+    background = Color(background), ink = Color(ink), inkMuted = Color(inkMuted),
+    inkSoft = Color(inkSoft), line = Color(line), accent = accent.dark.accent,
+    accentInk = Color(accentInk), accentSoft = accent.dark.soft,
+    danger = Color(0xFFC97A64),
+)

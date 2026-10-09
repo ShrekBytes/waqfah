@@ -115,10 +115,10 @@
     <string name="lang_system">সিস্টেম ডিফল্ট</string>
     <string name="theme_light">লাইট</string>
     <string name="theme_dark">ডার্ক</string>
-    <string name="theme_cream">ক্রিম</string>
     <string name="theme_stone">স্টোন</string>
-    <string name="theme_midnight">মিডনাইট</string>
-    <string name="theme_indigo">ইন্ডিগো</string>
+    <string name="theme_matte_black">ম্যাট ব্ল্যাক</string>
+    <string name="theme_material_light">মেটেরিয়াল লাইট</string>
+    <string name="theme_material_dark">মেটেরিয়াল ডার্ক</string>
     <string name="accent_sage">সেজ</string>
     <string name="accent_clay">ক্লে</string>
     <string name="accent_slate">স্লেট</string>

@@ -115,10 +115,10 @@
     <string name="lang_system">System default</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
-    <string name="theme_cream">Cream</string>
     <string name="theme_stone">Stone</string>
-    <string name="theme_midnight">Midnight</string>
-    <string name="theme_indigo">Indigo</string>
+    <string name="theme_matte_black">Matte Black</string>
+    <string name="theme_material_light">Material Light</string>
+    <string name="theme_material_dark">Material Dark</string>
     <string name="accent_sage">Sage</string>
     <string name="accent_clay">Clay</string>
     <string name="accent_slate">Slate</string>

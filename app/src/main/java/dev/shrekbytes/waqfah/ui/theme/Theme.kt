@@ -21,23 +21,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
 import dev.shrekbytes.waqfah.R
 
-enum class AppTheme { SYSTEM, LIGHT, DARK, CREAM, STONE, MIDNIGHT, INDIGO }
+enum class AppTheme { SYSTEM, LIGHT, DARK, STONE, MATTE_BLACK, MATERIAL_LIGHT, MATERIAL_DARK }
 
-// CREAM/STONE/MIDNIGHT/INDIGO ship a hand-tuned fixed accent (see
-// BasePalettes), so the accent picker only makes sense for the three base
-// themes.
+// STONE is the only theme that ships a hand-tuned fixed accent (see
+// BasePalettes), so it is the only one the picker doesn't apply to. Matte Black
+// and both Material themes take the five accents exactly like Light and Dark.
 val AppTheme.hasAccentPicker: Boolean
-    get() = this == AppTheme.SYSTEM || this == AppTheme.LIGHT || this == AppTheme.DARK
+    get() = this != AppTheme.STONE
 
 @Composable
 fun AppTheme.displayName(): String = when (this) {
     AppTheme.SYSTEM -> stringResource(R.string.lang_system)
     AppTheme.LIGHT -> stringResource(R.string.theme_light)
     AppTheme.DARK -> stringResource(R.string.theme_dark)
-    AppTheme.CREAM -> stringResource(R.string.theme_cream)
     AppTheme.STONE -> stringResource(R.string.theme_stone)
-    AppTheme.MIDNIGHT -> stringResource(R.string.theme_midnight)
-    AppTheme.INDIGO -> stringResource(R.string.theme_indigo)
+    AppTheme.MATTE_BLACK -> stringResource(R.string.theme_matte_black)
+    AppTheme.MATERIAL_LIGHT -> stringResource(R.string.theme_material_light)
+    AppTheme.MATERIAL_DARK -> stringResource(R.string.theme_material_dark)
 }
 
 data class WaqfahColors(
@@ -63,10 +63,13 @@ private fun resolveColors(theme: AppTheme, isSystemDark: Boolean, accentColor: A
         else BasePalettes.Light.withAccent(accentColor, isDark = false)
         AppTheme.LIGHT -> BasePalettes.Light.withAccent(accentColor, isDark = false)
         AppTheme.DARK -> BasePalettes.Dark.withAccent(accentColor, isDark = true)
-        AppTheme.CREAM -> BasePalettes.Cream
         AppTheme.STONE -> BasePalettes.Stone
-        AppTheme.MIDNIGHT -> BasePalettes.Midnight
-        AppTheme.INDIGO -> BasePalettes.Indigo
+        // Matte Black is dark-only, so the accent always resolves its dark variant.
+        AppTheme.MATTE_BLACK -> BasePalettes.MatteBlack.withAccent(accentColor, isDark = true)
+        // Material palettes carry their accent in the surface already, so the
+        // accent is part of the lookup rather than swapped in afterwards.
+        AppTheme.MATERIAL_LIGHT -> BasePalettes.MaterialLight.getValue(accentColor)
+        AppTheme.MATERIAL_DARK -> BasePalettes.MaterialDark.getValue(accentColor)
     }
 
 val LocalWaqfahColors = staticCompositionLocalOf { BasePalettes.Light }
