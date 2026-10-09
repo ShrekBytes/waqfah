@@ -3,6 +3,7 @@ package dev.shrekbytes.waqfah.detection
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -19,6 +20,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import dev.shrekbytes.waqfah.BuildConfig
+import dev.shrekbytes.waqfah.MainActivity
 import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.TriggerActivity
 import dev.shrekbytes.waqfah.data.monitoredapp.MonitoredAppState
@@ -190,6 +192,23 @@ class AppMonitorService : Service() {
             // the status bar.
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.monitor_notification_title))
+            // Tapping the status-bar notification opens the app shell. The
+            // intent is fully specified here, so the pending intent is
+            // immutable (mandatory for targetSdk 31+); NEW_TASK is the flag
+            // the service context needs, and it brings an existing app task
+            // forward rather than stacking a second MainActivity. The reading
+            // pause itself is never launched from here — TriggerActivity is
+            // the service's own interstitial and stays reachable only through
+            // a trigger. Opening the app has no effect on detection:
+            // MainActivity's resume path may only start the monitor.
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
             .setOngoing(true)
             .build()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
