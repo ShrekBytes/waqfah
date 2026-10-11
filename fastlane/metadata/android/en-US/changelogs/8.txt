@@ -1,0 +1,6 @@
+Fixed the ayah text on some phones.
+
+* The Digital Khatt Indopak font now loads everywhere it is offered,
+  including a device that silently fell back to a system font — diacritics
+  landed on the wrong letters, and Quranic annotation marks drew as empty
+  boxes

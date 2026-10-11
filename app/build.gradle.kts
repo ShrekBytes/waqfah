@@ -33,8 +33,8 @@ android {
         applicationId = "dev.shrekbytes.waqfah"
         minSdk = 28
         targetSdk = 37
-        versionCode = 7
-        versionName = "2.2.1"
+        versionCode = 8
+        versionName = "2.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
