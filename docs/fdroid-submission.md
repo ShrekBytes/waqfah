@@ -293,7 +293,7 @@ third party rights, including ... copyright and trade marks."
    links Tanzil. `quran_core.db` is covered by Tanzil's text license, which
    grants use in "any website or application" with attribution and a link.
 3. ~~OFL text for the bundled fonts~~ — **added.** Both `amiri.ttf` and
-   `digital_khatt_indopak.otf` are OFL-1.1, which requires the notice to travel
+   `digital_khatt_indopak.ttf` are OFL-1.1, which requires the notice to travel
    with the copies. `app/src/main/assets/licenses/` now ships each font's
    upstream OFL file verbatim, so they are inside the APK as well as the repo.
 4. ~~`quran_core.db` provenance~~ — **documented.** `docs/quran-core-db.md`
