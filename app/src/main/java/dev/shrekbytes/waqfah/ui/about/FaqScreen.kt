@@ -1,10 +1,12 @@
 package dev.shrekbytes.waqfah.ui.about
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
@@ -35,7 +38,12 @@ import dev.shrekbytes.waqfah.ui.components.SettingsScaffold
 import dev.shrekbytes.waqfah.ui.components.rowHighlight
 import dev.shrekbytes.waqfah.ui.theme.WaqfahTheme
 
-private data class FaqItem(val questionRes: Int, val answerRes: Int)
+private data class FaqItem(val questionRes: Int, val answerRes: Int, val image: FaqImage? = null)
+
+// A screenshot of a device's own settings screen, for the answers where the
+// menu path is the hard part. Grouped with its caption so a row cannot carry
+// an image whose caption went missing.
+private data class FaqImage(val res: Int, val captionRes: Int)
 
 private val items = listOf(
     FaqItem(R.string.faq_q1, R.string.faq_a1),
@@ -45,6 +53,11 @@ private val items = listOf(
     FaqItem(R.string.faq_q5, R.string.faq_a5),
     FaqItem(R.string.faq_q6, R.string.faq_a6),
     FaqItem(R.string.faq_q7, R.string.faq_a7),
+    FaqItem(
+        R.string.faq_q8,
+        R.string.faq_a8,
+        FaqImage(R.drawable.img_faq_miui_bg_windows, R.string.faq_a8_image_caption),
+    ),
 )
 
 @Composable
@@ -148,14 +161,52 @@ private fun ExpandableRow(item: FaqItem) {
                 modifier = Modifier.padding(start = 4.dp).size(14.dp).rotate(if (expanded) 90f else 0f),
             )
         }
-        AnimatedVisibility(visible = expanded) {
-            Text(
-                stringResource(item.answerRes),
-                color = colors.inkMuted,
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-                modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 13.dp),
-            )
+        // animateContentSize rather than AnimatedVisibility: the latter measures
+        // its content as one block and mis-places siblings around a full-width
+        // image, so the answer text ended up painted underneath the screenshot.
+        // An explicit Column with an animated height lays every child out in
+        // order whatever it contains.
+        Column(Modifier.fillMaxWidth().animateContentSize()) {
+            if (expanded) {
+                Text(
+                    stringResource(item.answerRes),
+                    color = colors.inkMuted,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                    modifier = Modifier.padding(start = 6.dp, end = 6.dp),
+                )
+                item.image?.let { image ->
+                    val painter = painterResource(image.res)
+                    Image(
+                        painter = painter,
+                        // The answer above already names the exact setting to
+                        // turn on, so the picture carries nothing a screen
+                        // reader is missing. The caption below is real text and
+                        // reads out.
+                        contentDescription = null,
+                        modifier = Modifier
+                            .padding(start = 6.dp, end = 6.dp, top = 12.dp)
+                            .fillMaxWidth()
+                            // A phone screen: its height is whatever its width
+                            // works out to — read off the painter rather than
+                            // hardcoded, so swapping the image cannot leave the
+                            // box the wrong shape.
+                            .aspectRatio(painter.intrinsicSize.width / painter.intrinsicSize.height)
+                            .clip(RoundedCornerShape(12.dp))
+                            // The vendor screens are light; a hairline keeps the
+                            // white panel from floating loose on the dark themes.
+                            .border(1.dp, colors.line, RoundedCornerShape(12.dp)),
+                    )
+                    Text(
+                        stringResource(image.captionRes),
+                        color = colors.inkSoft,
+                        fontSize = 11.5.sp,
+                        lineHeight = 16.sp,
+                        modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 8.dp),
+                    )
+                }
+                Spacer(Modifier.height(13.dp))
+            }
         }
     }
 }
