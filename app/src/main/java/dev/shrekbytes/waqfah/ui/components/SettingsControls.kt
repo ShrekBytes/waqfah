@@ -382,6 +382,31 @@ fun OnboardPermissionRow(title: String, subtitle: String, granted: Boolean, onOp
         }
     }
 
+// Device-specific help row. The permission it points at cannot be read, so it
+// shows no state at all: a toggle, a tick or a Grant pill would each claim
+// something the app cannot know (ADR-0008). It is a pointer to the vendor
+// screen that owns the setting, so the whole row is the tap target the way a
+// navigation row's is, and its affordance is the drill-in chevron.
+@Composable
+fun PermissionHelpRow(title: String, subtitle: String, onOpenSettings: () -> Unit) {
+    val colors = WaqfahTheme.colors
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .rowHighlight(onOpenSettings)
+            .padding(horizontal = 6.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = colors.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = colors.inkMuted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        ChevronIcon(direction = ChevronDirection.RIGHT, tint = colors.inkSoft, modifier = Modifier.size(14.dp))
+    }
+}
+
 // Slim custom pill toggle rather than Material3's Switch.
 @Composable
 fun WaqfahSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {

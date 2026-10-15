@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import dev.shrekbytes.waqfah.R
 
 // Stable identity for each permission row so screens never depend on list order.
-enum class PermissionKey { USAGE_ACCESS, OVERLAY, BATTERY, NOTIFICATIONS }
+enum class PermissionKey { USAGE_ACCESS, OVERLAY, BATTERY, NOTIFICATIONS, VENDOR_BACKGROUND_START }
 
 data class PermissionInfo(val key: PermissionKey, @param:StringRes val nameRes: Int, @param:StringRes val descriptionRes: Int)
 
@@ -33,6 +33,11 @@ object PermissionCatalog {
         R.string.perm_notifications_name,
         R.string.perm_notifications_desc,
     )
+    val vendorBackgroundStart = PermissionInfo(
+        PermissionKey.VENDOR_BACKGROUND_START,
+        R.string.perm_vendor_bg_name,
+        R.string.perm_vendor_bg_desc,
+    )
 
     // Optional rows rendered after the required ones, never gating anything:
     // - BATTERY: reliability only — stock Android runs the monitor fine without
@@ -41,4 +46,12 @@ object PermissionCatalog {
     // - NOTIFICATIONS: purely cosmetic — visibility of the monitor notification
     //   on Android 13+.
     val recommended = listOf(battery, notifications)
+
+    // Rows that only apply to some devices, rendered in their own group after
+    // the required ones. VENDOR_BACKGROUND_START is needed for the feature to
+    // work at all on the ROMs that impose it, but it cannot be read — the op
+    // that would report it is vendor-private and not stable across builds — so
+    // it is offered by capability (does the screen exist?) and never gates
+    // (ADR-0008). A device without the screen renders none of these.
+    val deviceSpecific = listOf(vendorBackgroundStart)
 }

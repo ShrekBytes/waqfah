@@ -21,6 +21,7 @@ import dev.shrekbytes.waqfah.R
 import dev.shrekbytes.waqfah.data.model.PermissionCatalog
 import dev.shrekbytes.waqfah.data.model.PermissionKey
 import dev.shrekbytes.waqfah.ui.components.OnboardPermissionRow
+import dev.shrekbytes.waqfah.ui.components.PermissionHelpRow
 import dev.shrekbytes.waqfah.ui.components.SectionTitle
 import dev.shrekbytes.waqfah.ui.components.WaqfahPrimaryButton
 import dev.shrekbytes.waqfah.ui.settings.permissions.PermissionsViewModel
@@ -83,9 +84,10 @@ fun OnboardPermissionsScreen(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenRationale),
         )
-        // The two groups get explicit headers so users can see at a glance
-        // what's indispensable versus nice-to-have (SectionTitle carries the
-        // group separation spacing itself).
+        // The groups get explicit headers so users can see at a glance what's
+        // indispensable, what this particular device additionally needs, and
+        // what's merely nice-to-have (SectionTitle carries the separation
+        // spacing itself).
         SectionTitle(stringResource(R.string.perm_section_required))
         PermissionCatalog.all.forEach { info ->
             OnboardPermissionRow(
@@ -94,6 +96,20 @@ fun OnboardPermissionsScreen(
                 granted = state.isGranted(info.key),
                 onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
             )
+        }
+        // Device-specific rows — present only where the screen that owns the
+        // setting exists, and never gating: the permission cannot be read, so
+        // it cannot gate Continue (ADR-0008). They sit above the optional rows
+        // because on the devices that have them they are not optional.
+        if (state.vendorBackgroundStartAvailable) {
+            SectionTitle(stringResource(R.string.perm_section_device))
+            PermissionCatalog.deviceSpecific.forEach { info ->
+                PermissionHelpRow(
+                    title = stringResource(info.nameRes),
+                    subtitle = stringResource(info.descriptionRes),
+                    onOpenSettings = { context.startActivity(viewModel.settingsIntentFor(info.key)) },
+                )
+            }
         }
         // Optional rows — recommended for reliability (battery) and visibility
         // (notifications) but never gating Continue. Battery routes through

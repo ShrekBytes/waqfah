@@ -21,11 +21,24 @@ class CatalogAndLimitsTest {
     }
 
     @Test
-    fun permissionCatalog_optionalRowsCoverEverythingElse_exactlyOnce() {
-        val optionalKeys = PermissionCatalog.recommended.map { it.key }
-        val expected = PermissionKey.entries.toSet() - PermissionCatalog.all.map { it.key }.toSet()
-        assertEquals(expected, optionalKeys.toSet())
-        assertEquals("Keys must be unique", optionalKeys.size, optionalKeys.toSet().size)
+    fun permissionCatalog_deviceSpecificRowsNeverGateOnboarding() {
+        // ADR-0008: the vendor background-start row cannot report its own
+        // state, so it must never join the rows gated behind Continue. This
+        // assertion exists to stop that decision being undone by accident.
+        val requiredKeys = PermissionCatalog.all.map { it.key }.toSet()
+        val deviceKeys = PermissionCatalog.deviceSpecific.map { it.key }.toSet()
+        assertTrue(
+            "device-specific rows must stay out of the Continue gate, found: ${requiredKeys intersect deviceKeys}",
+            (requiredKeys intersect deviceKeys).isEmpty(),
+        )
+    }
+
+    @Test
+    fun permissionCatalog_everyKeyBelongsToExactlyOneGroup() {
+        val groups = PermissionCatalog.all + PermissionCatalog.recommended + PermissionCatalog.deviceSpecific
+        val keys = groups.map { it.key }
+        assertEquals("A key must not appear in two groups", keys.size, keys.toSet().size)
+        assertEquals("Every key must be in exactly one group", PermissionKey.entries.toSet(), keys.toSet())
     }
 
     @Test
