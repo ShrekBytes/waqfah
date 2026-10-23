@@ -1,0 +1,5 @@
+Fixed broken ayah words on Android 12 and below.
+
+* Words carrying the Quranic madda sign (as in 2:5) drew with letters
+  split apart on Android 12 and below. They now join correctly, with the
+  sign drawn as the standard madda mark; Android 13 and up are unchanged
