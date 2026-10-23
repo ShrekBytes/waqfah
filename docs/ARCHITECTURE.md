@@ -67,7 +67,10 @@ TriggerDecision as a constructor probe.
 
 - `data/local/core` — read-only Quran text (`quran_core.db`, bundled asset,
   rebuilt wholesale each release; destructive migration by design). Its contents
-  and provenance are documented in `docs/quran-core-db.md`.
+  and provenance are documented in `docs/quran-core-db.md`. Which column a
+  surface draws goes through `arabicTextFor` (`ui/reading/ReadingFormatting.kt`),
+  which also substitutes the madda-wajib sign on shapers older than Unicode 14
+  (ADR-0008) — the stored text is drawn as-is everywhere else.
 - `data/local/appstate` — user data (`monitored_apps`, `read_verses`,
   `bookmark_verses`); **no** destructive fallback here, migrations must be
   written if schema changes.

@@ -69,7 +69,10 @@ curl -skL -o /tmp/tanzil.txt \
 ## Provenance of the other columns — not independently verified
 
 - `arabic_indopak` — all 6,236 verses end with `U+06DD` (end of ayah), and 1,834
-  embed the ayah number after it. No leading rub-el-hizb marks.
+  embed the ayah number after it. No leading rub-el-hizb marks. 1,576 verses
+  carry `U+089C` (arabic madda waajib), 2,098 occurrences; it is substituted
+  for display on Android 12 and below, whose shapers predate its assignment
+  (ADR-0008) — the stored bytes are unaffected.
 - `en_transliteration`, `bn_transliteration` — Latin and Bengali-script
   transliteration, no empty values.
 - `surahs.name_arabic` / `name_english` / `name_bengali` — surah names in three
